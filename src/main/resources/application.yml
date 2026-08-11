@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: gffh-api
+  data:
+    mongodb:
+      # Credentials come from secrets management, never from this file
+      # (Technical Specification section 17).
+      uri: ${MONGODB_URI:mongodb://localhost:27017/gffh}
+      auto-index-creation: false   # indexes are managed explicitly, see IndexConfig
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false   # ISO-8601, per API design standards
+
+server:
+  port: ${PORT:8090}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+gffh:
+  cors:
+    # The future web client's origin. Empty in development; never a wildcard.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  matching:
+    # Startup defaults; the live values are published through ADM-08.
+    weights:
+      age: 25
+      availability: 25
+      format: 15
+      distance: 15
+      home-away: 10
+      ability: 10
+    age-band-tolerance: 0
+  rate-limits:
+    invitations-per-hour: 20
+    auth-attempts-per-hour: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{requestId:-}]"
+  level:
+    com.gffh.api: INFO

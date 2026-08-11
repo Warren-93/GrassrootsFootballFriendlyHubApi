@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: gffh-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - gffh-mongo-data:/data/db
+
+volumes:
+  gffh-mongo-data:

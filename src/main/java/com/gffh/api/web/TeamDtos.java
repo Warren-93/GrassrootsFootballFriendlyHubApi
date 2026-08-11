@@ -1,0 +1,76 @@
+package com.gffh.api.web;
+
+import com.gffh.api.domain.*;
+import jakarta.validation.constraints.*;
+
+import java.time.Instant;
+
+/**
+ * Wire types for team creation and management. Not part of the README's
+ * "Outstanding" list by name, but required connective tissue: nothing else
+ * (availability, matching, friendly requests) has a team to act on without it.
+ */
+public final class TeamDtos {
+
+    private TeamDtos() {}
+
+    /**
+     * Creates the team's club in the same step when {@code clubId} is omitted -
+     * the common case for a manager's first team, mirroring SCR-ON-03.
+     */
+    public record CreateTeamRequest(
+            String clubId,
+            String clubName,
+            @NotBlank String name,
+            String badgeUrl,
+            @NotNull AgeGroup ageGroup,
+            @NotNull Gender gender,
+            Format format,
+            @NotNull AbilityLevel abilityLevel,
+            String league,
+            @NotBlank String postcode,
+            @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitude,
+            @NotNull @DecimalMin("-90") @DecimalMax("90") Double latitude,
+            @Min(1) @Max(50) int travelRadiusMiles,
+            @NotNull HomeAwayPreference homeAwayPreference,
+            String managerName,
+            String contactPhone,
+            String description,
+            String defaultVenueId) {}
+
+    public record UpdateTeamRequest(
+            String name,
+            String badgeUrl,
+            AgeGroup ageGroup,
+            Gender gender,
+            Format format,
+            AbilityLevel abilityLevel,
+            String league,
+            String postcode,
+            Double longitude,
+            Double latitude,
+            Integer travelRadiusMiles,
+            HomeAwayPreference homeAwayPreference,
+            String managerName,
+            String contactPhone,
+            String description,
+            String defaultVenueId) {}
+
+    public record TeamView(
+            String id, String clubId, String name, String clubName, String badgeUrl,
+            String ageGroup, String gender, String format, String abilityLevel,
+            String league, String postcode, double longitude, double latitude,
+            int travelRadiusMiles, String homeAwayPreference, String managerName,
+            String contactPhone, String description, String verification,
+            String defaultVenueId, int completenessPercent, Instant createdAt) {
+
+        public static TeamView from(Team t) {
+            return new TeamView(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
+                    t.ageGroup().name(), t.gender().name(), t.format().name(), t.abilityLevel().name(),
+                    t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
+                    t.travelRadiusMiles(), t.homeAwayPreference().name(), t.managerName(),
+                    t.contactPhone(), t.description(), t.verification().name(), t.defaultVenueId(),
+                    t.completenessPercent(t.defaultVenueId() != null), t.createdAt());
+        }
+    }
+}
