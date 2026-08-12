@@ -53,6 +53,11 @@ public class MongoUserRepository implements UserRepository {
     }
 
     @Override
+    public void delete(String id) {
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), UserDocument.class, COLLECTION);
+    }
+
+    @Override
     public List<User> search(String query, int limit) {
         String pattern = Pattern.quote(query);
         Query q = new Query(new Criteria().orOperator(

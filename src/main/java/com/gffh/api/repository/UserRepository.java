@@ -15,4 +15,6 @@ public interface UserRepository {
 
     /** Case-insensitive email/name search, for ADM-06's user search. */
     List<User> search(String query, int limit);
+
+    void delete(String id);
 }
