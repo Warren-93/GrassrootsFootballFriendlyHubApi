@@ -35,12 +35,14 @@ public class VerificationTokenService {
         this.tokens = tokens;
     }
 
-    public void issue(String userId, VerificationTokenPurpose purpose, String email) {
+    /** Returns the raw token so a caller without a real mail provider can still hand it to the user directly. */
+    public String issue(String userId, VerificationTokenPurpose purpose, String email) {
         String rawToken = randomToken();
         tokens.save(new VerificationToken(null, userId, rawToken, purpose,
                 Instant.now().plus(TTL_MINUTES, ChronoUnit.MINUTES), false, Instant.now()));
         log.info("Verification token issued [purpose={}, email={}, token={}] "
                 + "- no email provider configured, logging in place of delivery", purpose, email, rawToken);
+        return rawToken;
     }
 
     public Optional<String> consume(String rawToken, VerificationTokenPurpose purpose) {

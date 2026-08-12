@@ -28,12 +28,26 @@ public final class AuthDtos {
 
     public record VerifyConfirmRequest(@NotBlank String token) {}
 
+    /**
+     * {@code verificationToken} is only ever populated for the account whose
+     * own credentials/session produced this response (registration, resend)
+     * - never for an unauthenticated request like password reset, where
+     * returning it would let anyone probe whether an email is registered.
+     */
     public record TokenResponse(
-            String accessToken, String refreshToken, String tokenType, long expiresIn, UserView user) {
+            String accessToken, String refreshToken, String tokenType, long expiresIn, UserView user,
+            String verificationToken) {
         public static TokenResponse of(String accessToken, String refreshToken, long expiresIn, User user) {
-            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user));
+            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), null);
+        }
+
+        public static TokenResponse withVerificationToken(String accessToken, String refreshToken, long expiresIn,
+                                                            User user, String verificationToken) {
+            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), verificationToken);
         }
     }
+
+    public record VerificationResendResponse(String verificationToken) {}
 
     public record UserView(String id, String email, String displayName, boolean emailVerified) {
         public static UserView from(User user) {
