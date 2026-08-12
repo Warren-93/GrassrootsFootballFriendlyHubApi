@@ -149,6 +149,24 @@ public class FriendlyRequestService {
         return requests.findByTeamId(teamId);
     }
 
+    /**
+     * Blocking is bidirectional and immediate: neither team appears in the
+     * other's search results, and any open negotiation between them is
+     * cancelled (SCR-PR-11) - bypasses {@link RequestStateMachine} the same
+     * way admin team suspension does, since this isn't a normal user-driven
+     * transition.
+     */
+    public void cancelOpenBetween(String teamAId, String teamBId) {
+        requests.findByTeamId(teamAId).stream()
+                .filter(fr -> !fr.status().isTerminal())
+                .filter(fr -> fr.involves(teamBId))
+                .forEach(fr -> {
+                    FriendlyRequest cancelled = requests.save(withStatus(fr, RequestStatus.CANCELLED));
+                    releaseSlots(cancelled);
+                    cancelFixtureIfAny(cancelled);
+                });
+    }
+
     public FriendlyRequest get(String userId, String requestId) {
         return requireVisible(userId, requestId);
     }

@@ -14,14 +14,18 @@ public class BlockService {
 
     private final BlockRepository blocks;
     private final MembershipService membershipService;
+    private final FriendlyRequestService friendlyRequestService;
 
-    public BlockService(BlockRepository blocks, MembershipService membershipService) {
+    public BlockService(BlockRepository blocks, MembershipService membershipService,
+                        FriendlyRequestService friendlyRequestService) {
         this.blocks = blocks;
         this.membershipService = membershipService;
+        this.friendlyRequestService = friendlyRequestService;
     }
 
     public void block(String userId, String teamId, BlockDtos.BlockRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
         blocks.block(teamId, request.blockedTeamId(), request.reason());
+        friendlyRequestService.cancelOpenBetween(teamId, request.blockedTeamId());
     }
 }
