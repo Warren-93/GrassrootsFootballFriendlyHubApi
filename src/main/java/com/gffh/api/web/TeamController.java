@@ -9,6 +9,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/teams")
 @Tag(name = "Teams", description = "Team profile creation and management")
@@ -25,6 +27,14 @@ public class TeamController {
                                                      @Valid @RequestBody TeamDtos.CreateTeamRequest request) {
         Team team = teamService.create(principal.getSubject(), request);
         return ResponseEntity.ok(TeamDtos.TeamView.from(team));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<TeamDtos.TeamView>> listByClub(@AuthenticationPrincipal Jwt principal,
+                                                               @RequestParam String clubId) {
+        var views = teamService.listByClub(principal.getSubject(), clubId).stream()
+                .map(t -> TeamDtos.TeamView.from(t, true)).toList();
+        return ResponseEntity.ok(views);
     }
 
     @GetMapping("/{teamId}")

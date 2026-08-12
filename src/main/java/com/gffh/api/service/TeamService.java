@@ -74,6 +74,12 @@ public class TeamService {
         return role != null && role.canManageTeam();
     }
 
+    /** Every squad under a club (SCR-PR-03's teams list) - the club's own officials only. */
+    public java.util.List<Team> listByClub(String userId, String clubId) {
+        membershipService.requireCanManageClub(userId, clubId);
+        return teams.findByClubId(clubId);
+    }
+
     public Team update(String userId, String teamId, TeamDtos.UpdateTeamRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
         Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
