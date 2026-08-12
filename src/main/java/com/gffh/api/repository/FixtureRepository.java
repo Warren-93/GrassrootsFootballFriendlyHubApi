@@ -12,4 +12,7 @@ public interface FixtureRepository {
     List<Fixture> findByTeamId(String teamId);
 
     Fixture save(Fixture fixture);
+
+    /** Whether a not-yet-completed CONFIRMED fixture is booked at this venue - blocks deleting it out from under it. */
+    boolean existsUpcomingConfirmedAtVenue(String venueId);
 }

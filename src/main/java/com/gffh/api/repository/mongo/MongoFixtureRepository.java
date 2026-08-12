@@ -39,6 +39,15 @@ public class MongoFixtureRepository implements FixtureRepository {
     }
 
     @Override
+    public boolean existsUpcomingConfirmedAtVenue(String venueId) {
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("venueId").is(venueId),
+                Criteria.where("status").is("CONFIRMED"),
+                Criteria.where("date").gte(java.time.LocalDate.now())));
+        return mongoTemplate.exists(query, FixtureDocument.class, COLLECTION);
+    }
+
+    @Override
     public Fixture save(Fixture fixture) {
         Fixture toSave = fixture.id() != null ? fixture : withGeneratedId(fixture);
         FixtureDocument doc = FixtureDocument.from(toSave);

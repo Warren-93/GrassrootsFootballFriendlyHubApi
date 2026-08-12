@@ -2,6 +2,7 @@ package com.gffh.api.service;
 
 import com.gffh.api.domain.GeoPoint;
 import com.gffh.api.domain.Venue;
+import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.VenueRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,12 @@ public class VenueService {
 
     private final VenueRepository venues;
     private final MembershipService membershipService;
+    private final FixtureRepository fixtures;
 
-    public VenueService(VenueRepository venues, MembershipService membershipService) {
+    public VenueService(VenueRepository venues, MembershipService membershipService, FixtureRepository fixtures) {
         this.venues = venues;
         this.membershipService = membershipService;
+        this.fixtures = fixtures;
     }
 
     public Venue create(String userId, com.gffh.api.web.VenueDtos.CreateVenueRequest request) {
@@ -74,6 +77,10 @@ public class VenueService {
     public void delete(String userId, String venueId) {
         Venue current = find(venueId);
         membershipService.requireCanManageClub(userId, current.clubId());
+        if (fixtures.existsUpcomingConfirmedAtVenue(venueId)) {
+            throw new BusinessRuleException("VENUE_HAS_UPCOMING_FIXTURE", HttpStatus.CONFLICT,
+                    "This venue has a confirmed fixture booked - it can't be removed until that's played or cancelled.");
+        }
         venues.delete(venueId);
     }
 
