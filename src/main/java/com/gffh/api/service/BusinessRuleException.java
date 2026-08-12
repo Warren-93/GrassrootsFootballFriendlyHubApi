@@ -35,8 +35,8 @@ public class BusinessRuleException extends RuntimeException {
                 "This team already has a fixture on this date.");
     }
 
-    public static BusinessRuleException teamNotVerified() {
-        return new BusinessRuleException("TEAM_NOT_VERIFIED", HttpStatus.FORBIDDEN,
+    public static BusinessRuleException emailNotVerified() {
+        return new BusinessRuleException("EMAIL_NOT_VERIFIED", HttpStatus.FORBIDDEN,
                 "Verify your email address before sending invitations.");
     }
 

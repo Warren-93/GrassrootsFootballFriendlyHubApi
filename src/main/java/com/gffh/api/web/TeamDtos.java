@@ -65,11 +65,24 @@ public final class TeamDtos {
             String defaultVenueId, int completenessPercent, Instant createdAt) {
 
         public static TeamView from(Team t) {
+            return from(t, true);
+        }
+
+        /**
+         * {@code includeContact} is false when the caller doesn't manage this
+         * team - contact details are only disclosed to the team's own
+         * managers here, mirroring the CONFIRMED-only disclosure rule
+         * {@link com.gffh.api.request.RequestStateMachine#disclosesContactDetails}
+         * applies to fixtures and friendly requests.
+         */
+        public static TeamView from(Team t, boolean includeContact) {
             return new TeamView(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
                     t.ageGroup().name(), t.gender().name(), t.format().name(), t.abilityLevel().name(),
                     t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
-                    t.travelRadiusMiles(), t.homeAwayPreference().name(), t.managerName(),
-                    t.contactPhone(), t.description(), t.verification().name(), t.defaultVenueId(),
+                    t.travelRadiusMiles(), t.homeAwayPreference().name(),
+                    includeContact ? t.managerName() : null,
+                    includeContact ? t.contactPhone() : null,
+                    t.description(), t.verification().name(), t.defaultVenueId(),
                     t.completenessPercent(t.defaultVenueId() != null), t.createdAt());
         }
     }

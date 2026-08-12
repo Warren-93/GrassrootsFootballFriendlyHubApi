@@ -6,6 +6,7 @@ import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.TeamRepository;
+import com.gffh.api.repository.UserRepository;
 import com.gffh.api.request.RequestStateMachine;
 import com.gffh.api.request.RequestStateMachine.Actor;
 import com.gffh.api.web.FriendlyRequestDtos;
@@ -31,16 +32,19 @@ public class FriendlyRequestService {
     private final BlockRepository blocks;
     private final FixtureRepository fixtures;
     private final MembershipService memberships;
+    private final UserRepository users;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
-                                  FixtureRepository fixtures, MembershipService memberships) {
+                                  FixtureRepository fixtures, MembershipService memberships,
+                                  UserRepository users) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
         this.blocks = blocks;
         this.fixtures = fixtures;
         this.memberships = memberships;
+        this.users = users;
     }
 
     public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req) {
@@ -49,7 +53,10 @@ public class FriendlyRequestService {
         Team sender = teams.findById(req.senderTeamId()).orElseThrow(BusinessRuleException::blocked);
         Team recipient = teams.findById(req.recipientTeamId()).orElseThrow(BusinessRuleException::blocked);
 
-        if (!sender.isVerified()) throw BusinessRuleException.teamNotVerified();
+        // Team verification is a trust badge, not a gate (spec SCR-PR-07) - the
+        // real gate is the acting user's own email verification.
+        User senderUser = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
+        if (!senderUser.emailVerified()) throw BusinessRuleException.emailNotVerified();
 
         int completeness = sender.completenessPercent(sender.defaultVenueId() != null);
         if (completeness < 80) throw BusinessRuleException.profileIncomplete(completeness);

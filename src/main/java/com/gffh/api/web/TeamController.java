@@ -30,7 +30,10 @@ public class TeamController {
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDtos.TeamView> get(@AuthenticationPrincipal Jwt principal,
                                                  @PathVariable String teamId) {
-        return ResponseEntity.ok(TeamDtos.TeamView.from(teamService.get(principal.getSubject(), teamId)));
+        String userId = principal.getSubject();
+        Team team = teamService.get(userId, teamId);
+        boolean canManage = teamService.canManage(userId, teamId);
+        return ResponseEntity.ok(TeamDtos.TeamView.from(team, canManage));
     }
 
     @PatchMapping("/{teamId}")

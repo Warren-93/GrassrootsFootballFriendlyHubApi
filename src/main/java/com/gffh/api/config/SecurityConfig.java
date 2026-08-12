@@ -95,7 +95,7 @@ public class SecurityConfig {
         // Never a wildcard: the future web client is a known origin, and a
         // wildcard would let any site call the API with a user's token.
         config.setAllowedOrigins(allowedOrigins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

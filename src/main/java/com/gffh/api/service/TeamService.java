@@ -59,9 +59,19 @@ public class TeamService {
         return team;
     }
 
+    /**
+     * Viewing is not gated on management - matching (SCR-FF-05) and direct
+     * links both need to open a team you don't manage. Contact details are
+     * redacted for non-managers at the DTO layer instead; see
+     * {@link com.gffh.api.web.TeamDtos.TeamView#from(Team, boolean)}.
+     */
     public Team get(String userId, String teamId) {
-        membershipService.requireCanManageTeam(userId, teamId);
         return teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+    }
+
+    public boolean canManage(String userId, String teamId) {
+        Role role = membershipService.roleFor(userId, teamId);
+        return role != null && role.canManageTeam();
     }
 
     public Team update(String userId, String teamId, TeamDtos.UpdateTeamRequest request) {

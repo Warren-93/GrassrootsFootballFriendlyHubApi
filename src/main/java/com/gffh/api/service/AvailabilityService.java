@@ -35,8 +35,13 @@ public class AvailabilityService {
         return availability.save(slot);
     }
 
+    /**
+     * No management check: this backs both a manager's own calendar and
+     * viewing an opponent's published availability (SCR-FF-05), and
+     * {@link com.gffh.api.repository.AvailabilityRepository#findBookableForTeamBetween}
+     * already restricts results to publicly-bookable slots either way.
+     */
     public List<AvailabilitySlot> list(String userId, String teamId, LocalDate from, LocalDate to) {
-        memberships.requireCanManageTeam(userId, teamId);
         LocalDate start = from != null ? from : LocalDate.now();
         LocalDate end = to != null ? to : start.plusWeeks(8);
         return availability.findBookableForTeamBetween(teamId, start, end);
