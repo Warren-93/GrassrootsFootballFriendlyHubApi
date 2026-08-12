@@ -50,6 +50,12 @@ public class VerificationService {
         return VerificationDtos.VerificationRequestView.from(saved);
     }
 
+    /** The team's own manager checking where their most recent submission stands - null if never submitted. */
+    public VerificationDtos.VerificationRequestView getForTeam(String userId, String teamId) {
+        membershipService.requireCanManageTeam(userId, teamId);
+        return requests.findLatestByTeamId(teamId).map(VerificationDtos.VerificationRequestView::from).orElse(null);
+    }
+
     public List<VerificationDtos.VerificationRequestView> queue() {
         return requests.findByStatus(VerificationRequestStatus.PENDING).stream()
                 .map(VerificationDtos.VerificationRequestView::from).toList();

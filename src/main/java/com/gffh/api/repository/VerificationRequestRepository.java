@@ -12,6 +12,9 @@ public interface VerificationRequestRepository {
 
     Optional<VerificationRequest> findPendingByTeamId(String teamId);
 
+    /** Most recently submitted request for this team, regardless of status - for the manager's own status view. */
+    Optional<VerificationRequest> findLatestByTeamId(String teamId);
+
     List<VerificationRequest> findByStatus(VerificationRequestStatus status);
 
     VerificationRequest save(VerificationRequest request);

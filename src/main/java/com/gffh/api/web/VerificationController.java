@@ -28,6 +28,12 @@ public class VerificationController {
         return ResponseEntity.ok(verificationService.submit(principal.getSubject(), teamId, request));
     }
 
+    @GetMapping("/api/v1/teams/{teamId}/verification")
+    public ResponseEntity<VerificationDtos.VerificationRequestView> getForTeam(
+            @AuthenticationPrincipal Jwt principal, @PathVariable String teamId) {
+        return ResponseEntity.ok(verificationService.getForTeam(principal.getSubject(), teamId));
+    }
+
     @GetMapping("/api/v1/admin/verifications")
     public ResponseEntity<List<VerificationDtos.VerificationRequestView>> queue() {
         return ResponseEntity.ok(verificationService.queue());

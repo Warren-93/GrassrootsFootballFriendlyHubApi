@@ -40,6 +40,15 @@ public class MongoVerificationRequestRepository implements VerificationRequestRe
     }
 
     @Override
+    public Optional<VerificationRequest> findLatestByTeamId(String teamId) {
+        Query query = new Query(Criteria.where("teamId").is(teamId));
+        query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "submittedAt"));
+        query.limit(1);
+        VerificationRequestDocument doc = mongoTemplate.findOne(query, VerificationRequestDocument.class, COLLECTION);
+        return Optional.ofNullable(doc).map(VerificationRequestDocument::toDomain);
+    }
+
+    @Override
     public List<VerificationRequest> findByStatus(VerificationRequestStatus status) {
         Query query = new Query(Criteria.where("status").is(status.name()));
         return mongoTemplate.find(query, VerificationRequestDocument.class, COLLECTION).stream()
