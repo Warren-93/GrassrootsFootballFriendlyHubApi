@@ -24,6 +24,12 @@ public class MongoMembershipRepository implements MembershipRepository {
     }
 
     @Override
+    public Optional<Membership> findById(String id) {
+        MembershipDocument doc = mongoTemplate.findById(id, MembershipDocument.class, COLLECTION);
+        return Optional.ofNullable(doc).map(MembershipDocument::toDomain);
+    }
+
+    @Override
     public Optional<Membership> findTeamMembership(String userId, String teamId) {
         Query query = new Query(Criteria.where("userId").is(userId).and("teamId").is(teamId));
         MembershipDocument doc = mongoTemplate.findOne(query, MembershipDocument.class, COLLECTION);
@@ -52,11 +58,23 @@ public class MongoMembershipRepository implements MembershipRepository {
     }
 
     @Override
+    public List<Membership> findByClubId(String clubId) {
+        Query query = new Query(Criteria.where("clubId").is(clubId));
+        return mongoTemplate.find(query, MembershipDocument.class, COLLECTION).stream()
+                .map(MembershipDocument::toDomain).toList();
+    }
+
+    @Override
     public Membership save(Membership membership) {
         Membership toSave = membership.id() != null ? membership : withGeneratedId(membership);
         MembershipDocument doc = MembershipDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
+    }
+
+    @Override
+    public void delete(String id) {
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), MembershipDocument.class, COLLECTION);
     }
 
     private Membership withGeneratedId(Membership m) {
