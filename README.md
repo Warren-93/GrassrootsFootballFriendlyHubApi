@@ -79,7 +79,7 @@ mvn spring-boot:run
 ```
 
 The app needs a reachable MongoDB (`MONGODB_URI`, default
-`mongodb://localhost:27017/gffh`) — `docker-compose.yml` provides one with a
+`mongodb://localhost:27017/db-gffh`) — `docker-compose.yml` provides one with a
 named volume so data survives a restart. It generates its own RSA signing key at
 startup for issuing bearer tokens — there is no external identity provider yet
 (see `JwtKeyConfig`), so restarting the API invalidates outstanding tokens.
