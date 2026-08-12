@@ -3,11 +3,15 @@ package com.gffh.api.repository.mongo;
 import com.gffh.api.domain.Club;
 import com.gffh.api.repository.ClubRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Repository
 public class MongoClubRepository implements ClubRepository {
@@ -38,5 +42,12 @@ public class MongoClubRepository implements ClubRepository {
         return new Club(UUID.randomUUID().toString(), club.name(), club.badgeUrl(), club.postcode(),
                 club.location(), club.website(), club.contactEmail(),
                 club.createdAt() != null ? club.createdAt() : Instant.now());
+    }
+
+    @Override
+    public List<Club> searchByName(String query, int limit) {
+        Query q = new Query(Criteria.where("name").regex(Pattern.quote(query), "i")).limit(limit);
+        return mongoTemplate.find(q, ClubDocument.class, COLLECTION).stream()
+                .map(ClubDocument::toDomain).toList();
     }
 }

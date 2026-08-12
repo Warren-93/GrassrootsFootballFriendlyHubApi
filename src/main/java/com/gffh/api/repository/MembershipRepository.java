@@ -13,5 +13,8 @@ public interface MembershipRepository {
 
     List<Membership> findByUserId(String userId);
 
+    /** Every membership scoped to this exact team (not the club it belongs to). Admin-only use (ADM-05 merge). */
+    List<Membership> findByTeamId(String teamId);
+
     Membership save(Membership membership);
 }

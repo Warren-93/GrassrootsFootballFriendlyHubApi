@@ -44,4 +44,7 @@ public interface TeamRepository {
                               boolean verifiedOnly,
                               String excludeClubId,
                               int limit);
+
+    /** Case-insensitive name search, for ADM-05's team search. */
+    List<Team> searchByName(String query, int limit);
 }

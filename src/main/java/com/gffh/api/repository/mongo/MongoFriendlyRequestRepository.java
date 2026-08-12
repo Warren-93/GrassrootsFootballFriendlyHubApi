@@ -61,6 +61,18 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         return doc.toDomain();
     }
 
+    @Override
+    public void cancelOpenForTeam(String teamId) {
+        Criteria pair = new Criteria().orOperator(
+                Criteria.where("senderTeamId").is(teamId),
+                Criteria.where("recipientTeamId").is(teamId));
+        Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").nin(TERMINAL)));
+        mongoTemplate.updateMulti(query,
+                org.springframework.data.mongodb.core.query.Update.update("status", RequestStatus.CANCELLED.name())
+                        .set("updatedAt", Instant.now()),
+                FriendlyRequestDocument.class, COLLECTION);
+    }
+
     private FriendlyRequest withGeneratedId(FriendlyRequest r) {
         Instant now = Instant.now();
         return new FriendlyRequest(UUID.randomUUID().toString(), r.senderTeamId(), r.recipientTeamId(),

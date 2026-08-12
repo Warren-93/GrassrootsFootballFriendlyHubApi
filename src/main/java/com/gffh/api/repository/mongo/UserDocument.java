@@ -16,6 +16,7 @@ public class UserDocument {
     public String displayName;
     public boolean emailVerified;
     public Instant createdAt;
+    public boolean suspended;
 
     public static UserDocument from(User u) {
         UserDocument d = new UserDocument();
@@ -25,10 +26,11 @@ public class UserDocument {
         d.displayName = u.displayName();
         d.emailVerified = u.emailVerified();
         d.createdAt = u.createdAt();
+        d.suspended = u.suspended();
         return d;
     }
 
     public User toDomain() {
-        return new User(id, email, passwordHash, displayName, emailVerified, createdAt);
+        return new User(id, email, passwordHash, displayName, emailVerified, createdAt, suspended);
     }
 }

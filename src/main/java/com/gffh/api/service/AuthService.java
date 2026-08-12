@@ -35,7 +35,7 @@ public class AuthService {
                     "An account with this email already exists.");
         }
         User user = users.save(new User(null, request.email(),
-                passwordEncoder.encode(request.password()), request.displayName(), false, Instant.now()));
+                passwordEncoder.encode(request.password()), request.displayName(), false, Instant.now(), false));
 
         // The session is established immediately; verification is asynchronous
         // and does not block use of the app (SCR-AU-03, SCR-AU-06).
@@ -48,6 +48,10 @@ public class AuthService {
                 .filter(u -> passwordEncoder.matches(request.password(), u.passwordHash()))
                 .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
                         "Email or password is incorrect."));
+        if (user.suspended()) {
+            throw new BusinessRuleException("ACCOUNT_SUSPENDED", HttpStatus.FORBIDDEN,
+                    "This account has been suspended.");
+        }
         return issueToken(user);
     }
 
@@ -113,11 +117,11 @@ public class AuthService {
 
     private static User withPasswordHash(User user, String passwordHash) {
         return new User(user.id(), user.email(), passwordHash, user.displayName(),
-                user.emailVerified(), user.createdAt());
+                user.emailVerified(), user.createdAt(), user.suspended());
     }
 
     private static User withEmailVerified(User user) {
         return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
-                true, user.createdAt());
+                true, user.createdAt(), user.suspended());
     }
 }

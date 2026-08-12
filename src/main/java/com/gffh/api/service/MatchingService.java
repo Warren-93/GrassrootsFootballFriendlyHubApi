@@ -50,7 +50,6 @@ public class MatchingService {
     }
 
     public MatchDtos.SearchResponse search(String userId, MatchDtos.SearchRequest request) {
-
         Team ourTeam = teams.findById(request.teamId())
                 .orElseThrow(BusinessRuleException::blocked);
 
@@ -58,6 +57,23 @@ public class MatchingService {
         // authenticated user could search on behalf of anyone.
         memberships.requireCanManageTeam(userId, ourTeam.id());
 
+        return score(ourTeam, request, weightsProvider.current());
+    }
+
+    /**
+     * Scores with the given weights instead of the published ones, and skips
+     * the per-user membership check: this is called only from ADM-08's
+     * preview, which is already authorized at the controller level by
+     * requiring PLATFORM_ADMIN, not by any particular user managing the team
+     * being previewed against. Never touches the live configuration.
+     */
+    public MatchDtos.SearchResponse previewForAdmin(MatchDtos.SearchRequest request, MatchingWeights weights) {
+        Team ourTeam = teams.findById(request.teamId())
+                .orElseThrow(BusinessRuleException::blocked);
+        return score(ourTeam, request, weights);
+    }
+
+    private MatchDtos.SearchResponse score(Team ourTeam, MatchDtos.SearchRequest request, MatchingWeights weights) {
         LocalDate from = request.fromDate() != null ? request.fromDate() : LocalDate.now();
         LocalDate to = request.toDate() != null ? request.toDate() : from.plusWeeks(8);
 
@@ -66,7 +82,7 @@ public class MatchingService {
         if (ourSlots.isEmpty()) {
             // Quick match is meaningless without published availability. The
             // client blocks this, but a direct API caller must be told why.
-            return empty(weightsProvider.current());
+            return empty(weights);
         }
 
         // Narrow in the database before scoring in memory. The 2dsphere index
@@ -94,7 +110,7 @@ public class MatchingService {
                 .filter(t -> !excluded.contains(t.id()))
                 .toList();
         if (candidates.isEmpty()) {
-            return empty(weightsProvider.current());
+            return empty(weights);
         }
 
         Map<String, List<AvailabilitySlot>> slotsByTeam =
@@ -109,7 +125,6 @@ public class MatchingService {
                 .filter(c -> !c.slots().isEmpty())
                 .toList();
 
-        MatchingWeights weights = weightsProvider.current();
         List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored);
 
         Map<String, Team> byId = candidates.stream()

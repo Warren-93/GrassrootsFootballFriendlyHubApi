@@ -43,6 +43,12 @@ public class FixtureService {
         return teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
     }
 
+    /** ADM-07's read-only fixture inspector: no team-management check, already gated by PLATFORM_ADMIN at the controller. */
+    public Fixture getForAdmin(String fixtureId) {
+        return fixtures.findById(fixtureId).orElseThrow(() -> new BusinessRuleException(
+                "FIXTURE_NOT_FOUND", HttpStatus.NOT_FOUND, "That fixture could not be found."));
+    }
+
     private boolean canManage(String userId, String teamId) {
         var role = memberships.roleFor(userId, teamId);
         return role != null && role.canManageTeam();

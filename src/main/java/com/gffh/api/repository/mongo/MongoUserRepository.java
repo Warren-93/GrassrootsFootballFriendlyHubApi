@@ -8,8 +8,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Repository
 public class MongoUserRepository implements UserRepository {
@@ -47,6 +49,16 @@ public class MongoUserRepository implements UserRepository {
     private User withGeneratedId(User user) {
         return new User(UUID.randomUUID().toString(), user.email(), user.passwordHash(),
                 user.displayName(), user.emailVerified(),
-                user.createdAt() != null ? user.createdAt() : Instant.now());
+                user.createdAt() != null ? user.createdAt() : Instant.now(), user.suspended());
+    }
+
+    @Override
+    public List<User> search(String query, int limit) {
+        String pattern = Pattern.quote(query);
+        Query q = new Query(new Criteria().orOperator(
+                Criteria.where("email").regex(pattern, "i"),
+                Criteria.where("displayName").regex(pattern, "i"))).limit(limit);
+        return mongoTemplate.find(q, UserDocument.class, COLLECTION).stream()
+                .map(UserDocument::toDomain).toList();
     }
 }

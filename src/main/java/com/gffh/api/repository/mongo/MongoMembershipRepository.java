@@ -45,6 +45,13 @@ public class MongoMembershipRepository implements MembershipRepository {
     }
 
     @Override
+    public List<Membership> findByTeamId(String teamId) {
+        Query query = new Query(Criteria.where("teamId").is(teamId));
+        return mongoTemplate.find(query, MembershipDocument.class, COLLECTION).stream()
+                .map(MembershipDocument::toDomain).toList();
+    }
+
+    @Override
     public Membership save(Membership membership) {
         Membership toSave = membership.id() != null ? membership : withGeneratedId(membership);
         MembershipDocument doc = MembershipDocument.from(toSave);

@@ -39,6 +39,7 @@ public class TeamDocument {
     public Instant firstFixtureConfirmedAt;
     public Instant createdAt;
     public Instant updatedAt;
+    public boolean suspended;
 
     public static TeamDocument from(Team t) {
         TeamDocument d = new TeamDocument();
@@ -64,6 +65,7 @@ public class TeamDocument {
         d.firstFixtureConfirmedAt = t.firstFixtureConfirmedAt();
         d.createdAt = t.createdAt();
         d.updatedAt = t.updatedAt();
+        d.suspended = t.suspended();
         return d;
     }
 
@@ -80,6 +82,6 @@ public class TeamDocument {
                 HomeAwayPreference.valueOf(homeAwayPreference),
                 managerName, contactPhone, description,
                 VerificationStatus.valueOf(verification),
-                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt);
+                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt, suspended);
     }
 }

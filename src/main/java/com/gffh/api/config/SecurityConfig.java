@@ -7,8 +7,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -58,11 +60,33 @@ public class SecurityConfig {
                 // anyRequest().authenticated() below rather than being listed here.
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                // Admin sign-in is necessarily unauthenticated (that's the point of
+                // it); every other /api/v1/admin/** route requires the role.
+                .requestMatchers(HttpMethod.POST,
+                        "/api/v1/admin/auth/bootstrap", "/api/v1/admin/auth/login",
+                        "/api/v1/admin/auth/login/verify").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("PLATFORM_ADMIN")
                 .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
+            .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
+    }
+
+    /**
+     * Regular user tokens (from {@code JwtService}) carry no "role" claim and
+     * so map to no authorities - fine, since only {@code hasRole(...)} checks
+     * on /api/v1/admin/** care. Admin tokens (from {@code AdminJwtService})
+     * carry {@code role=PLATFORM_ADMIN}, mapped here to the matching
+     * ROLE_PLATFORM_ADMIN authority Spring Security's hasRole(...) expects.
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            String role = jwt.getClaimAsString("role");
+            return role == null ? List.of() : List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        });
+        return converter;
     }
 
     @Bean

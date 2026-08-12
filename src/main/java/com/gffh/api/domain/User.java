@@ -13,5 +13,6 @@ public record User(
         String passwordHash,
         String displayName,
         boolean emailVerified,
-        Instant createdAt) {
+        Instant createdAt,
+        boolean suspended) {
 }

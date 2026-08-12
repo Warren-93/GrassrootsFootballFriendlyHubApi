@@ -32,7 +32,8 @@ public record Team(
         String defaultVenueId,
         Instant firstFixtureConfirmedAt,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        boolean suspended) {
 
     public boolean isVerified() { return verification == VerificationStatus.VERIFIED; }
 

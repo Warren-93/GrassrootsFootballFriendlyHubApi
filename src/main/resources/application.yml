@@ -20,8 +20,12 @@ server:
 
 gffh:
   cors:
-    # The future web client's origin. Empty in development; never a wildcard.
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+    # Defaults to the two local Vite dev servers (gffh-web, gffh-admin) plus
+    # the hosted gffh-web Vercel deployment, so local development and that
+    # deployment both work without remembering to set the env var every time
+    # - never a wildcard, and a real production deployment overrides this
+    # completely via CORS_ALLOWED_ORIGINS rather than extending it.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,https://grassroots-football-friendly-hub-we.vercel.app}
   matching:
     # Startup defaults; the live values are published through ADM-08.
     weights:

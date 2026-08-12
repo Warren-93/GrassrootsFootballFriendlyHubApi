@@ -67,7 +67,7 @@ public class MongoTeamRepository implements TeamRepository {
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now);
+                now, now, team.suspended());
     }
 
     private Team withCreatedAt(Team team, Instant now) {
@@ -76,7 +76,7 @@ public class MongoTeamRepository implements TeamRepository {
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now);
+                now, now, team.suspended());
     }
 
     @Override
@@ -88,7 +88,8 @@ public class MongoTeamRepository implements TeamRepository {
 
         Criteria criteria = Criteria.where("location").withinSphere(circle)
                 .and("ageGroup").is(ageGroup.name())
-                .and("clubId").ne(excludeClubId);
+                .and("clubId").ne(excludeClubId)
+                .and("suspended").ne(true);
 
         // MIXED is compatible with everything, so only a non-mixed search team
         // narrows the candidate set by gender.
@@ -107,6 +108,13 @@ public class MongoTeamRepository implements TeamRepository {
 
         Query query = new Query(criteria).limit(limit);
         return mongoTemplate.find(query, TeamDocument.class, COLLECTION).stream()
+                .map(TeamDocument::toDomain).toList();
+    }
+
+    @Override
+    public List<Team> searchByName(String query, int limit) {
+        Query q = new Query(Criteria.where("name").regex(java.util.regex.Pattern.quote(query), "i")).limit(limit);
+        return mongoTemplate.find(q, TeamDocument.class, COLLECTION).stream()
                 .map(TeamDocument::toDomain).toList();
     }
 }

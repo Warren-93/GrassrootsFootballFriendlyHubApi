@@ -53,7 +53,7 @@ public class TeamService {
                 new GeoPoint(request.longitude(), request.latitude()),
                 request.travelRadiusMiles(), request.homeAwayPreference(),
                 request.managerName(), request.contactPhone(), request.description(),
-                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null));
+                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false));
 
         memberships.save(new Membership(null, userId, team.id(), null, Role.TEAM_MANAGER, Instant.now()));
         return team;
@@ -98,7 +98,7 @@ public class TeamService {
                 orDefault(request.description(), current.description()),
                 current.verification(),
                 orDefault(request.defaultVenueId(), current.defaultVenueId()),
-                current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt());
+                current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt(), current.suspended());
 
         return teams.save(updated);
     }
