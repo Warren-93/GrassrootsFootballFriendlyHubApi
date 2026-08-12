@@ -38,12 +38,14 @@ public class FriendlyRequestService {
     private final IdempotencyKeyRepository idempotencyKeys;
     private final RateLimiter rateLimiter;
     private final RateLimitProperties rateLimits;
+    private final NotificationService notificationService;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
                                   FixtureRepository fixtures, MembershipService memberships,
                                   UserRepository users, IdempotencyKeyRepository idempotencyKeys,
-                                  RateLimiter rateLimiter, RateLimitProperties rateLimits) {
+                                  RateLimiter rateLimiter, RateLimitProperties rateLimits,
+                                  NotificationService notificationService) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
@@ -54,6 +56,7 @@ public class FriendlyRequestService {
         this.idempotencyKeys = idempotencyKeys;
         this.rateLimiter = rateLimiter;
         this.rateLimits = rateLimits;
+        this.notificationService = notificationService;
     }
 
     public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req, String idempotencyKey) {
@@ -115,12 +118,16 @@ public class FriendlyRequestService {
             idempotencyKeys.claim(idempotencyKey, saved.id());
         }
 
+        notificationService.notifyTeam(req.recipientTeamId(), NotificationType.REQUEST_RECEIVED,
+                "New friendly request", sender.name() + " sent you a friendly request.", saved.id(), null);
+
         return saved;
     }
 
     public FriendlyRequest act(String userId, String requestId, String action, String reason) {
         FriendlyRequest fr = requireVisible(userId, requestId);
         Actor actor = actorFor(userId, fr);
+        RequestStatus fromStatus = fr.status();
 
         RequestStateMachine.Transition transition = RequestStateMachine.transitionsFrom(fr.status()).stream()
                 .filter(t -> t.action().equals(action))
@@ -141,7 +148,36 @@ public class FriendlyRequestService {
             cancelFixtureIfAny(updated);
         }
 
+        notifyOtherParty(updated, actor, transition.to(), fromStatus);
+
         return updated;
+    }
+
+    private void notifyOtherParty(FriendlyRequest fr, Actor actor, RequestStatus toStatus, RequestStatus fromStatus) {
+        String actingTeamId = actor == Actor.SENDER ? fr.senderTeamId() : fr.recipientTeamId();
+        String otherTeamId = actor == Actor.SENDER ? fr.recipientTeamId() : fr.senderTeamId();
+        String actingTeamName = teams.findById(actingTeamId).map(Team::name).orElse("The other team");
+
+        switch (toStatus) {
+            case ACCEPTED -> notificationService.notifyTeam(otherTeamId, NotificationType.FIXTURE_CONFIRMED,
+                    "Fixture confirmed", actingTeamName + " confirmed your friendly.", fr.id(), null);
+            case DECLINED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_DECLINED,
+                    "Friendly request declined", actingTeamName + " declined your friendly request.", fr.id(), null);
+            case CHANGES_REQUESTED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_CHANGES_REQUESTED,
+                    "Changes requested", actingTeamName + " suggested changes to your friendly request.", fr.id(), null);
+            case SENT, UPDATED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_RECEIVED,
+                    "Friendly request updated", actingTeamName + " updated the friendly request - take a look.", fr.id(), null);
+            case CANCELLED -> {
+                if (fromStatus == RequestStatus.ACCEPTED || fromStatus == RequestStatus.CONFIRMED) {
+                    notificationService.notifyTeam(otherTeamId, NotificationType.FIXTURE_CANCELLED,
+                            "Fixture cancelled", actingTeamName + " cancelled the confirmed fixture.", fr.id(), null);
+                } else {
+                    notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_WITHDRAWN,
+                            "Friendly request withdrawn", actingTeamName + " withdrew the friendly request.", fr.id(), null);
+                }
+            }
+            default -> { }
+        }
     }
 
     public List<FriendlyRequest> list(String userId, String teamId) {

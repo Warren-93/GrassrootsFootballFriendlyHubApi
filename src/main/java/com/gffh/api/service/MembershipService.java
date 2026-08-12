@@ -3,6 +3,8 @@ package com.gffh.api.service;
 import com.gffh.api.domain.Role;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
+
 /**
  * Resolves what a user may do with a given team or club.
  *
@@ -34,4 +36,7 @@ public interface MembershipService {
     }
 
     Role roleForClub(String userId, String clubId);
+
+    /** Every user who can currently manage this team - direct team managers plus the club's admins. */
+    List<String> managerUserIdsFor(String teamId);
 }

@@ -76,5 +76,13 @@ public class IndexConfig {
         var idempotencyKeys = mongoTemplate.indexOps("idempotencyKeys");
         idempotencyKeys.ensureIndex(new Index("createdAt", org.springframework.data.domain.Sort.Direction.ASC)
                 .expire(java.time.Duration.ofHours(24)));
+
+        var notifications = mongoTemplate.indexOps("notifications");
+        notifications.ensureIndex(new CompoundIndexDefinition(
+                new Document("userId", 1).append("createdAt", -1)));
+
+        var messages = mongoTemplate.indexOps("messages");
+        messages.ensureIndex(new CompoundIndexDefinition(
+                new Document("fixtureId", 1).append("createdAt", 1)));
     }
 }

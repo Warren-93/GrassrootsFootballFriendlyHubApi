@@ -1,5 +1,6 @@
 package com.gffh.api.service;
 
+import com.gffh.api.domain.NotificationType;
 import com.gffh.api.domain.Team;
 import com.gffh.api.domain.VerificationRequest;
 import com.gffh.api.domain.VerificationRequestStatus;
@@ -25,13 +26,16 @@ public class VerificationService {
     private final TeamRepository teams;
     private final MembershipService membershipService;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     public VerificationService(VerificationRequestRepository requests, TeamRepository teams,
-                               MembershipService membershipService, AuditLogService auditLogService) {
+                               MembershipService membershipService, AuditLogService auditLogService,
+                               NotificationService notificationService) {
         this.requests = requests;
         this.teams = teams;
         this.membershipService = membershipService;
         this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     public VerificationDtos.VerificationRequestView submit(String userId, String teamId,
@@ -80,6 +84,8 @@ public class VerificationService {
                 adminId, current.submittedAt(), Instant.now());
         requests.save(updated);
         auditLogService.record(adminId, "VERIFICATION_APPROVED", "TEAM", current.teamId(), null);
+        notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_APPROVED,
+                "Verification approved", "Your team is now verified.", null, null);
         return VerificationDtos.VerificationRequestView.from(updated);
     }
 
@@ -117,6 +123,8 @@ public class VerificationService {
                     adminId, current.submittedAt(), Instant.now());
             requests.save(updated);
             auditLogService.record(adminId, "VERIFICATION_REJECTED", "TEAM", current.teamId(), request.reason());
+            notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_REJECTED,
+                    "Verification rejected", request.reason(), null, null);
             return VerificationDtos.VerificationRequestView.from(updated);
         }
 

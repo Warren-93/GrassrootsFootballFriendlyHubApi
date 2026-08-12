@@ -7,6 +7,9 @@ import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 /**
  * A user manages a team either through a membership scoped directly to that
  * team, or through a club-admin membership scoped to the club the team belongs
@@ -40,5 +43,19 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     public Role roleForClub(String userId, String clubId) {
         return memberships.findClubMembership(userId, clubId).map(Membership::role).orElse(null);
+    }
+
+    @Override
+    public List<String> managerUserIdsFor(String teamId) {
+        Team team = teams.findById(teamId).orElse(null);
+        if (team == null) return List.of();
+
+        Stream<Membership> teamScoped = memberships.findByTeamId(teamId).stream();
+        Stream<Membership> clubScoped = memberships.findByClubId(team.clubId()).stream();
+        return Stream.concat(teamScoped, clubScoped)
+                .filter(m -> m.role().canManageTeam())
+                .map(Membership::userId)
+                .distinct()
+                .toList();
     }
 }
