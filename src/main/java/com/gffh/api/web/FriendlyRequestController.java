@@ -25,8 +25,9 @@ public class FriendlyRequestController {
     @PostMapping
     public ResponseEntity<FriendlyRequestDtos.FriendlyRequestView> send(
             @AuthenticationPrincipal Jwt principal,
-            @Valid @RequestBody FriendlyRequestDtos.SendRequest request) {
-        FriendlyRequest fr = friendlyRequestService.send(principal.getSubject(), request);
+            @Valid @RequestBody FriendlyRequestDtos.SendRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        FriendlyRequest fr = friendlyRequestService.send(principal.getSubject(), request, idempotencyKey);
         return ResponseEntity.ok(view(fr, principal.getSubject()));
     }
 

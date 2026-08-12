@@ -71,5 +71,10 @@ public class IndexConfig {
 
         var venues = mongoTemplate.indexOps("venues");
         venues.ensureIndex(new Index("clubId", org.springframework.data.domain.Sort.Direction.ASC));
+
+        // A retry long after this window is a new attempt, not a resend.
+        var idempotencyKeys = mongoTemplate.indexOps("idempotencyKeys");
+        idempotencyKeys.ensureIndex(new Index("createdAt", org.springframework.data.domain.Sort.Direction.ASC)
+                .expire(java.time.Duration.ofHours(24)));
     }
 }

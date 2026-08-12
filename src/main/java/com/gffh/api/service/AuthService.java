@@ -1,5 +1,6 @@
 package com.gffh.api.service;
 
+import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.domain.User;
 import com.gffh.api.domain.VerificationTokenPurpose;
 import com.gffh.api.repository.UserRepository;
@@ -18,15 +19,20 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final VerificationTokenService verificationTokenService;
+    private final RateLimiter rateLimiter;
+    private final RateLimitProperties rateLimits;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService,
                        RefreshTokenService refreshTokenService,
-                       VerificationTokenService verificationTokenService) {
+                       VerificationTokenService verificationTokenService,
+                       RateLimiter rateLimiter, RateLimitProperties rateLimits) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.verificationTokenService = verificationTokenService;
+        this.rateLimiter = rateLimiter;
+        this.rateLimits = rateLimits;
     }
 
     public AuthDtos.TokenResponse register(AuthDtos.RegisterRequest request) {
@@ -44,6 +50,11 @@ public class AuthService {
     }
 
     public AuthDtos.TokenResponse login(AuthDtos.LoginRequest request) {
+        // Keyed on the attempted email, not the caller, so brute-forcing one
+        // account is capped regardless of how many IPs it's spread across.
+        if (!rateLimiter.tryConsume("auth:" + request.email().toLowerCase(), rateLimits.getAuthAttemptsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
         User user = users.findByEmail(request.email())
                 .filter(u -> passwordEncoder.matches(request.password(), u.passwordHash()))
                 .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,

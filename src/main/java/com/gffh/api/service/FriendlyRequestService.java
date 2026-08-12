@@ -1,10 +1,12 @@
 package com.gffh.api.service;
 
+import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.domain.*;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
+import com.gffh.api.repository.IdempotencyKeyRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.UserRepository;
 import com.gffh.api.request.RequestStateMachine;
@@ -33,11 +35,15 @@ public class FriendlyRequestService {
     private final FixtureRepository fixtures;
     private final MembershipService memberships;
     private final UserRepository users;
+    private final IdempotencyKeyRepository idempotencyKeys;
+    private final RateLimiter rateLimiter;
+    private final RateLimitProperties rateLimits;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
                                   FixtureRepository fixtures, MembershipService memberships,
-                                  UserRepository users) {
+                                  UserRepository users, IdempotencyKeyRepository idempotencyKeys,
+                                  RateLimiter rateLimiter, RateLimitProperties rateLimits) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
@@ -45,10 +51,24 @@ public class FriendlyRequestService {
         this.fixtures = fixtures;
         this.memberships = memberships;
         this.users = users;
+        this.idempotencyKeys = idempotencyKeys;
+        this.rateLimiter = rateLimiter;
+        this.rateLimits = rateLimits;
     }
 
-    public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req) {
+    public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req, String idempotencyKey) {
         memberships.requireCanManageTeam(userId, req.senderTeamId());
+
+        if (idempotencyKey != null) {
+            Optional<String> existing = idempotencyKeys.resourceIdFor(idempotencyKey);
+            if (existing.isPresent()) {
+                return requests.findById(existing.get()).orElseThrow(BusinessRuleException::blocked);
+            }
+        }
+
+        if (!rateLimiter.tryConsume("invite:" + req.senderTeamId(), rateLimits.getInvitationsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
 
         Team sender = teams.findById(req.senderTeamId()).orElseThrow(BusinessRuleException::blocked);
         Team recipient = teams.findById(req.recipientTeamId()).orElseThrow(BusinessRuleException::blocked);
@@ -90,6 +110,11 @@ public class FriendlyRequestService {
 
         reserve(senderSlot);
         reserve(recipientSlot);
+
+        if (idempotencyKey != null) {
+            idempotencyKeys.claim(idempotencyKey, saved.id());
+        }
+
         return saved;
     }
 
