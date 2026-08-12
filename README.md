@@ -66,9 +66,9 @@ fixture confirmation flow).
 What *has* been verified: the scoring arithmetic in `MatchingEngine` was
 reimplemented independently and checked against the worked example in the
 Product Proposal and against the ranking and exclusion cases in
-`CoreRulesHarness`, all 44 of which pass. The same worked-example score (99,
-HIGH band) reproduces through the live API when two matching teams are
-created via `POST /api/v1/teams`.
+`MatchingEngineTest`/`RequestStateMachineTest` (`mvn test`), all 16 of which
+pass. The same worked-example score (99, HIGH band) reproduces through the
+live API when two matching teams are created via `POST /api/v1/teams`.
 
 To build:
 
@@ -84,9 +84,9 @@ named volume so data survives a restart. It generates its own RSA signing key at
 startup for issuing bearer tokens — there is no external identity provider yet
 (see `JwtKeyConfig`), so restarting the API invalidates outstanding tokens.
 
-`CoreRulesHarness` is a dependency-free `main` that asserts the core rules. It
-should be ported to JUnit 5 — it is the seed of the deterministic matching
-test scenarios required by section 22 of the Technical Specification.
+`MatchingEngineTest` and `RequestStateMachineTest` are the deterministic
+matching test scenarios required by section 22 of the Technical
+Specification, run by `mvn test` like any other JUnit 5 test.
 
 ## Two calibration decisions
 
