@@ -86,14 +86,14 @@ public class FriendlyRequestService {
                 null, req.senderTeamId(), req.recipientTeamId(), req.senderSlotId(), req.recipientSlotId(),
                 RequestStatus.SENT, req.date(), req.startTime(), req.endTime(), req.venueId(),
                 req.homeTeamId(), req.costShare(), req.refereeArrangement(), req.message(),
-                userId, now, now));
+                userId, now, now, null));
 
         reserve(senderSlot);
         reserve(recipientSlot);
         return saved;
     }
 
-    public FriendlyRequest act(String userId, String requestId, String action) {
+    public FriendlyRequest act(String userId, String requestId, String action, String reason) {
         FriendlyRequest fr = requireVisible(userId, requestId);
         Actor actor = actorFor(userId, fr);
 
@@ -106,7 +106,7 @@ public class FriendlyRequestService {
 
         RequestStateMachine.requirePermitted(fr.status(), transition.to(), actor);
 
-        FriendlyRequest updated = withStatus(fr, transition.to());
+        FriendlyRequest updated = withStatus(fr, transition.to(), reason);
         updated = requests.save(updated);
 
         if (transition.to() == RequestStatus.ACCEPTED) {
@@ -180,10 +180,14 @@ public class FriendlyRequestService {
     }
 
     private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status) {
+        return withStatus(fr, status, fr.actionReason());
+    }
+
+    private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status, String reason) {
         return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(),
                 fr.senderSlotId(), fr.recipientSlotId(), status, fr.date(), fr.startTime(), fr.endTime(),
                 fr.venueId(), fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(),
-                fr.createdByUserId(), fr.createdAt(), Instant.now());
+                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason);
     }
 
     /**

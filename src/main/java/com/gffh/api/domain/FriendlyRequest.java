@@ -31,7 +31,9 @@ public record FriendlyRequest(
         String message,
         String createdByUserId,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        /** The reason given for the most recent status change (e.g. why changes were requested, or declined). */
+        String actionReason) {
 
     public boolean involves(String teamId) {
         return senderTeamId.equals(teamId) || recipientTeamId.equals(teamId);

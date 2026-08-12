@@ -29,6 +29,7 @@ public class FriendlyRequestDocument {
     public String createdByUserId;
     public Instant createdAt;
     public Instant updatedAt;
+    public String actionReason;
 
     public static FriendlyRequestDocument from(FriendlyRequest r) {
         FriendlyRequestDocument d = new FriendlyRequestDocument();
@@ -49,6 +50,7 @@ public class FriendlyRequestDocument {
         d.createdByUserId = r.createdByUserId();
         d.createdAt = r.createdAt();
         d.updatedAt = r.updatedAt();
+        d.actionReason = r.actionReason();
         return d;
     }
 
@@ -56,6 +58,6 @@ public class FriendlyRequestDocument {
         return new FriendlyRequest(id, senderTeamId, recipientTeamId, senderSlotId, recipientSlotId,
                 RequestStatus.valueOf(status), date, startTime, endTime, venueId, homeTeamId,
                 CostShare.valueOf(costShare), RefereeArrangement.valueOf(refereeArrangement),
-                message, createdByUserId, createdAt, updatedAt);
+                message, createdByUserId, createdAt, updatedAt, actionReason);
     }
 }

@@ -30,11 +30,14 @@ public final class FriendlyRequestDtos {
     /** Contact details, populated only once {@link RequestStateMachine#disclosesContactDetails} is true. */
     public record TeamContact(String teamId, String managerName, String contactPhone, String venueId) {}
 
+    /** Body for {@code POST /{id}/actions/{action}} - {@code reason} is optional and free-text. */
+    public record ActionRequest(String reason) {}
+
     public record FriendlyRequestView(
             String id, String senderTeamId, String recipientTeamId, String status,
             LocalDate date, LocalTime startTime, LocalTime endTime, String venueId,
             String homeTeamId, String awayTeamId, String costShare, String refereeArrangement,
-            String message, List<String> availableActions,
+            String message, String actionReason, List<String> availableActions,
             TeamContact senderContact, TeamContact recipientContact) {
 
         public static FriendlyRequestView from(FriendlyRequest r, boolean isSender,
@@ -46,7 +49,7 @@ public final class FriendlyRequestDtos {
             return new FriendlyRequestView(
                     r.id(), r.senderTeamId(), r.recipientTeamId(), r.status().name(),
                     r.date(), r.startTime(), r.endTime(), r.venueId(), r.homeTeamId(), r.awayTeamId(),
-                    r.costShare().name(), r.refereeArrangement().name(), r.message(), actions,
+                    r.costShare().name(), r.refereeArrangement().name(), r.message(), r.actionReason(), actions,
                     disclose ? senderContact : null, disclose ? recipientContact : null);
         }
     }

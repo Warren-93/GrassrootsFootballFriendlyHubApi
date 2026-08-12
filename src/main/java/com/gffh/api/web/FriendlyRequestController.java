@@ -34,8 +34,10 @@ public class FriendlyRequestController {
     public ResponseEntity<FriendlyRequestDtos.FriendlyRequestView> act(
             @AuthenticationPrincipal Jwt principal,
             @PathVariable String id,
-            @PathVariable String action) {
-        FriendlyRequest fr = friendlyRequestService.act(principal.getSubject(), id, action);
+            @PathVariable String action,
+            @RequestBody(required = false) FriendlyRequestDtos.ActionRequest request) {
+        String reason = request != null ? request.reason() : null;
+        FriendlyRequest fr = friendlyRequestService.act(principal.getSubject(), id, action, reason);
         return ResponseEntity.ok(view(fr, principal.getSubject()));
     }
 
