@@ -33,7 +33,8 @@ public record Team(
         Instant firstFixtureConfirmedAt,
         Instant createdAt,
         Instant updatedAt,
-        boolean suspended) {
+        boolean suspended,
+        boolean archived) {
 
     public boolean isVerified() { return verification == VerificationStatus.VERIFIED; }
 

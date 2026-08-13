@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -210,6 +211,33 @@ public class FriendlyRequestService {
 
     public FriendlyRequest get(String userId, String requestId) {
         return requireVisible(userId, requestId);
+    }
+
+    /**
+     * SCR spec's automatic completion (Actor.SYSTEM in RequestStateMachine):
+     * a CONFIRMED fixture needs no explicit action from either team once its
+     * date has passed. Called by the scheduled job in FixtureCompletionJob -
+     * not exposed through {@link #act}, which only ever resolves a real
+     * user's own team as SENDER or RECIPIENT and can never authorize a
+     * SYSTEM transition.
+     */
+    public int completePastDue(LocalDate today) {
+        List<FriendlyRequest> due = requests.findConfirmedBefore(today);
+        for (FriendlyRequest fr : due) {
+            RequestStateMachine.requirePermitted(RequestStatus.CONFIRMED, RequestStatus.COMPLETED, Actor.SYSTEM);
+            requests.save(withStatus(fr, RequestStatus.COMPLETED));
+            completeFixtureIfAny(fr);
+        }
+        return due.size();
+    }
+
+    private void completeFixtureIfAny(FriendlyRequest fr) {
+        fixtures.findByTeamId(fr.homeTeamId()).stream()
+                .filter(f -> f.friendlyRequestId().equals(fr.id()))
+                .findFirst()
+                .ifPresent(f -> fixtures.save(new Fixture(f.id(), f.friendlyRequestId(), f.homeTeamId(),
+                        f.awayTeamId(), f.date(), f.startTime(), f.endTime(), f.venueId(),
+                        FixtureStatus.COMPLETED, f.costShare(), f.refereeArrangement(), f.createdAt())));
     }
 
     // ---- Helpers --------------------------------------------------------

@@ -1,6 +1,7 @@
 package com.gffh.api.web;
 
 import com.gffh.api.domain.Team;
+import com.gffh.api.service.MemberService;
 import com.gffh.api.service.TeamService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,9 +18,11 @@ import java.util.List;
 public class TeamController {
 
     private final TeamService teamService;
+    private final MemberService memberService;
 
-    public TeamController(TeamService teamService) {
+    public TeamController(TeamService teamService, MemberService memberService) {
         this.teamService = teamService;
+        this.memberService = memberService;
     }
 
     @PostMapping
@@ -52,5 +55,17 @@ public class TeamController {
                                                      @RequestBody TeamDtos.UpdateTeamRequest request) {
         Team team = teamService.update(principal.getSubject(), teamId, request);
         return ResponseEntity.ok(TeamDtos.TeamView.from(team));
+    }
+
+    @PostMapping("/{teamId}/archive")
+    public ResponseEntity<Void> archive(@AuthenticationPrincipal Jwt principal, @PathVariable String teamId) {
+        teamService.archive(principal.getSubject(), teamId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<MemberDtos.MemberView> join(@AuthenticationPrincipal Jwt principal,
+                                                       @Valid @RequestBody MemberDtos.RedeemJoinCodeRequest request) {
+        return ResponseEntity.ok(memberService.redeem(principal.getSubject(), request.code()));
     }
 }

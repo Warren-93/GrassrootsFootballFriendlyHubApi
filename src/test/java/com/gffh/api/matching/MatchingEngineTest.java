@@ -254,7 +254,7 @@ class MatchingEngineTest {
                 age, Gender.MIXED, format, ability, "Local League",
                 "G74", new GeoPoint(lon, lat), radius, pref,
                 "Manager", "07000 000000", "A team", VerificationStatus.VERIFIED,
-                "venue_" + id, null, Instant.now(), Instant.now(), false);
+                "venue_" + id, null, Instant.now(), Instant.now(), false, false);
     }
 
     private static AvailabilitySlot slot(String id, String teamId, String date,

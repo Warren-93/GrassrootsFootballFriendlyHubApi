@@ -62,7 +62,7 @@ public final class TeamDtos {
             String league, String postcode, double longitude, double latitude,
             int travelRadiusMiles, String homeAwayPreference, String managerName,
             String contactPhone, String description, String verification,
-            String defaultVenueId, int completenessPercent, Instant createdAt) {
+            String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt) {
 
         public static TeamView from(Team t) {
             return from(t, true);
@@ -83,7 +83,7 @@ public final class TeamDtos {
                     includeContact ? t.managerName() : null,
                     includeContact ? t.contactPhone() : null,
                     t.description(), t.verification().name(), t.defaultVenueId(),
-                    t.completenessPercent(t.defaultVenueId() != null), t.createdAt());
+                    t.completenessPercent(t.defaultVenueId() != null), t.archived(), t.createdAt());
         }
     }
 }

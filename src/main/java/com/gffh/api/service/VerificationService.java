@@ -158,6 +158,6 @@ public class VerificationService {
                 team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.league(),
                 team.postcode(), team.location(), team.travelRadiusMiles(), team.homeAwayPreference(),
                 team.managerName(), team.contactPhone(), team.description(), status, team.defaultVenueId(),
-                team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended());
+                team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(), team.archived());
     }
 }

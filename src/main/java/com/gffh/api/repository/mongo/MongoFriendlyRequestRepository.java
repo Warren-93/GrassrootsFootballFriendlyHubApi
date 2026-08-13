@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,11 +45,29 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     }
 
     @Override
+    public List<FriendlyRequest> findConfirmedBefore(LocalDate date) {
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("status").is(RequestStatus.CONFIRMED.name()),
+                Criteria.where("date").lt(date)));
+        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
+                .map(FriendlyRequestDocument::toDomain).toList();
+    }
+
+    @Override
     public boolean existsOpenBetween(String teamAId, String teamBId) {
         Criteria pair = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
                 Criteria.where("senderTeamId").is(teamBId).and("recipientTeamId").is(teamAId));
         Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").nin(TERMINAL)));
+        return mongoTemplate.exists(query, FriendlyRequestDocument.class, COLLECTION);
+    }
+
+    @Override
+    public boolean existsOpenForTeam(String teamId) {
+        Criteria team = new Criteria().orOperator(
+                Criteria.where("senderTeamId").is(teamId),
+                Criteria.where("recipientTeamId").is(teamId));
+        Query query = new Query(new Criteria().andOperator(team, Criteria.where("status").nin(TERMINAL)));
         return mongoTemplate.exists(query, FriendlyRequestDocument.class, COLLECTION);
     }
 

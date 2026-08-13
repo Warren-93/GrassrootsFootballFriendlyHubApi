@@ -39,4 +39,16 @@ public final class ClubDtos {
                     c.website(), c.contactEmail(), c.createdAt());
         }
     }
+
+    /**
+     * A lean result for SCR-ON-01's "my club already exists" search - just
+     * enough to identify the right club and pass its id into team creation.
+     * Deliberately omits contactEmail: that stays visible only to the club's
+     * own managers via ClubView, not to anyone typing a search query.
+     */
+    public record ClubSearchView(String id, String name, String badgeUrl, String postcode) {
+        public static ClubSearchView from(Club c) {
+            return new ClubSearchView(c.id(), c.name(), c.badgeUrl(), c.postcode());
+        }
+    }
 }

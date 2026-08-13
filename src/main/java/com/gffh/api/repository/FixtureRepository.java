@@ -15,4 +15,7 @@ public interface FixtureRepository {
 
     /** Whether a not-yet-completed CONFIRMED fixture is booked at this venue - blocks deleting it out from under it. */
     boolean existsUpcomingConfirmedAtVenue(String venueId);
+
+    /** Whether this team (home or away) has a not-yet-completed CONFIRMED fixture - blocks archiving it out from under it. */
+    boolean existsUpcomingConfirmedForTeam(String teamId);
 }

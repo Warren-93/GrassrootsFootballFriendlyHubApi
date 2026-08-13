@@ -10,6 +10,7 @@ import com.gffh.api.web.ClubDtos;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Standalone club creation - SCR-ON-02, for the "club official setting up
@@ -36,6 +37,11 @@ public class ClubService {
                 request.website(), request.contactEmail(), Instant.now()));
         memberships.save(new Membership(null, userId, null, club.id(), Role.CLUB_ADMIN, Instant.now()));
         return club;
+    }
+
+    /** SCR-ON-01's "my club already exists" search - any authenticated user, no membership required. */
+    public List<Club> search(String query) {
+        return clubs.searchByName(query, 20);
     }
 
     public Club get(String userId, String clubId) {

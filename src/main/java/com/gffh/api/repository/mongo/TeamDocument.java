@@ -40,6 +40,7 @@ public class TeamDocument {
     public Instant createdAt;
     public Instant updatedAt;
     public boolean suspended;
+    public boolean archived;
 
     public static TeamDocument from(Team t) {
         TeamDocument d = new TeamDocument();
@@ -66,6 +67,7 @@ public class TeamDocument {
         d.createdAt = t.createdAt();
         d.updatedAt = t.updatedAt();
         d.suspended = t.suspended();
+        d.archived = t.archived();
         return d;
     }
 
@@ -82,6 +84,6 @@ public class TeamDocument {
                 HomeAwayPreference.valueOf(homeAwayPreference),
                 managerName, contactPhone, description,
                 VerificationStatus.valueOf(verification),
-                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt, suspended);
+                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt, suspended, archived);
     }
 }

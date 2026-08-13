@@ -49,4 +49,18 @@ public class MemberController {
         memberService.remove(principal.getSubject(), teamId, membershipId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/join-code")
+    public ResponseEntity<MemberDtos.JoinCodeView> joinCode(@AuthenticationPrincipal Jwt principal,
+                                                            @PathVariable String teamId) {
+        return ResponseEntity.ok(new MemberDtos.JoinCodeView(
+                memberService.getOrCreateJoinCode(principal.getSubject(), teamId)));
+    }
+
+    @PostMapping("/join-code/regenerate")
+    public ResponseEntity<MemberDtos.JoinCodeView> regenerateJoinCode(@AuthenticationPrincipal Jwt principal,
+                                                                       @PathVariable String teamId) {
+        return ResponseEntity.ok(new MemberDtos.JoinCodeView(
+                memberService.regenerateJoinCode(principal.getSubject(), teamId)));
+    }
 }

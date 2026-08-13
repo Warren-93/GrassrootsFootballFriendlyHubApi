@@ -81,6 +81,6 @@ public class AdminTeamService {
                 team.postcode(), team.location(), team.travelRadiusMiles(), team.homeAwayPreference(),
                 team.managerName(), team.contactPhone(), team.description(), team.verification(),
                 team.defaultVenueId(), team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(),
-                suspended);
+                suspended, team.archived());
     }
 }

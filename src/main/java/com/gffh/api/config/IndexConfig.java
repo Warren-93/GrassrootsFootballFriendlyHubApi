@@ -84,5 +84,9 @@ public class IndexConfig {
         var messages = mongoTemplate.indexOps("messages");
         messages.ensureIndex(new CompoundIndexDefinition(
                 new Document("fixtureId", 1).append("createdAt", 1)));
+
+        var joinCodes = mongoTemplate.indexOps("joinCodes");
+        joinCodes.ensureIndex(new Index("code", org.springframework.data.domain.Sort.Direction.ASC).unique());
+        joinCodes.ensureIndex(new Index("teamId", org.springframework.data.domain.Sort.Direction.ASC));
     }
 }

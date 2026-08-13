@@ -2,6 +2,8 @@ package com.gffh.api.service;
 
 import com.gffh.api.domain.*;
 import com.gffh.api.repository.ClubRepository;
+import com.gffh.api.repository.FixtureRepository;
+import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.web.TeamDtos;
@@ -17,13 +19,18 @@ public class TeamService {
     private final ClubRepository clubs;
     private final MembershipRepository memberships;
     private final MembershipService membershipService;
+    private final FixtureRepository fixtures;
+    private final FriendlyRequestRepository friendlyRequests;
 
     public TeamService(TeamRepository teams, ClubRepository clubs, MembershipRepository memberships,
-                       MembershipService membershipService) {
+                       MembershipService membershipService, FixtureRepository fixtures,
+                       FriendlyRequestRepository friendlyRequests) {
         this.teams = teams;
         this.clubs = clubs;
         this.memberships = memberships;
         this.membershipService = membershipService;
+        this.fixtures = fixtures;
+        this.friendlyRequests = friendlyRequests;
     }
 
     public Team create(String userId, TeamDtos.CreateTeamRequest request) {
@@ -53,7 +60,7 @@ public class TeamService {
                 new GeoPoint(request.longitude(), request.latitude()),
                 request.travelRadiusMiles(), request.homeAwayPreference(),
                 request.managerName(), request.contactPhone(), request.description(),
-                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false));
+                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false, false));
 
         memberships.save(new Membership(null, userId, team.id(), null, Role.TEAM_MANAGER, Instant.now()));
         return team;
@@ -114,9 +121,39 @@ public class TeamService {
                 orDefault(request.description(), current.description()),
                 current.verification(),
                 orDefault(request.defaultVenueId(), current.defaultVenueId()),
-                current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt(), current.suspended());
+                current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt(), current.suspended(),
+                current.archived());
 
         return teams.save(updated);
+    }
+
+    /**
+     * A manager's own soft-delete for a team that's done - distinct from
+     * admin suspension (a moderation action) and hard deletion (data loss).
+     * Guarded the same way VenueService.delete guards against removing a
+     * venue with an upcoming confirmed fixture: nothing that would strand an
+     * open negotiation or a fixture someone is still counting on.
+     */
+    public void archive(String userId, String teamId) {
+        membershipService.requireCanManageTeam(userId, teamId);
+        Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+
+        if (fixtures.existsUpcomingConfirmedForTeam(teamId)) {
+            throw new BusinessRuleException("TEAM_HAS_UPCOMING_FIXTURE", HttpStatus.CONFLICT,
+                    "This team has an upcoming confirmed fixture - cancel it before archiving.");
+        }
+        if (friendlyRequests.existsOpenForTeam(teamId)) {
+            throw new BusinessRuleException("TEAM_HAS_OPEN_REQUESTS", HttpStatus.CONFLICT,
+                    "This team has an open friendly request - resolve it before archiving.");
+        }
+
+        Team archived = new Team(current.id(), current.clubId(), current.name(), current.clubName(),
+                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(),
+                current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
+                current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
+                current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
+                current.createdAt(), current.updatedAt(), current.suspended(), true);
+        teams.save(archived);
     }
 
     private static String orDefault(String value, String fallback) {

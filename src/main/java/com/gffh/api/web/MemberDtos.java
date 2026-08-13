@@ -21,6 +21,10 @@ public final class MemberDtos {
 
     public record UpdateRoleRequest(@NotBlank String role) {}
 
+    public record JoinCodeView(String code) {}
+
+    public record RedeemJoinCodeRequest(@NotBlank String code) {}
+
     public record MemberView(
             String membershipId, String userId, String email, String displayName,
             String role, String scope, Instant joinedAt) {

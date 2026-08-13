@@ -2,6 +2,7 @@ package com.gffh.api.repository;
 
 import com.gffh.api.domain.FriendlyRequest;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,8 +12,14 @@ public interface FriendlyRequestRepository {
 
     List<FriendlyRequest> findByTeamId(String teamId);
 
+    /** CONFIRMED requests whose date has already passed - the fixture auto-completion job's input. */
+    List<FriendlyRequest> findConfirmedBefore(LocalDate date);
+
     /** Whether an open (non-terminal) negotiation already exists between these two teams. */
     boolean existsOpenBetween(String teamAId, String teamBId);
+
+    /** Whether this team (sender or recipient) has any open (non-terminal) negotiation - blocks archiving it out from under it. */
+    boolean existsOpenForTeam(String teamId);
 
     FriendlyRequest save(FriendlyRequest request);
 

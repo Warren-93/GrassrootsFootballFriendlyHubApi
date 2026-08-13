@@ -9,6 +9,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/clubs")
 @Tag(name = "Clubs", description = "Club creation and management")
@@ -25,6 +27,12 @@ public class ClubController {
                                                      @Valid @RequestBody ClubDtos.CreateClubRequest request) {
         Club club = clubService.create(principal.getSubject(), request);
         return ResponseEntity.ok(ClubDtos.ClubView.from(club));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ClubDtos.ClubSearchView>> search(@RequestParam String query) {
+        var views = clubService.search(query).stream().map(ClubDtos.ClubSearchView::from).toList();
+        return ResponseEntity.ok(views);
     }
 
     @GetMapping("/{clubId}")
