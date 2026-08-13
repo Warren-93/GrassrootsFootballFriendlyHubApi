@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,6 +34,27 @@ public class AvailabilityService {
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
                 request.venueId(), format, request.notes(), AvailabilityStatus.AVAILABLE);
         return availability.save(slot);
+    }
+
+    /** SCR-AV-04: the same window published across several dates - past dates are skipped rather than failing the whole batch. */
+    public AvailabilityDtos.BulkCreateResult createBulk(String userId, String teamId,
+                                                         AvailabilityDtos.BulkCreateSlotRequest request) {
+        memberships.requireCanManageTeam(userId, teamId);
+        Format format = request.format() == null ? null : Format.valueOf(request.format());
+        LocalDate today = LocalDate.now();
+
+        List<AvailabilityDtos.SlotView> created = new ArrayList<>();
+        List<LocalDate> skipped = new ArrayList<>();
+        for (LocalDate date : request.dates()) {
+            if (date.isBefore(today)) {
+                skipped.add(date);
+                continue;
+            }
+            AvailabilitySlot slot = new AvailabilitySlot(null, teamId, date, request.startTime(), request.endTime(),
+                    request.homeAwayPreference(), request.venueId(), format, request.notes(), AvailabilityStatus.AVAILABLE);
+            created.add(AvailabilityDtos.SlotView.from(availability.save(slot)));
+        }
+        return new AvailabilityDtos.BulkCreateResult(created, skipped);
     }
 
     /**

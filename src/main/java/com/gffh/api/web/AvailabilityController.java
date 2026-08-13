@@ -32,6 +32,14 @@ public class AvailabilityController {
         return ResponseEntity.ok(AvailabilityDtos.SlotView.from(slot));
     }
 
+    @PostMapping("/bulk")
+    public ResponseEntity<AvailabilityDtos.BulkCreateResult> createBulk(
+            @AuthenticationPrincipal Jwt principal,
+            @PathVariable String teamId,
+            @Valid @RequestBody AvailabilityDtos.BulkCreateSlotRequest request) {
+        return ResponseEntity.ok(availabilityService.createBulk(principal.getSubject(), teamId, request));
+    }
+
     @GetMapping
     public ResponseEntity<List<AvailabilityDtos.SlotView>> list(
             @AuthenticationPrincipal Jwt principal,

@@ -2,10 +2,13 @@ package com.gffh.api.web;
 
 import com.gffh.api.domain.AvailabilitySlot;
 import com.gffh.api.domain.HomeAwayPreference;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public final class AvailabilityDtos {
 
@@ -19,6 +22,18 @@ public final class AvailabilityDtos {
             String venueId,
             String format,
             String notes) {}
+
+    /** SCR-AV-04: one time window published across several dates at once - a Saturday slot repeated for eight weeks, say. */
+    public record BulkCreateSlotRequest(
+            @NotEmpty @Size(max = 52) List<@NotNull LocalDate> dates,
+            @NotNull LocalTime startTime,
+            @NotNull LocalTime endTime,
+            @NotNull HomeAwayPreference homeAwayPreference,
+            String venueId,
+            String format,
+            String notes) {}
+
+    public record BulkCreateResult(List<SlotView> created, List<LocalDate> skippedPastDates) {}
 
     public record SlotView(
             String id, String teamId, LocalDate date, LocalTime startTime, LocalTime endTime,
