@@ -140,27 +140,32 @@ public class FriendlyRequestService {
 
         FriendlyRequest updated = withStatus(fr, transition.to(), reason);
         updated = requests.save(updated);
+        String fixtureId = null;
 
         if (transition.to() == RequestStatus.ACCEPTED) {
             updated = confirmAndCreateFixture(updated);
+            String confirmedRequestId = updated.id();
+            fixtureId = fixtures.findByTeamId(updated.homeTeamId()).stream()
+                    .filter(f -> f.friendlyRequestId().equals(confirmedRequestId))
+                    .findFirst().map(Fixture::id).orElse(null);
         } else if (transition.to() == RequestStatus.DECLINED || transition.to() == RequestStatus.CANCELLED) {
             releaseSlots(updated);
             cancelFixtureIfAny(updated);
         }
 
-        notifyOtherParty(updated, actor, transition.to(), fromStatus);
+        notifyOtherParty(updated, actor, transition.to(), fromStatus, fixtureId);
 
         return updated;
     }
 
-    private void notifyOtherParty(FriendlyRequest fr, Actor actor, RequestStatus toStatus, RequestStatus fromStatus) {
+    private void notifyOtherParty(FriendlyRequest fr, Actor actor, RequestStatus toStatus, RequestStatus fromStatus, String fixtureId) {
         String actingTeamId = actor == Actor.SENDER ? fr.senderTeamId() : fr.recipientTeamId();
         String otherTeamId = actor == Actor.SENDER ? fr.recipientTeamId() : fr.senderTeamId();
         String actingTeamName = teams.findById(actingTeamId).map(Team::name).orElse("The other team");
 
         switch (toStatus) {
             case ACCEPTED -> notificationService.notifyTeam(otherTeamId, NotificationType.FIXTURE_CONFIRMED,
-                    "Fixture confirmed", actingTeamName + " confirmed your friendly.", fr.id(), null);
+                    "Fixture confirmed", actingTeamName + " confirmed your friendly.", fr.id(), fixtureId);
             case DECLINED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_DECLINED,
                     "Friendly request declined", actingTeamName + " declined your friendly request.", fr.id(), null);
             case CHANGES_REQUESTED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_CHANGES_REQUESTED,
