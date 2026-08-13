@@ -58,4 +58,10 @@ public class AdminUserController {
         adminUserService.resendVerification(principal.getSubject(), userId);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{userId}/verify-email")
+    public ResponseEntity<AdminUserDtos.AdminUserView> verifyEmail(
+            @AuthenticationPrincipal Jwt principal, @PathVariable String userId) {
+        return ResponseEntity.ok(adminUserService.verifyEmail(principal.getSubject(), userId));
+    }
 }

@@ -1,6 +1,7 @@
 package com.gffh.api.web;
 
 import com.gffh.api.service.AdminTeamService;
+import com.gffh.api.service.VerificationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +14,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/teams")
-@Tag(name = "Admin teams", description = "ADM-05 clubs and teams: search, suspend, merge duplicates")
+@Tag(name = "Admin teams", description = "ADM-05 clubs and teams: search, suspend, merge duplicates, direct verify")
 public class AdminTeamController {
 
     private final AdminTeamService adminTeamService;
+    private final VerificationService verificationService;
 
-    public AdminTeamController(AdminTeamService adminTeamService) {
+    public AdminTeamController(AdminTeamService adminTeamService, VerificationService verificationService) {
         this.adminTeamService = adminTeamService;
+        this.verificationService = verificationService;
     }
 
     @GetMapping
@@ -53,5 +56,12 @@ public class AdminTeamController {
                                       @Valid @RequestBody AdminTeamDtos.MergeRequest request) {
         adminTeamService.merge(principal.getSubject(), request);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{teamId}/verify")
+    public ResponseEntity<AdminTeamDtos.AdminTeamView> verify(
+            @AuthenticationPrincipal Jwt principal, @PathVariable String teamId) {
+        verificationService.verifyDirectly(principal.getSubject(), teamId);
+        return ResponseEntity.ok(adminTeamService.get(teamId));
     }
 }

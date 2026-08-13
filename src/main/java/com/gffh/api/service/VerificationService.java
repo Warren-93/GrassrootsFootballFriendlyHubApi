@@ -90,6 +90,22 @@ public class VerificationService {
     }
 
     /**
+     * ADM-05's quick admin override: verifies a team directly, with no
+     * submission or two-admin review required. Additive to, not a
+     * replacement for, the normal submit/approve/reject flow above - for a
+     * team an admin already knows is legitimate (or test data that will
+     * never realistically go through the submission flow), not a shortcut
+     * meant to replace real review of a genuine applicant.
+     */
+    public void verifyDirectly(String adminId, String teamId) {
+        Team team = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+        teams.save(withVerification(team, VerificationStatus.VERIFIED));
+        auditLogService.record(adminId, "TEAM_VERIFIED_BY_ADMIN", "TEAM", teamId, null);
+        notificationService.notifyTeam(teamId, NotificationType.VERIFICATION_APPROVED,
+                "Verification approved", "An admin verified your team directly.", null, null);
+    }
+
+    /**
      * First reject moves to AWAITING_SECOND_REJECTION; a second reject by a
      * *different* admin finalizes it to REJECTED and the reason is sent to
      * the applicant verbatim (ADM-03's two-person review rule).

@@ -65,6 +65,19 @@ public class AdminUserService {
         auditLogService.record(adminId, "USER_VERIFICATION_RESENT", "USER", userId, null);
     }
 
+    /**
+     * A manual bypass for the self-serve email-verification link (see
+     * VerificationTokenService's javadoc: there's no real email provider in
+     * this build) - lets an admin unblock an account directly instead of
+     * relying on the account holder following the link themselves.
+     */
+    public AdminUserDtos.AdminUserView verifyEmail(String adminId, String userId) {
+        User user = find(userId);
+        users.save(withEmailVerified(user, true));
+        auditLogService.record(adminId, "USER_EMAIL_VERIFIED_BY_ADMIN", "USER", userId, null);
+        return get(userId);
+    }
+
     private User find(String userId) {
         return users.findById(userId).orElseThrow(() -> new BusinessRuleException(
                 "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "That account could not be found."));
@@ -73,5 +86,10 @@ public class AdminUserService {
     private static User withSuspended(User user, boolean suspended) {
         return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
                 user.emailVerified(), user.createdAt(), suspended);
+    }
+
+    private static User withEmailVerified(User user, boolean verified) {
+        return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
+                verified, user.createdAt(), user.suspended());
     }
 }
