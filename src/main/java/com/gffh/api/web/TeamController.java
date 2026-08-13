@@ -64,8 +64,8 @@ public class TeamController {
     }
 
     @PostMapping("/join")
-    public ResponseEntity<MemberDtos.MemberView> join(@AuthenticationPrincipal Jwt principal,
-                                                       @Valid @RequestBody MemberDtos.RedeemJoinCodeRequest request) {
+    public ResponseEntity<MemberDtos.JoinResultView> join(@AuthenticationPrincipal Jwt principal,
+                                                           @Valid @RequestBody MemberDtos.RedeemJoinCodeRequest request) {
         return ResponseEntity.ok(memberService.redeem(principal.getSubject(), request.code()));
     }
 }

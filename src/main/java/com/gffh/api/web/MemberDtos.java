@@ -25,6 +25,8 @@ public final class MemberDtos {
 
     public record RedeemJoinCodeRequest(@NotBlank String code) {}
 
+    public record JoinResultView(String teamId, String teamName, String clubId, MemberView membership) {}
+
     public record MemberView(
             String membershipId, String userId, String email, String displayName,
             String role, String scope, Instant joinedAt) {

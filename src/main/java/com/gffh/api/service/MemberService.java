@@ -144,8 +144,14 @@ public class MemberService {
         return sb.toString();
     }
 
-    /** Redeems a join code: adds the calling user as a basic member of whichever team it belongs to. */
-    public MemberDtos.MemberView redeem(String userId, String rawCode) {
+    /**
+     * Redeems a join code: adds the calling user as a basic member of
+     * whichever team it belongs to. Returns which team was joined (not just
+     * the membership) since the client needs it to switch straight into
+     * that team - {@link MemberDtos.MemberView} alone carries no team
+     * identity, only meaningful in the context of an already-known team.
+     */
+    public MemberDtos.JoinResultView redeem(String userId, String rawCode) {
         String code = rawCode.trim().toUpperCase();
         JoinCode joinCode = joinCodes.findByCode(code).orElseThrow(() -> new BusinessRuleException(
                 "JOIN_CODE_NOT_FOUND", HttpStatus.NOT_FOUND, "That code is not valid."));
@@ -159,7 +165,8 @@ public class MemberService {
         }
 
         Membership saved = memberships.save(scoped(null, userId, team, Role.USER, Instant.now()));
-        return MemberDtos.MemberView.from(saved, target);
+        return new MemberDtos.JoinResultView(team.id(), team.name(), team.clubId(),
+                MemberDtos.MemberView.from(saved, target));
     }
 
     /** CLUB_ADMIN always cascades club-wide, so it is club-scoped; every other role is scoped to this exact team. */
