@@ -27,7 +27,7 @@ public class AdminUserService {
     }
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
-        return users.search(query, 50).stream()
+        return users.search(query, 500).stream()
                 .map(u -> AdminUserDtos.AdminUserView.from(u, memberships.findByUserId(u.id())))
                 .toList();
     }

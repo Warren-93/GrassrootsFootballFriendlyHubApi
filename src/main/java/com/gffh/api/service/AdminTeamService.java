@@ -28,7 +28,7 @@ public class AdminTeamService {
     }
 
     public List<AdminTeamDtos.AdminTeamView> search(String query) {
-        return teams.searchByName(query, 50).stream().map(AdminTeamDtos.AdminTeamView::from).toList();
+        return teams.searchByName(query, 500).stream().map(AdminTeamDtos.AdminTeamView::from).toList();
     }
 
     public AdminTeamDtos.AdminTeamView get(String teamId) {
