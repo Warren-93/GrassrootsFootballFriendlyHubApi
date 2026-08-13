@@ -15,11 +15,14 @@ public class FixtureService {
     private final FixtureRepository fixtures;
     private final TeamRepository teams;
     private final MembershipService memberships;
+    private final FriendlyRequestService friendlyRequestService;
 
-    public FixtureService(FixtureRepository fixtures, TeamRepository teams, MembershipService memberships) {
+    public FixtureService(FixtureRepository fixtures, TeamRepository teams, MembershipService memberships,
+                          FriendlyRequestService friendlyRequestService) {
         this.fixtures = fixtures;
         this.teams = teams;
         this.memberships = memberships;
+        this.friendlyRequestService = friendlyRequestService;
     }
 
     public List<Fixture> list(String userId, String teamId) {
@@ -37,6 +40,19 @@ public class FixtureService {
                     "That fixture could not be found.");
         }
         return fixture;
+    }
+
+    /**
+     * SCR-FX-06. A fixture has no state of its own to drive - cancelling one is
+     * really cancelling the {@link com.gffh.api.domain.FriendlyRequest} that
+     * confirmed it, so this delegates to the same state machine
+     * {@link FriendlyRequestService#act} already uses for every other
+     * transition, rather than duplicating the CONFIRMED-to-CANCELLED rules here.
+     */
+    public Fixture cancel(String userId, String fixtureId, String reason) {
+        Fixture fixture = get(userId, fixtureId);
+        friendlyRequestService.act(userId, fixture.friendlyRequestId(), "cancel", reason);
+        return fixtures.findById(fixtureId).orElseThrow(BusinessRuleException::blocked);
     }
 
     public Team team(String teamId) {

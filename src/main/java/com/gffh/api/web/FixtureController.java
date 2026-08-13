@@ -38,6 +38,15 @@ public class FixtureController {
         return ResponseEntity.ok(toView(fixtureService.get(principal.getSubject(), id)));
     }
 
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<FixtureDtos.FixtureView> cancel(
+            @AuthenticationPrincipal Jwt principal,
+            @PathVariable String id,
+            @RequestBody(required = false) FixtureDtos.CancelFixtureRequest request) {
+        String reason = request != null ? request.reason() : null;
+        return ResponseEntity.ok(toView(fixtureService.cancel(principal.getSubject(), id, reason)));
+    }
+
     private FixtureDtos.FixtureView toView(Fixture fixture) {
         return FixtureDtos.FixtureView.from(fixture,
                 fixtureService.team(fixture.homeTeamId()),

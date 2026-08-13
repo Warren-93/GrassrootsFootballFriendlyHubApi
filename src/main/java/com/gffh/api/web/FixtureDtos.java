@@ -17,6 +17,8 @@ public final class FixtureDtos {
 
     private FixtureDtos() {}
 
+    public record CancelFixtureRequest(String reason) {}
+
     public record FixtureTeamView(String id, String name, String clubName, String managerName,
                                    String contactPhone, String venueId) {
         public static FixtureTeamView from(Team t) {
