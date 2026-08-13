@@ -17,13 +17,16 @@ public class AdminUserService {
     private final MembershipRepository memberships;
     private final VerificationTokenService verificationTokenService;
     private final AuditLogService auditLogService;
+    private final PrivacyService privacyService;
 
     public AdminUserService(UserRepository users, MembershipRepository memberships,
-                            VerificationTokenService verificationTokenService, AuditLogService auditLogService) {
+                            VerificationTokenService verificationTokenService, AuditLogService auditLogService,
+                            PrivacyService privacyService) {
         this.users = users;
         this.memberships = memberships;
         this.verificationTokenService = verificationTokenService;
         this.auditLogService = auditLogService;
+        this.privacyService = privacyService;
     }
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
@@ -76,6 +79,27 @@ public class AdminUserService {
         users.save(withEmailVerified(user, true));
         auditLogService.record(adminId, "USER_EMAIL_VERIFIED_BY_ADMIN", "USER", userId, null);
         return get(userId);
+    }
+
+    /**
+     * Reuses PrivacyService.deleteAccount for the actual removal (and its
+     * "not the sole CLUB_ADMIN of any club" guard) so an admin-initiated
+     * delete can't orphan a club any more than a self-service one can. The
+     * guard's message is written for the self-service caller ("your
+     * account"), so it's reworded here for an admin deleting someone else's.
+     */
+    public void delete(String adminId, String userId) {
+        User user = find(userId);
+        try {
+            privacyService.deleteAccount(userId);
+        } catch (BusinessRuleException ex) {
+            if ("LAST_CLUB_ADMIN".equals(ex.code())) {
+                throw new BusinessRuleException(ex.code(), ex.status(), user.displayName()
+                        + " is the only admin for at least one club - promote someone else there first.");
+            }
+            throw ex;
+        }
+        auditLogService.record(adminId, "USER_DELETED", "USER", userId, "Deleted by admin (was " + user.email() + ")");
     }
 
     private User find(String userId) {

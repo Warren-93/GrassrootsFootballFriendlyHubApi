@@ -64,4 +64,10 @@ public class AdminUserController {
             @AuthenticationPrincipal Jwt principal, @PathVariable String userId) {
         return ResponseEntity.ok(adminUserService.verifyEmail(principal.getSubject(), userId));
     }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt principal, @PathVariable String userId) {
+        adminUserService.delete(principal.getSubject(), userId);
+        return ResponseEntity.noContent().build();
+    }
 }
