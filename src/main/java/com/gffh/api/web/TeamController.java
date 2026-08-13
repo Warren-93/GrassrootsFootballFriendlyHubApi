@@ -40,6 +40,13 @@ public class TeamController {
         return ResponseEntity.ok(views);
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<List<TeamDtos.TeamView>> listMine(@AuthenticationPrincipal Jwt principal) {
+        var views = teamService.listMine(principal.getSubject()).stream()
+                .map(t -> TeamDtos.TeamView.from(t, true)).toList();
+        return ResponseEntity.ok(views);
+    }
+
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamDtos.TeamView> get(@AuthenticationPrincipal Jwt principal,
                                                  @PathVariable String teamId) {

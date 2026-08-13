@@ -87,6 +87,29 @@ public class TeamService {
         return teams.findByClubId(clubId);
     }
 
+    /**
+     * Every team this user manages - directly, or via a club-admin membership
+     * that cascades to every team under that club (the same reach
+     * {@link MembershipServiceImpl#roleFor} grants). Lets a client rebuild
+     * "which team am I acting as" from scratch after sign-in, without relying
+     * on a locally cached team ID that a fresh session won't have.
+     */
+    public java.util.List<Team> listMine(String userId) {
+        var teamIds = new java.util.LinkedHashSet<String>();
+        for (Membership m : memberships.findByUserId(userId)) {
+            if (m.teamId() != null) {
+                teamIds.add(m.teamId());
+            } else if (m.clubId() != null && m.role().canManageClub()) {
+                teams.findByClubId(m.clubId()).forEach(t -> teamIds.add(t.id()));
+            }
+        }
+        return teamIds.stream()
+                .map(teams::findById)
+                .flatMap(java.util.Optional::stream)
+                .filter(t -> !t.archived())
+                .toList();
+    }
+
     public Team update(String userId, String teamId, TeamDtos.UpdateTeamRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
         Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
