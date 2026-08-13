@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,6 +49,16 @@ public class GlobalExceptionHandler {
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining("; "));
         return respond(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", detail);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> onMalformedRequest(HttpMessageNotReadableException ex) {
+        // A client sent a body we can't parse - bad JSON, a missing field, or a
+        // value that doesn't match one of our enums. That's a client error, not
+        // a server crash, even though Jackson throws it from deep inside message
+        // conversion before any controller method runs.
+        return respond(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST",
+                "The request body is invalid or contains an unrecognised value.");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
