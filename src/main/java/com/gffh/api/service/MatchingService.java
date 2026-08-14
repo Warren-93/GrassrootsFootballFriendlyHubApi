@@ -31,6 +31,14 @@ public class MatchingService {
     /** Candidate ceiling before scoring, to bound query and CPU cost. */
     private static final int CANDIDATE_LIMIT = 500;
 
+    /**
+     * Stand-in for "no distance limit" when ignoreTravelRadius is set - a
+     * $centerSphere query needs a numeric radius, and any value at or beyond
+     * half the Earth's circumference (~12,450 miles, the farthest two points
+     * can be from each other) covers the whole globe.
+     */
+    private static final int UNLIMITED_RADIUS_MILES = 12500;
+
     private final TeamRepository teams;
     private final AvailabilityRepository availability;
     private final BlockRepository blocks;
@@ -88,9 +96,12 @@ public class MatchingService {
         // Narrow in the database before scoring in memory. The 2dsphere index
         // and the ageGroup/format/gender compound index carry this query; see
         // section 10 of the Technical Specification.
-        int radius = request.maxDistanceMiles() != null
-                ? Math.min(request.maxDistanceMiles(), ourTeam.travelRadiusMiles())
-                : ourTeam.travelRadiusMiles();
+        boolean ignoreTravelRadius = Boolean.TRUE.equals(request.ignoreTravelRadius());
+        int radius = ignoreTravelRadius
+                ? UNLIMITED_RADIUS_MILES
+                : request.maxDistanceMiles() != null
+                        ? Math.min(request.maxDistanceMiles(), ourTeam.travelRadiusMiles())
+                        : ourTeam.travelRadiusMiles();
 
         List<Team> candidates = teams.findCandidates(
                 ourTeam.location(),
@@ -125,7 +136,7 @@ public class MatchingService {
                 .filter(c -> !c.slots().isEmpty())
                 .toList();
 
-        List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored);
+        List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored, ignoreTravelRadius);
 
         Map<String, Team> byId = candidates.stream()
                 .collect(Collectors.toMap(Team::id, t -> t));

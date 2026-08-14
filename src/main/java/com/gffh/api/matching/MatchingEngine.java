@@ -54,9 +54,22 @@ public final class MatchingEngine {
     public List<MatchResult> rank(Team ourTeam,
                                   List<AvailabilitySlot> ourSlots,
                                   List<Candidate> candidates) {
+        return rank(ourTeam, ourSlots, candidates, false);
+    }
+
+    /**
+     * @param ignoreTravelRadius when true, a candidate beyond either team's
+     *        configured travel radius is still scored and returned rather
+     *        than excluded - the radius stays a preference (it still drives
+     *        the distance factor's score) rather than a hard wall.
+     */
+    public List<MatchResult> rank(Team ourTeam,
+                                  List<AvailabilitySlot> ourSlots,
+                                  List<Candidate> candidates,
+                                  boolean ignoreTravelRadius) {
         List<MatchResult> results = new ArrayList<>();
         for (Candidate candidate : candidates) {
-            score(ourTeam, ourSlots, candidate.team(), candidate.slots())
+            score(ourTeam, ourSlots, candidate.team(), candidate.slots(), ignoreTravelRadius)
                     .ifPresent(results::add);
         }
         results.sort(MatchResult.RANKING);
@@ -72,6 +85,14 @@ public final class MatchingEngine {
                                        List<AvailabilitySlot> ourSlots,
                                        Team theirTeam,
                                        List<AvailabilitySlot> theirSlots) {
+        return score(ourTeam, ourSlots, theirTeam, theirSlots, false);
+    }
+
+    public Optional<MatchResult> score(Team ourTeam,
+                                       List<AvailabilitySlot> ourSlots,
+                                       Team theirTeam,
+                                       List<AvailabilitySlot> theirSlots,
+                                       boolean ignoreTravelRadius) {
 
         // ---- Exclusions -----------------------------------------------------
 
@@ -84,11 +105,14 @@ public final class MatchingEngine {
         int ageBands = ourTeam.ageGroup().bandsApart(theirTeam.ageGroup());
         if (ageBands > weights.ageBandTolerance()) return Optional.empty();
 
-        // Distance is bounded by the tighter of the two radii: a team that will
-        // not travel this far is not a match however good the rest looks.
+        // Distance is bounded by the tighter of the two radii by default: a team
+        // that will not normally travel this far scores it down rather than up.
+        // ignoreTravelRadius turns that preference into an explicit "show me
+        // everything" search - the radius still drives the distance factor's
+        // score below, it just stops excluding.
         double miles = ourTeam.location().milesTo(theirTeam.location());
         int radiusLimit = Math.min(ourTeam.travelRadiusMiles(), theirTeam.travelRadiusMiles());
-        if (miles > radiusLimit) return Optional.empty();
+        if (!ignoreTravelRadius && miles > radiusLimit) return Optional.empty();
 
         // Formats more than one step apart cannot produce a fixture at all:
         // a 7v7 squad cannot field an 11v11 side. One step apart is negotiable

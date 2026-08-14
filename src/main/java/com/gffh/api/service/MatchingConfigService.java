@@ -40,7 +40,7 @@ public class MatchingConfigService {
     public MatchDtos.SearchResponse preview(MatchingConfigDtos.PreviewRequest request) {
         MatchingWeights proposed = toValidatedWeights(request.weights());
         MatchDtos.SearchRequest searchRequest = new MatchDtos.SearchRequest(
-                request.teamId(), null, null, null, null, null, null, null, 20, null);
+                request.teamId(), null, null, null, null, null, null, null, null, 20, null);
         return matchingService.previewForAdmin(searchRequest, proposed);
     }
 

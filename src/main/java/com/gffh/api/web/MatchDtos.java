@@ -31,6 +31,8 @@ public final class MatchDtos {
             @Min(1) @Max(50) Integer maxDistanceMiles,
             Boolean verifiedOnly,
             Boolean venueRequired,
+            /** Search beyond both teams' configured travel radius - the radius is a preference, not a hard wall. */
+            Boolean ignoreTravelRadius,
             @Min(1) @Max(100) Integer limit,
             String cursor) {
 
