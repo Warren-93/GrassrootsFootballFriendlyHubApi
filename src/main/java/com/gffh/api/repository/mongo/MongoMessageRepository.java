@@ -32,15 +32,15 @@ public class MongoMessageRepository implements MessageRepository {
     }
 
     @Override
-    public List<Message> findByFixtureId(String fixtureId) {
-        Query query = new Query(Criteria.where("fixtureId").is(fixtureId))
+    public List<Message> findByConversationId(String conversationId) {
+        Query query = new Query(Criteria.where("conversationId").is(conversationId))
                 .with(Sort.by(Sort.Direction.ASC, "createdAt"));
         return mongoTemplate.find(query, MessageDocument.class, COLLECTION).stream()
                 .map(MessageDocument::toDomain).toList();
     }
 
     private Message withGeneratedId(Message m) {
-        return new Message(UUID.randomUUID().toString(), m.fixtureId(), m.senderTeamId(), m.senderUserId(),
+        return new Message(UUID.randomUUID().toString(), m.conversationId(), m.senderTeamId(), m.senderUserId(),
                 m.body(), m.createdAt() != null ? m.createdAt() : Instant.now());
     }
 }

@@ -19,6 +19,7 @@ public class NotificationDocument {
     public String relatedTeamId;
     public String relatedRequestId;
     public String relatedFixtureId;
+    public String relatedConversationId;
     public boolean read;
     public Instant createdAt;
 
@@ -32,6 +33,7 @@ public class NotificationDocument {
         d.relatedTeamId = n.relatedTeamId();
         d.relatedRequestId = n.relatedRequestId();
         d.relatedFixtureId = n.relatedFixtureId();
+        d.relatedConversationId = n.relatedConversationId();
         d.read = n.read();
         d.createdAt = n.createdAt();
         return d;
@@ -39,6 +41,6 @@ public class NotificationDocument {
 
     public Notification toDomain() {
         return new Notification(id, userId, NotificationType.valueOf(type), title, body,
-                relatedTeamId, relatedRequestId, relatedFixtureId, read, createdAt);
+                relatedTeamId, relatedRequestId, relatedFixtureId, relatedConversationId, read, createdAt);
     }
 }

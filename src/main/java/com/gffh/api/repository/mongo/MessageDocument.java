@@ -11,7 +11,7 @@ public class MessageDocument {
 
     @Id
     public String id;
-    public String fixtureId;
+    public String conversationId;
     public String senderTeamId;
     public String senderUserId;
     public String body;
@@ -20,7 +20,7 @@ public class MessageDocument {
     public static MessageDocument from(Message m) {
         MessageDocument d = new MessageDocument();
         d.id = m.id();
-        d.fixtureId = m.fixtureId();
+        d.conversationId = m.conversationId();
         d.senderTeamId = m.senderTeamId();
         d.senderUserId = m.senderUserId();
         d.body = m.body();
@@ -29,6 +29,6 @@ public class MessageDocument {
     }
 
     public Message toDomain() {
-        return new Message(id, fixtureId, senderTeamId, senderUserId, body, createdAt);
+        return new Message(id, conversationId, senderTeamId, senderUserId, body, createdAt);
     }
 }

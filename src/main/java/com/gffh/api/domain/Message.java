@@ -2,10 +2,10 @@ package com.gffh.api.domain;
 
 import java.time.Instant;
 
-/** A message on a confirmed fixture (SCR-FX-05), for coordinating logistics between the two teams. */
+/** A message within a team-to-team Conversation. */
 public record Message(
         String id,
-        String fixtureId,
+        String conversationId,
         String senderTeamId,
         String senderUserId,
         String body,

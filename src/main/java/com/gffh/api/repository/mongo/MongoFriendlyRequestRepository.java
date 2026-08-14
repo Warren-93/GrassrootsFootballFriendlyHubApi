@@ -63,6 +63,14 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     }
 
     @Override
+    public boolean existsBetween(String teamAId, String teamBId) {
+        Criteria pair = new Criteria().orOperator(
+                Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
+                Criteria.where("senderTeamId").is(teamBId).and("recipientTeamId").is(teamAId));
+        return mongoTemplate.exists(new Query(pair), FriendlyRequestDocument.class, COLLECTION);
+    }
+
+    @Override
     public boolean existsOpenForTeam(String teamId) {
         Criteria team = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamId),

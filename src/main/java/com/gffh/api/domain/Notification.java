@@ -16,6 +16,7 @@ public record Notification(
         String relatedTeamId,
         String relatedRequestId,
         String relatedFixtureId,
+        String relatedConversationId,
         boolean read,
         Instant createdAt) {
 }

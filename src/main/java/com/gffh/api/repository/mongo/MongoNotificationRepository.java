@@ -55,7 +55,7 @@ public class MongoNotificationRepository implements NotificationRepository {
 
     private Notification withGeneratedId(Notification n) {
         return new Notification(UUID.randomUUID().toString(), n.userId(), n.type(), n.title(), n.body(),
-                n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.read(),
+                n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(), n.read(),
                 n.createdAt() != null ? n.createdAt() : Instant.now());
     }
 }

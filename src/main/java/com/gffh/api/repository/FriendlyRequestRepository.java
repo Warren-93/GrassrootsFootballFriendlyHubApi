@@ -18,6 +18,9 @@ public interface FriendlyRequestRepository {
     /** Whether an open (non-terminal) negotiation already exists between these two teams. */
     boolean existsOpenBetween(String teamAId, String teamBId);
 
+    /** Whether any request, of any status, has ever existed between these two teams - past or present relationship. */
+    boolean existsBetween(String teamAId, String teamBId);
+
     /** Whether this team (sender or recipient) has any open (non-terminal) negotiation - blocks archiving it out from under it. */
     boolean existsOpenForTeam(String teamId);
 

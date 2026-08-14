@@ -8,5 +8,5 @@ public interface MessageRepository {
 
     Message save(Message message);
 
-    List<Message> findByFixtureId(String fixtureId);
+    List<Message> findByConversationId(String conversationId);
 }

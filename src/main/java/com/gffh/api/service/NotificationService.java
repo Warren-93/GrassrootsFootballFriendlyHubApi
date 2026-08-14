@@ -42,11 +42,16 @@ public class NotificationService {
 
     public void notifyTeam(String teamId, NotificationType type, String title, String body,
                            String relatedRequestId, String relatedFixtureId) {
+        notifyTeam(teamId, type, title, body, relatedRequestId, relatedFixtureId, null);
+    }
+
+    public void notifyTeam(String teamId, NotificationType type, String title, String body,
+                           String relatedRequestId, String relatedFixtureId, String relatedConversationId) {
         try {
             for (String userId : membershipService.managerUserIdsFor(teamId)) {
                 if (!preferenceFor(userId).allows(type.category())) continue;
                 notifications.save(new Notification(null, userId, type, title, body, teamId,
-                        relatedRequestId, relatedFixtureId, false, Instant.now()));
+                        relatedRequestId, relatedFixtureId, relatedConversationId, false, Instant.now()));
             }
         } catch (Exception e) {
             log.warn("Failed to fan out notification type={} teamId={}", type, teamId, e);
@@ -72,7 +77,8 @@ public class NotificationService {
         }
         if (!n.read()) {
             notifications.save(new Notification(n.id(), n.userId(), n.type(), n.title(), n.body(),
-                    n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), true, n.createdAt()));
+                    n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(),
+                    true, n.createdAt()));
         }
     }
 

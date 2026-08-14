@@ -10,11 +10,12 @@ public final class NotificationDtos {
     private NotificationDtos() {}
 
     public record NotificationView(String id, String type, String title, String body, String relatedTeamId,
-                                    String relatedRequestId, String relatedFixtureId, boolean read, Instant createdAt) {
+                                    String relatedRequestId, String relatedFixtureId, String relatedConversationId,
+                                    boolean read, Instant createdAt) {
 
         public static NotificationView from(Notification n) {
             return new NotificationView(n.id(), n.type().name(), n.title(), n.body(), n.relatedTeamId(),
-                    n.relatedRequestId(), n.relatedFixtureId(), n.read(), n.createdAt());
+                    n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(), n.read(), n.createdAt());
         }
     }
 
