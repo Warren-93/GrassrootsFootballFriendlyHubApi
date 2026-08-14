@@ -36,11 +36,12 @@ public class ConversationService {
     private final FriendlyRequestRepository friendlyRequests;
     private final MembershipService membershipService;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public ConversationService(ConversationRepository conversations, MessageRepository messages,
                                TeamRepository teams, AvailabilityRepository availability, BlockRepository blocks,
                                FriendlyRequestRepository friendlyRequests, MembershipService membershipService,
-                               NotificationService notificationService) {
+                               NotificationService notificationService, AuditLogService auditLogService) {
         this.conversations = conversations;
         this.messages = messages;
         this.teams = teams;
@@ -49,6 +50,25 @@ public class ConversationService {
         this.friendlyRequests = friendlyRequests;
         this.membershipService = membershipService;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
+    }
+
+    /**
+     * Admin-only: the transcript between two teams, for investigating a
+     * report. Bypasses the membership check {@link #requireVisible} enforces
+     * for team-side access - the caller is a platform admin, not a team
+     * member - and records an audit entry every time, since reading message
+     * content is a genuinely sensitive action distinct from every other
+     * read-only admin view.
+     */
+    public List<ConversationDtos.MessageView> transcriptForAdmin(String adminId, String teamAId, String teamBId) {
+        Optional<Conversation> conversation = conversations.findBetweenTeams(teamAId, teamBId);
+        if (conversation.isEmpty()) {
+            return List.of();
+        }
+        auditLogService.record(adminId, "CONVERSATION_VIEWED", "CONVERSATION", conversation.get().id(), null);
+        return messages.findByConversationId(conversation.get().id()).stream()
+                .map(ConversationDtos.MessageView::from).toList();
     }
 
     /**
