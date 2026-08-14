@@ -1,5 +1,7 @@
 # Maven
 target/
+# Self-bootstrapped by mvnw on first run - never checked in, see .mvn/wrapper/maven-wrapper.properties
+.mvn/wrapper/maven-wrapper.jar
 
 # IDE
 .idea/
