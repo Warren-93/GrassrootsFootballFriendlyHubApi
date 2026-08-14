@@ -22,10 +22,8 @@ public class AdminMatchingConfigController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<MatchDtos.WeightsView> current() {
-        var w = matchingConfigService.current();
-        return ResponseEntity.ok(new MatchDtos.WeightsView(w.age(), w.availability(), w.format(),
-                w.distance(), w.homeAway(), w.ability()));
+    public ResponseEntity<MatchingConfigDtos.CurrentWeightsView> current() {
+        return ResponseEntity.ok(MatchingConfigDtos.CurrentWeightsView.from(matchingConfigService.current()));
     }
 
     @GetMapping("/versions")

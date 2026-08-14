@@ -31,6 +31,17 @@ public final class MatchingConfigDtos {
         }
     }
 
+    /** The full resolved weights, including the tuning fields WeightsInput/WeightsView don't carry for ordinary search consumers. */
+    public record CurrentWeightsView(
+            int age, int availability, int format, int distance, int homeAway, int ability,
+            int ageBandTolerance, double distanceFreeMiles, double distanceFloor) {
+
+        public static CurrentWeightsView from(MatchingWeights w) {
+            return new CurrentWeightsView(w.age(), w.availability(), w.format(), w.distance(), w.homeAway(),
+                    w.ability(), w.ageBandTolerance(), w.distanceFreeMiles(), w.distanceFloor());
+        }
+    }
+
     public record PublishRequest(@NotNull WeightsInput weights, @NotBlank String versionNote) {}
 
     public record PreviewRequest(@NotBlank String teamId, @NotNull WeightsInput weights) {}
