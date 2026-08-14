@@ -42,6 +42,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Recipient", 56.014582, -3.790261);
+        completeTeamProfile(senderOwner.accessToken(), senderTeam);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-12");
         String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-12");
@@ -113,6 +114,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Decline Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Decline Recipient", 56.014582, -3.790261);
+        completeTeamProfile(senderOwner.accessToken(), senderTeam);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-19");
         String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-19");

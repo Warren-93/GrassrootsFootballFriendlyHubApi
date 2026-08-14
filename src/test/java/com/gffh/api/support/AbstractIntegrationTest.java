@@ -15,6 +15,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -109,6 +110,25 @@ public abstract class AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         return objectMapper.readTree(response).get("id").asText();
+    }
+
+    /** Pushes Team.completenessPercent() past the 80% a friendly request requires - see FriendlyRequestService's PROFILE_INCOMPLETE gate. */
+    protected void completeTeamProfile(String accessToken, String teamId) throws Exception {
+        String body = """
+                {
+                  "managerName": "Test Manager",
+                  "contactPhone": "07700900000",
+                  "description": "A test team.",
+                  "league": "Test League",
+                  "badgeUrl": "https://example.com/badge.png"
+                }
+                """;
+
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
     }
 
     protected void publishAvailability(String accessToken, String teamId, String isoDate) throws Exception {
