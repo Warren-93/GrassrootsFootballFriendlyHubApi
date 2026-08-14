@@ -39,6 +39,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
     void acceptCreatesAConfirmedFixtureThatCanBeCancelled() throws Exception {
         TestAccount senderOwner = registerAccount("Lifecycle Sender Owner");
         TestAccount recipientOwner = registerAccount("Lifecycle Recipient Owner");
+        verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Recipient", 56.014582, -3.790261);
 
@@ -109,6 +110,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
     void decliningReleasesSlotsWithoutCreatingAFixture() throws Exception {
         TestAccount senderOwner = registerAccount("Lifecycle Decline Sender");
         TestAccount recipientOwner = registerAccount("Lifecycle Decline Recipient");
+        verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Decline Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Decline Recipient", 56.014582, -3.790261);
 

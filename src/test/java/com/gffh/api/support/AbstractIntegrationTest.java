@@ -50,7 +50,7 @@ public abstract class AbstractIntegrationTest {
     protected ObjectMapper objectMapper;
 
     /** A fresh, uniquely-emailed account so tests never collide on state or the per-email login rate limit. */
-    protected record TestAccount(String email, String accessToken, String userId) {}
+    protected record TestAccount(String email, String accessToken, String userId, String verificationToken) {}
 
     protected TestAccount registerAccount(String displayName) throws Exception {
         String email = "it_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12) + "@example.com";
@@ -69,7 +69,20 @@ public abstract class AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode json = objectMapper.readTree(response);
-        return new TestAccount(email, json.get("accessToken").asText(), json.get("user").get("id").asText());
+        return new TestAccount(email, json.get("accessToken").asText(), json.get("user").get("id").asText(),
+                json.get("verificationToken").asText());
+    }
+
+    /** Some actions (sending a friendly request) require a verified email - see AuthService's EMAIL_NOT_VERIFIED gate. */
+    protected void verifyEmail(TestAccount account) throws Exception {
+        String body = """
+                { "token": "%s" }
+                """.formatted(account.verificationToken());
+
+        mockMvc.perform(post("/api/v1/auth/verify/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
     }
 
     protected String createTeam(String accessToken, String name, double lat, double lon) throws Exception {
