@@ -92,9 +92,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Never a wildcard: the future web client is a known origin, and a
-        // wildcard would let any site call the API with a user's token.
+        // Exact origins from gffh.cors.allowed-origins, plus a scoped pattern
+        // for Vercel preview deployments - each branch push gets its own
+        // random *.vercel.app subdomain, so an exact-match list can't cover
+        // them. Never a bare "*": the pattern is still scoped to the vercel.app
+        // domain rather than any origin.
         config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
         config.setAllowCredentials(true);
