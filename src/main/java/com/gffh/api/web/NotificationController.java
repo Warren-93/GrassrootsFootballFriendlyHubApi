@@ -45,6 +45,12 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/api/v1/notifications")
+    public ResponseEntity<Void> clearAll(@AuthenticationPrincipal Jwt principal) {
+        notificationService.clearAll(principal.getSubject());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/api/v1/me/notification-preferences")
     public ResponseEntity<NotificationDtos.PreferenceView> getPreferences(@AuthenticationPrincipal Jwt principal) {
         return ResponseEntity.ok(preferenceService.get(principal.getSubject()));

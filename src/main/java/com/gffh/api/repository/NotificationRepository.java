@@ -14,4 +14,6 @@ public interface NotificationRepository {
     List<Notification> findByUserId(String userId, int limit);
 
     long countUnread(String userId);
+
+    void deleteAllForUser(String userId);
 }

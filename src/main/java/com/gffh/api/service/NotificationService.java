@@ -88,6 +88,10 @@ public class NotificationService {
                 .forEach(n -> markRead(userId, n.id()));
     }
 
+    public void clearAll(String userId) {
+        notifications.deleteAllForUser(userId);
+    }
+
     private NotificationPreference preferenceFor(String userId) {
         return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
     }

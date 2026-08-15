@@ -53,6 +53,12 @@ public class MongoNotificationRepository implements NotificationRepository {
         return mongoTemplate.count(query, NotificationDocument.class, COLLECTION);
     }
 
+    @Override
+    public void deleteAllForUser(String userId) {
+        Query query = new Query(Criteria.where("userId").is(userId));
+        mongoTemplate.remove(query, NotificationDocument.class, COLLECTION);
+    }
+
     private Notification withGeneratedId(Notification n) {
         return new Notification(UUID.randomUUID().toString(), n.userId(), n.type(), n.title(), n.body(),
                 n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(), n.read(),
