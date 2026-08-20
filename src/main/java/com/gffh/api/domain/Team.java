@@ -34,7 +34,9 @@ public record Team(
         Instant createdAt,
         Instant updatedAt,
         boolean suspended,
-        boolean archived) {
+        boolean archived,
+        boolean searchVisible,
+        boolean shareContactDetails) {
 
     public boolean isVerified() { return verification == VerificationStatus.VERIFIED; }
 

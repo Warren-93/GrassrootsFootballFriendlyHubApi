@@ -70,6 +70,19 @@ public class TeamController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{teamId}/privacy")
+    public ResponseEntity<TeamDtos.PrivacyPreferences> getPrivacy(@AuthenticationPrincipal Jwt principal,
+                                                                    @PathVariable String teamId) {
+        return ResponseEntity.ok(teamService.getPrivacyPreferences(principal.getSubject(), teamId));
+    }
+
+    @PatchMapping("/{teamId}/privacy")
+    public ResponseEntity<TeamDtos.PrivacyPreferences> updatePrivacy(
+            @AuthenticationPrincipal Jwt principal, @PathVariable String teamId,
+            @RequestBody TeamDtos.PrivacyPreferences request) {
+        return ResponseEntity.ok(teamService.updatePrivacyPreferences(principal.getSubject(), teamId, request));
+    }
+
     @PostMapping("/join")
     public ResponseEntity<MemberDtos.JoinResultView> join(@AuthenticationPrincipal Jwt principal,
                                                            @Valid @RequestBody MemberDtos.RedeemJoinCodeRequest request) {

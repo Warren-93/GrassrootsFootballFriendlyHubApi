@@ -41,6 +41,9 @@ public class TeamDocument {
     public Instant updatedAt;
     public boolean suspended;
     public boolean archived;
+    /** Nullable so pre-existing documents (written before this field existed) default to visible/shared, not hidden. */
+    public Boolean searchVisible;
+    public Boolean shareContactDetails;
 
     public static TeamDocument from(Team t) {
         TeamDocument d = new TeamDocument();
@@ -68,6 +71,8 @@ public class TeamDocument {
         d.updatedAt = t.updatedAt();
         d.suspended = t.suspended();
         d.archived = t.archived();
+        d.searchVisible = t.searchVisible();
+        d.shareContactDetails = t.shareContactDetails();
         return d;
     }
 
@@ -84,6 +89,8 @@ public class TeamDocument {
                 HomeAwayPreference.valueOf(homeAwayPreference),
                 managerName, contactPhone, description,
                 VerificationStatus.valueOf(verification),
-                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt, suspended, archived);
+                defaultVenueId, firstFixtureConfirmedAt, createdAt, updatedAt, suspended, archived,
+                searchVisible == null || searchVisible,
+                shareContactDetails == null || shareContactDetails);
     }
 }

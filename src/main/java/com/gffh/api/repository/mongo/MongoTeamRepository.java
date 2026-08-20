@@ -67,7 +67,7 @@ public class MongoTeamRepository implements TeamRepository {
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now, team.suspended(), team.archived());
+                now, now, team.suspended(), team.archived(), team.searchVisible(), team.shareContactDetails());
     }
 
     private Team withCreatedAt(Team team, Instant now) {
@@ -76,7 +76,7 @@ public class MongoTeamRepository implements TeamRepository {
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now, team.suspended(), team.archived());
+                now, now, team.suspended(), team.archived(), team.searchVisible(), team.shareContactDetails());
     }
 
     @Override
@@ -90,7 +90,8 @@ public class MongoTeamRepository implements TeamRepository {
                 .and("ageGroup").is(ageGroup.name())
                 .and("clubId").ne(excludeClubId)
                 .and("suspended").ne(true)
-                .and("archived").ne(true);
+                .and("archived").ne(true)
+                .and("searchVisible").ne(false);
 
         // MIXED is compatible with everything, so only a non-mixed search team
         // narrows the candidate set by gender.

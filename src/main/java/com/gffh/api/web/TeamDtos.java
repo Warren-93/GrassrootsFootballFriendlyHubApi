@@ -86,4 +86,15 @@ public final class TeamDtos {
                     t.completenessPercent(t.defaultVenueId() != null), t.archived(), t.createdAt());
         }
     }
+
+    /**
+     * SCR-PR-10's "Profile visibility" and "Share contact details" toggles -
+     * team-level, not user-level, since it's the team that's discoverable in
+     * search and disclosed on a confirmed fixture, not the account.
+     */
+    public record PrivacyPreferences(boolean searchVisible, boolean shareContactDetails) {
+        public static PrivacyPreferences from(Team t) {
+            return new PrivacyPreferences(t.searchVisible(), t.shareContactDetails());
+        }
+    }
 }

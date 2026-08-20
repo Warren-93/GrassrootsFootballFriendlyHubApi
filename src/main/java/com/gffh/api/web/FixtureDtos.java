@@ -21,9 +21,15 @@ public final class FixtureDtos {
 
     public record FixtureTeamView(String id, String name, String clubName, String managerName,
                                    String contactPhone, String venueId) {
+        /**
+         * A team that's turned off "share contact details" still discloses
+         * everything else about itself once a fixture is confirmed - only the
+         * manager name/phone the OTHER side would see are withheld.
+         */
         public static FixtureTeamView from(Team t) {
-            return new FixtureTeamView(t.id(), t.name(), t.clubName(), t.managerName(),
-                    t.contactPhone(), t.defaultVenueId());
+            boolean share = t.shareContactDetails();
+            return new FixtureTeamView(t.id(), t.name(), t.clubName(), share ? t.managerName() : null,
+                    share ? t.contactPhone() : null, t.defaultVenueId());
         }
     }
 

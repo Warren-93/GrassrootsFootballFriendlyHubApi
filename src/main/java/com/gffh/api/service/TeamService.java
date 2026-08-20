@@ -60,7 +60,7 @@ public class TeamService {
                 new GeoPoint(request.longitude(), request.latitude()),
                 request.travelRadiusMiles(), request.homeAwayPreference(),
                 request.managerName(), request.contactPhone(), request.description(),
-                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false, false));
+                VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false, false, true, true));
 
         memberships.save(new Membership(null, userId, team.id(), null, Role.TEAM_MANAGER, Instant.now()));
         return team;
@@ -145,9 +145,40 @@ public class TeamService {
                 current.verification(),
                 orDefault(request.defaultVenueId(), current.defaultVenueId()),
                 current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt(), current.suspended(),
-                current.archived());
+                current.archived(), current.searchVisible(), current.shareContactDetails());
 
         return teams.save(updated);
+    }
+
+    public TeamDtos.PrivacyPreferences getPrivacyPreferences(String userId, String teamId) {
+        membershipService.requireCanManageTeam(userId, teamId);
+        Team team = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+        return TeamDtos.PrivacyPreferences.from(team);
+    }
+
+    /**
+     * {@code searchVisible} governs whether the team appears as a match
+     * candidate at all (see MongoTeamRepository#findCandidates);
+     * {@code shareContactDetails} governs whether a confirmed fixture's
+     * manager name/phone for this team are populated at all (see
+     * FixtureDtos.FixtureTeamView#from) - symmetric for both sides of the
+     * fixture, not just the other team, since fixture detail is the same
+     * projection either way.
+     */
+    public TeamDtos.PrivacyPreferences updatePrivacyPreferences(
+            String userId, String teamId, TeamDtos.PrivacyPreferences request) {
+        membershipService.requireCanManageTeam(userId, teamId);
+        Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+
+        Team updated = new Team(current.id(), current.clubId(), current.name(), current.clubName(),
+                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(),
+                current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
+                current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
+                current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
+                current.createdAt(), current.updatedAt(), current.suspended(), current.archived(),
+                request.searchVisible(), request.shareContactDetails());
+
+        return TeamDtos.PrivacyPreferences.from(teams.save(updated));
     }
 
     /**
@@ -175,7 +206,8 @@ public class TeamService {
                 current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
                 current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
                 current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
-                current.createdAt(), current.updatedAt(), current.suspended(), true);
+                current.createdAt(), current.updatedAt(), current.suspended(), true,
+                current.searchVisible(), current.shareContactDetails());
         teams.save(archived);
     }
 
