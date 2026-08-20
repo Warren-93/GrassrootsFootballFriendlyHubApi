@@ -28,6 +28,21 @@ public final class AuthDtos {
 
     public record VerifyConfirmRequest(@NotBlank String token) {}
 
+    public record ChangePasswordRequest(
+            @NotBlank String currentPassword,
+            @NotBlank @Size(min = 10, max = 72) String newPassword) {}
+
+    public record ChangeEmailRequest(
+            @NotBlank @Email String newEmail,
+            @NotBlank String currentPassword) {}
+
+    /**
+     * {@code verificationToken} is safe to return here (unlike password
+     * reset) because the caller just proved account ownership with their
+     * current password - same reasoning as {@link VerificationResendResponse}.
+     */
+    public record ChangeEmailResponse(UserView user, String verificationToken) {}
+
     /**
      * {@code verificationToken} is only ever populated for the account whose
      * own credentials/session produced this response (registration, resend)

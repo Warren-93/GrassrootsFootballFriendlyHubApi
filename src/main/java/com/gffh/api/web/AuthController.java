@@ -62,4 +62,17 @@ public class AuthController {
         authService.confirmVerification(request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/api/v1/me/password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal Jwt principal,
+                                                @Valid @RequestBody AuthDtos.ChangePasswordRequest request) {
+        authService.changePassword(principal.getSubject(), request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/v1/me/email")
+    public ResponseEntity<AuthDtos.ChangeEmailResponse> changeEmail(@AuthenticationPrincipal Jwt principal,
+                                                                     @Valid @RequestBody AuthDtos.ChangeEmailRequest request) {
+        return ResponseEntity.ok(authService.changeEmail(principal.getSubject(), request));
+    }
 }

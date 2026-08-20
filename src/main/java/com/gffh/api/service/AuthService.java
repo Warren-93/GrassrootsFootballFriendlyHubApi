@@ -125,6 +125,36 @@ public class AuthService {
         users.save(withEmailVerified(user));
     }
 
+    public void changePassword(String userId, AuthDtos.ChangePasswordRequest request) {
+        User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
+        requireCurrentPassword(user, request.currentPassword());
+        users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
+    }
+
+    /**
+     * Re-verification is required (SCR-AU-03/06's gate applies again), same
+     * as a fresh registration - see {@link #confirmVerification}.
+     */
+    public AuthDtos.ChangeEmailResponse changeEmail(String userId, AuthDtos.ChangeEmailRequest request) {
+        User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
+        requireCurrentPassword(user, request.currentPassword());
+        if (!request.newEmail().equalsIgnoreCase(user.email()) && users.findByEmail(request.newEmail()).isPresent()) {
+            throw new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
+                    "An account with this email already exists.");
+        }
+        User updated = users.save(withEmail(user, request.newEmail()));
+        String verificationToken = verificationTokenService.issue(
+                updated.id(), VerificationTokenPurpose.EMAIL_VERIFY, updated.email());
+        return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated), verificationToken);
+    }
+
+    private void requireCurrentPassword(User user, String presented) {
+        if (!passwordEncoder.matches(presented, user.passwordHash())) {
+            throw new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
+                    "Current password is incorrect.");
+        }
+    }
+
     private AuthDtos.TokenResponse issueToken(User user) {
         String accessToken = jwtService.issueAccessToken(user.id(), user.email());
         String refreshToken = refreshTokenService.issue(user.id());
@@ -139,5 +169,10 @@ public class AuthService {
     private static User withEmailVerified(User user) {
         return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
                 true, user.createdAt(), user.suspended());
+    }
+
+    private static User withEmail(User user, String newEmail) {
+        return new User(user.id(), newEmail, user.passwordHash(), user.displayName(),
+                false, user.createdAt(), user.suspended());
     }
 }
