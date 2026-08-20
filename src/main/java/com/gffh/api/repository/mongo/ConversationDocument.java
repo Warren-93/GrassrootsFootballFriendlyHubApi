@@ -17,6 +17,7 @@ public class ConversationDocument {
     public Instant lastMessageAt;
     public String lastMessageBody;
     public String lastMessageSenderTeamId;
+    public String relatedFixtureId;
 
     public static ConversationDocument from(Conversation c) {
         ConversationDocument d = new ConversationDocument();
@@ -27,10 +28,12 @@ public class ConversationDocument {
         d.lastMessageAt = c.lastMessageAt();
         d.lastMessageBody = c.lastMessageBody();
         d.lastMessageSenderTeamId = c.lastMessageSenderTeamId();
+        d.relatedFixtureId = c.relatedFixtureId();
         return d;
     }
 
     public Conversation toDomain() {
-        return new Conversation(id, teamAId, teamBId, createdAt, lastMessageAt, lastMessageBody, lastMessageSenderTeamId);
+        return new Conversation(id, teamAId, teamBId, createdAt, lastMessageAt, lastMessageBody,
+                lastMessageSenderTeamId, relatedFixtureId);
     }
 }

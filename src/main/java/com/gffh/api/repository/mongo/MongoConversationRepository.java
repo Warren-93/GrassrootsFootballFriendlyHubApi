@@ -60,6 +60,7 @@ public class MongoConversationRepository implements ConversationRepository {
     private Conversation withGeneratedId(Conversation c) {
         Instant now = c.createdAt() != null ? c.createdAt() : Instant.now();
         return new Conversation(UUID.randomUUID().toString(), c.teamAId(), c.teamBId(), now,
-                c.lastMessageAt() != null ? c.lastMessageAt() : now, c.lastMessageBody(), c.lastMessageSenderTeamId());
+                c.lastMessageAt() != null ? c.lastMessageAt() : now, c.lastMessageBody(), c.lastMessageSenderTeamId(),
+                c.relatedFixtureId());
     }
 }

@@ -12,7 +12,8 @@ public final class ConversationDtos {
 
     private ConversationDtos() {}
 
-    public record StartConversationRequest(@NotBlank String teamId, @NotBlank String otherTeamId) {}
+    /** {@code fixtureId} is optional - present when opened from a fixture's "Message" entry point. */
+    public record StartConversationRequest(@NotBlank String teamId, @NotBlank String otherTeamId, String fixtureId) {}
 
     public record SendMessageRequest(@NotBlank String body) {}
 
@@ -23,11 +24,12 @@ public final class ConversationDtos {
             String lastMessageBody,
             String lastMessageSenderTeamId,
             Instant lastMessageAt,
-            Instant createdAt) {
+            Instant createdAt,
+            String relatedFixtureId) {
 
         public static ConversationView of(Conversation c, Team other) {
             return new ConversationView(c.id(), MatchDtos.TeamSummary.from(other), c.lastMessageBody(),
-                    c.lastMessageSenderTeamId(), c.lastMessageAt(), c.createdAt());
+                    c.lastMessageSenderTeamId(), c.lastMessageAt(), c.createdAt(), c.relatedFixtureId());
         }
     }
 

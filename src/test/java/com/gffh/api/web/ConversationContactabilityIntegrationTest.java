@@ -109,6 +109,44 @@ class ConversationContactabilityIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
+    @DisplayName("opening the thread from a fixture stamps and updates which fixture it's currently about")
+    void fixtureIdIsStampedAndRefreshedOnTheConversation() throws Exception {
+        TestAccount ownerA = registerAccount("Team G Owner");
+        TestAccount ownerB = registerAccount("Team H Owner");
+        String teamA = createTeam(ownerA.accessToken(), "Contactability Test G", 56.014582, -3.790261);
+        String teamB = createTeam(ownerB.accessToken(), "Contactability Test H", 56.014582, -3.790261);
+        publishAvailability(ownerB.accessToken(), teamB, "2026-09-10");
+
+        String firstStart = mockMvc.perform(post("/api/v1/conversations")
+                        .header("Authorization", "Bearer " + ownerA.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "teamId": "%s", "otherTeamId": "%s", "fixtureId": "fixture-1" }
+                                """.formatted(teamA, teamB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relatedFixtureId").value("fixture-1"))
+                .andReturn().getResponse().getContentAsString();
+        String conversationId = objectMapper.readTree(firstStart).get("id").asText();
+
+        // Opening again from a different fixture re-stamps it - "what's this
+        // thread currently about" tracks the most recent context, not a lock.
+        mockMvc.perform(post("/api/v1/conversations")
+                        .header("Authorization", "Bearer " + ownerA.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "teamId": "%s", "otherTeamId": "%s", "fixtureId": "fixture-2" }
+                                """.formatted(teamA, teamB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(conversationId))
+                .andExpect(jsonPath("$.relatedFixtureId").value("fixture-2"));
+
+        mockMvc.perform(get("/api/v1/conversations/" + conversationId)
+                        .header("Authorization", "Bearer " + ownerB.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relatedFixtureId").value("fixture-2"));
+    }
+
+    @Test
     @DisplayName("a team cannot start a conversation on behalf of a team it doesn't manage")
     void blocksStartingOnBehalfOfAnUnmanagedTeam() throws Exception {
         TestAccount ownerA = registerAccount("Team E Owner");

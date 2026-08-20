@@ -95,7 +95,13 @@ public class ConversationService {
 
         Optional<Conversation> existing = conversations.findBetweenTeams(request.teamId(), request.otherTeamId());
         if (existing.isPresent()) {
-            return ConversationDtos.ConversationView.of(existing.get(), otherTeam);
+            Conversation conversation = existing.get();
+            if (request.fixtureId() != null && !request.fixtureId().equals(conversation.relatedFixtureId())) {
+                conversation = conversations.save(new Conversation(conversation.id(), conversation.teamAId(),
+                        conversation.teamBId(), conversation.createdAt(), conversation.lastMessageAt(),
+                        conversation.lastMessageBody(), conversation.lastMessageSenderTeamId(), request.fixtureId()));
+            }
+            return ConversationDtos.ConversationView.of(conversation, otherTeam);
         }
 
         boolean hasPublishedAvailability = !availability
@@ -109,7 +115,7 @@ public class ConversationService {
 
         Instant now = Instant.now();
         Conversation saved = conversations.save(
-                new Conversation(null, request.teamId(), request.otherTeamId(), now, now, null, null));
+                new Conversation(null, request.teamId(), request.otherTeamId(), now, now, null, null, request.fixtureId()));
         return ConversationDtos.ConversationView.of(saved, otherTeam);
     }
 
@@ -154,7 +160,7 @@ public class ConversationService {
         Message saved = messages.save(new Message(null, conversation.id(), senderTeamId, userId, body, Instant.now()));
 
         conversations.save(new Conversation(conversation.id(), conversation.teamAId(), conversation.teamBId(),
-                conversation.createdAt(), saved.createdAt(), body, senderTeamId));
+                conversation.createdAt(), saved.createdAt(), body, senderTeamId, conversation.relatedFixtureId()));
 
         notificationService.notifyTeam(otherTeamId, NotificationType.MESSAGE_RECEIVED,
                 "New message", body, null, null, conversation.id());
