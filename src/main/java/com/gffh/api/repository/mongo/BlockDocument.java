@@ -1,5 +1,6 @@
 package com.gffh.api.repository.mongo;
 
+import com.gffh.api.domain.Block;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -14,4 +15,8 @@ public class BlockDocument {
     public String blockedTeamId;
     public String reason;
     public Instant createdAt;
+
+    public Block toDomain() {
+        return new Block(id, blockingTeamId, blockedTeamId, reason, createdAt);
+    }
 }

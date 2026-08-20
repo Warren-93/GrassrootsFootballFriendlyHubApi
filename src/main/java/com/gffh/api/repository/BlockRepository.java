@@ -1,5 +1,9 @@
 package com.gffh.api.repository;
 
+import com.gffh.api.domain.Block;
+
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface BlockRepository {
@@ -12,4 +16,11 @@ public interface BlockRepository {
     Set<String> blockedTeamIdsEitherDirection(String teamId);
 
     void block(String blockingTeamId, String blockedTeamId, String reason);
+
+    /** The blocks *this* team placed - one-directional, unlike the matching-time set above. */
+    List<Block> findByBlockingTeamId(String teamId);
+
+    Optional<Block> findById(String id);
+
+    void deleteById(String id);
 }
