@@ -37,8 +37,7 @@ public class FriendlyRequestController {
             @PathVariable String id,
             @PathVariable String action,
             @RequestBody(required = false) FriendlyRequestDtos.ActionRequest request) {
-        String reason = request != null ? request.reason() : null;
-        FriendlyRequest fr = friendlyRequestService.act(principal.getSubject(), id, action, reason);
+        FriendlyRequest fr = friendlyRequestService.act(principal.getSubject(), id, action, request);
         return ResponseEntity.ok(view(fr, principal.getSubject()));
     }
 

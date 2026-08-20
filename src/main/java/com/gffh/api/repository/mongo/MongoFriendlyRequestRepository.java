@@ -105,6 +105,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         return new FriendlyRequest(UUID.randomUUID().toString(), r.senderTeamId(), r.recipientTeamId(),
                 r.senderSlotId(), r.recipientSlotId(), r.status(), r.date(), r.startTime(), r.endTime(),
                 r.venueId(), r.homeTeamId(), r.costShare(), r.refereeArrangement(), r.message(),
-                r.createdByUserId(), now, now, r.actionReason());
+                r.createdByUserId(), now, now, r.actionReason(),
+                r.proposedStartTime(), r.proposedEndTime(), r.proposedVenueId());
     }
 }

@@ -158,4 +158,69 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
     }
+
+    @Test
+    @DisplayName("a real counter-proposal (time/venue) gets baked into the fixture once accepted")
+    void suggestChangesProposalIsAppliedOnAcceptChanges() throws Exception {
+        TestAccount senderOwner = registerAccount("Lifecycle Counter Sender");
+        TestAccount recipientOwner = registerAccount("Lifecycle Counter Recipient");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Counter Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Counter Recipient", 56.014582, -3.790261);
+        completeTeamProfile(senderOwner.accessToken(), senderTeam);
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-26");
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-26");
+
+        String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "senderTeamId": "%s", "recipientTeamId": "%s",
+                                  "senderSlotId": "%s", "recipientSlotId": "%s",
+                                  "date": "2026-09-26", "startTime": "10:00:00", "endTime": "12:00:00",
+                                  "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"
+                                }
+                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String requestId = objectMapper.readTree(sendResponse).get("id").asText();
+
+        // The recipient proposes a later kick-off, not a different day.
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/suggestChanges")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reason": "Can we kick off later?", "proposedStartTime": "14:00:00", "proposedEndTime": "16:00:00" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CHANGES_REQUESTED"))
+                .andExpect(jsonPath("$.proposedStartTime").value("14:00:00"))
+                .andExpect(jsonPath("$.proposedEndTime").value("16:00:00"))
+                // the real terms don't change until the proposal is accepted
+                .andExpect(jsonPath("$.startTime").value("10:00:00"));
+
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/acceptChanges")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UPDATED"))
+                .andExpect(jsonPath("$.startTime").value("14:00:00"))
+                .andExpect(jsonPath("$.endTime").value("16:00:00"))
+                .andExpect(jsonPath("$.proposedStartTime").doesNotExist());
+
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/accept")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        String fixturesResponse = mockMvc.perform(get("/api/v1/fixtures")
+                        .param("teamId", senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode fixture = objectMapper.readTree(fixturesResponse).get(0);
+        assertEquals("14:00:00", fixture.get("startTime").asText(), "the fixture should carry the accepted proposal, not the original time");
+        assertEquals("16:00:00", fixture.get("endTime").asText());
+    }
 }

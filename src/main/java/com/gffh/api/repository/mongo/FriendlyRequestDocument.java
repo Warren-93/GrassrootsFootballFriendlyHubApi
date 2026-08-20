@@ -30,6 +30,9 @@ public class FriendlyRequestDocument {
     public Instant createdAt;
     public Instant updatedAt;
     public String actionReason;
+    public LocalTime proposedStartTime;
+    public LocalTime proposedEndTime;
+    public String proposedVenueId;
 
     public static FriendlyRequestDocument from(FriendlyRequest r) {
         FriendlyRequestDocument d = new FriendlyRequestDocument();
@@ -51,6 +54,9 @@ public class FriendlyRequestDocument {
         d.createdAt = r.createdAt();
         d.updatedAt = r.updatedAt();
         d.actionReason = r.actionReason();
+        d.proposedStartTime = r.proposedStartTime();
+        d.proposedEndTime = r.proposedEndTime();
+        d.proposedVenueId = r.proposedVenueId();
         return d;
     }
 
@@ -58,6 +64,7 @@ public class FriendlyRequestDocument {
         return new FriendlyRequest(id, senderTeamId, recipientTeamId, senderSlotId, recipientSlotId,
                 RequestStatus.valueOf(status), date, startTime, endTime, venueId, homeTeamId,
                 CostShare.valueOf(costShare), RefereeArrangement.valueOf(refereeArrangement),
-                message, createdByUserId, createdAt, updatedAt, actionReason);
+                message, createdByUserId, createdAt, updatedAt, actionReason,
+                proposedStartTime, proposedEndTime, proposedVenueId);
     }
 }

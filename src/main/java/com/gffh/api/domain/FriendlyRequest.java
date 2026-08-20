@@ -33,7 +33,18 @@ public record FriendlyRequest(
         Instant createdAt,
         Instant updatedAt,
         /** The reason given for the most recent status change (e.g. why changes were requested, or declined). */
-        String actionReason) {
+        String actionReason,
+        /**
+         * A pending counter-proposal from {@code suggestChanges} - date is
+         * deliberately not proposable here, since {@code senderSlotId}/
+         * {@code recipientSlotId} are reserved against the original date and
+         * re-matching them to a different one is out of scope. Null until a
+         * proposal exists; applied to the real fields and cleared the moment
+         * {@code acceptChanges} is called.
+         */
+        LocalTime proposedStartTime,
+        LocalTime proposedEndTime,
+        String proposedVenueId) {
 
     public boolean involves(String teamId) {
         return senderTeamId.equals(teamId) || recipientTeamId.equals(teamId);

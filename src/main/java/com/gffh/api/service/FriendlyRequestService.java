@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -110,7 +111,7 @@ public class FriendlyRequestService {
                 null, req.senderTeamId(), req.recipientTeamId(), req.senderSlotId(), req.recipientSlotId(),
                 RequestStatus.SENT, req.date(), req.startTime(), req.endTime(), req.venueId(),
                 req.homeTeamId(), req.costShare(), req.refereeArrangement(), req.message(),
-                userId, now, now, null));
+                userId, now, now, null, null, null, null));
 
         reserve(senderSlot);
         reserve(recipientSlot);
@@ -125,10 +126,11 @@ public class FriendlyRequestService {
         return saved;
     }
 
-    public FriendlyRequest act(String userId, String requestId, String action, String reason) {
+    public FriendlyRequest act(String userId, String requestId, String action, FriendlyRequestDtos.ActionRequest request) {
         FriendlyRequest fr = requireVisible(userId, requestId);
         Actor actor = actorFor(userId, fr);
         RequestStatus fromStatus = fr.status();
+        String reason = request != null ? request.reason() : null;
 
         RequestStateMachine.Transition transition = RequestStateMachine.transitionsFrom(fr.status()).stream()
                 .filter(t -> t.action().equals(action))
@@ -139,7 +141,19 @@ public class FriendlyRequestService {
 
         RequestStateMachine.requirePermitted(fr.status(), transition.to(), actor);
 
-        FriendlyRequest updated = withStatus(fr, transition.to(), reason);
+        FriendlyRequest updated;
+        if (action.equals("suggestChanges") && request != null
+                && (request.proposedStartTime() != null || request.proposedEndTime() != null || request.proposedVenueId() != null)) {
+            updated = withStatus(fr, transition.to(), reason,
+                    request.proposedStartTime(), request.proposedEndTime(), request.proposedVenueId());
+        } else if (action.equals("acceptChanges")) {
+            LocalTime newStart = fr.proposedStartTime() != null ? fr.proposedStartTime() : fr.startTime();
+            LocalTime newEnd = fr.proposedEndTime() != null ? fr.proposedEndTime() : fr.endTime();
+            String newVenue = fr.proposedVenueId() != null ? fr.proposedVenueId() : fr.venueId();
+            updated = withTerms(fr, transition.to(), reason, newStart, newEnd, newVenue);
+        } else {
+            updated = withStatus(fr, transition.to(), reason);
+        }
         updated = requests.save(updated);
         String fixtureId = null;
 
@@ -295,11 +309,27 @@ public class FriendlyRequestService {
         return withStatus(fr, status, fr.actionReason());
     }
 
+    /** Clears any pending proposal - every transition except suggestChanges/acceptChanges resolves or moots it. */
     private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status, String reason) {
+        return withStatus(fr, status, reason, null, null, null);
+    }
+
+    private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status, String reason,
+                                        LocalTime proposedStartTime, LocalTime proposedEndTime, String proposedVenueId) {
         return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(),
                 fr.senderSlotId(), fr.recipientSlotId(), status, fr.date(), fr.startTime(), fr.endTime(),
                 fr.venueId(), fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(),
-                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason);
+                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason,
+                proposedStartTime, proposedEndTime, proposedVenueId);
+    }
+
+    /** Bakes a proposal into the real terms (acceptChanges) - proposed fields always clear here. */
+    private FriendlyRequest withTerms(FriendlyRequest fr, RequestStatus status, String reason,
+                                       LocalTime startTime, LocalTime endTime, String venueId) {
+        return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(),
+                fr.senderSlotId(), fr.recipientSlotId(), status, fr.date(), startTime, endTime,
+                venueId, fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(),
+                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason, null, null, null);
     }
 
     /**

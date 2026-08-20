@@ -4,6 +4,7 @@ import com.gffh.api.domain.Fixture;
 import com.gffh.api.domain.Team;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.TeamRepository;
+import com.gffh.api.web.FriendlyRequestDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,8 @@ public class FixtureService {
      */
     public Fixture cancel(String userId, String fixtureId, String reason) {
         Fixture fixture = get(userId, fixtureId);
-        friendlyRequestService.act(userId, fixture.friendlyRequestId(), "cancel", reason);
+        friendlyRequestService.act(userId, fixture.friendlyRequestId(), "cancel",
+                new FriendlyRequestDtos.ActionRequest(reason, null, null, null));
         return fixtures.findById(fixtureId).orElseThrow(BusinessRuleException::blocked);
     }
 
