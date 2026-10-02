@@ -122,9 +122,10 @@ Still open:
 - **The browser auth flow.** Bearer tokens suit the mobile clients but should not be
   reused for a web client; a cookie-based flow or a backend-for-frontend is
   needed. CORS is configured in anticipation.
-- **JWT signing key persistence.** `JwtKeyConfig` generates a fresh RSA key pair
-  on every startup (see its javadoc for why that's currently fine); this needs
-  to change before horizontal scaling or long-lived refresh tokens.
+- **JWT signing key in deployed environments.** `JwtKeyConfig` signs with the
+  PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
+  startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA
+  -pkeyopt rsa_keygen_bits:2048`) so access tokens survive restarts.
 - **`TeamRepository.findCandidates` takes a single `AgeGroup`, not a tolerance
   range.** `MatchingService` always passes the searching team's exact age group,
   so raising `ageBandTolerance` above zero via `MatchingWeightsProvider` would

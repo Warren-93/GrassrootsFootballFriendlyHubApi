@@ -19,6 +19,11 @@ server:
     include-message: never
 
 gffh:
+  jwt:
+    # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
+    # deployed environment so tokens survive restarts; when unset, a key is
+    # generated per startup (fine locally). See JwtKeyConfig.
+    private-key: ${JWT_PRIVATE_KEY:}
   cors:
     # Defaults to the two local Vite dev servers (gffh-web, gffh-admin) plus
     # the hosted gffh-web Vercel deployment, so local development and that
