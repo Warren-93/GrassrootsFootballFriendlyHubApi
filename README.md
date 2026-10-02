@@ -115,7 +115,12 @@ scaffold didn't call out but which turned out to be required connective tissue
 
 Still open:
 
-- **Email verification.** `Team.verification` and `BusinessRuleException.teamNotVerified()`
+- **Email delivery.** `EmailService` sends verification and password-reset
+  links over SMTP once `SPRING_MAIL_HOST`/`_PORT`/`_USERNAME`/`_PASSWORD` and
+  `MAIL_FROM` are set (any provider; links point at `APP_BASE_URL`). Until
+  then tokens are logged and returned to the client, which means account
+  email verification proves nothing in that mode.
+- **Team verification.** `Team.verification` and `BusinessRuleException.teamNotVerified()`
   already gate friendly-request sending on it, but nothing moves a team out of
   `NOT_STARTED`. Verified in this session's smoke test with a direct database
   write, not through the API.

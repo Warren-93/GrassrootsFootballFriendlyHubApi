@@ -7,6 +7,16 @@ spring:
       # (Technical Specification section 17).
       uri: ${MONGODB_URI:mongodb://localhost:27017/db-gffh}
       auto-index-creation: false   # indexes are managed explicitly, see IndexConfig
+  mail:
+    # Host, port, username and password come from SPRING_MAIL_HOST,
+    # SPRING_MAIL_PORT, SPRING_MAIL_USERNAME and SPRING_MAIL_PASSWORD. With no
+    # host set, no mail sender exists and tokens are logged instead (EmailService).
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   jackson:
     default-property-inclusion: non_null
     serialization:
@@ -19,6 +29,12 @@ server:
     include-message: never
 
 gffh:
+  mail:
+    # Sender address, e.g. "Grassroots Football Friendly Hub <noreply@example.com>".
+    from: ${MAIL_FROM:}
+    # Where the links in emails point: the web app, which has /verify-email
+    # and /reset-password pages.
+    app-base-url: ${APP_BASE_URL:https://grassroots-football-friendly-hub-we.vercel.app}
   jwt:
     # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
     # deployed environment so tokens survive restarts; when unset, a key is
@@ -46,6 +62,10 @@ gffh:
     auth-attempts-per-hour: 10
 
 management:
+  health:
+    # An SMTP outage must not mark the whole API unhealthy and get it restarted.
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
