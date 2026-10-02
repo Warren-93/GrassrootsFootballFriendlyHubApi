@@ -39,9 +39,10 @@ class NotificationsIntegrationTest extends AbstractIntegrationTest {
         TestAccount senderOwner = registerAccount("Notif Sender Owner");
         String senderTeam = createTeam(senderOwner.accessToken(), "Notif FC Sender", 56.014582, -3.790261);
         completeTeamProfile(senderOwner.accessToken(), senderTeam);
+        verifyEmail(senderOwner);
 
-        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-12");
-        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-12");
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(9));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(9));
 
         String sendBody = """
                 {
@@ -49,7 +50,7 @@ class NotificationsIntegrationTest extends AbstractIntegrationTest {
                   "recipientTeamId": "%s",
                   "senderSlotId": "%s",
                   "recipientSlotId": "%s",
-                  "date": "2026-09-12",
+                  "date": "%s",
                   "startTime": "10:00:00",
                   "endTime": "12:00:00",
                   "homeTeamId": "%s",
@@ -57,7 +58,7 @@ class NotificationsIntegrationTest extends AbstractIntegrationTest {
                   "refereeArrangement": "NONE",
                   "message": "Fancy a friendly?"
                 }
-                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam);
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(9), senderTeam);
 
         mockMvc.perform(post("/api/v1/friendly-requests")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())

@@ -67,8 +67,8 @@ class TeamPrivacyIntegrationTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        String senderSlotId = publishSlot(senderOwner.accessToken(), senderTeam, "2026-09-14");
-        String recipientSlotId = publishSlot(recipientOwner.accessToken(), recipientTeam, "2026-09-14");
+        String senderSlotId = publishSlot(senderOwner.accessToken(), senderTeam, daysFromNow(11));
+        String recipientSlotId = publishSlot(recipientOwner.accessToken(), recipientTeam, daysFromNow(11));
 
         String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())
@@ -77,10 +77,10 @@ class TeamPrivacyIntegrationTest extends AbstractIntegrationTest {
                                 {
                                   "senderTeamId": "%s", "recipientTeamId": "%s",
                                   "senderSlotId": "%s", "recipientSlotId": "%s",
-                                  "date": "2026-09-14", "startTime": "10:00:00", "endTime": "12:00:00",
+                                  "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00",
                                   "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"
                                 }
-                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam)))
+                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(11), senderTeam)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String requestId = objectMapper.readTree(sendResponse).get("id").asText();
@@ -102,9 +102,11 @@ class TeamPrivacyIntegrationTest extends AbstractIntegrationTest {
         org.junit.jupiter.api.Assertions.assertTrue(fixture.get("awayTeam").get("managerName").asText().length() > 0);
     }
 
+    // The API serialises with default-property-inclusion: non_null, so a
+    // blanked field is omitted from the JSON rather than sent as null.
     private void assertNullField(JsonNode teamNode) {
-        org.junit.jupiter.api.Assertions.assertTrue(teamNode.get("managerName").isNull());
-        org.junit.jupiter.api.Assertions.assertTrue(teamNode.get("contactPhone").isNull());
+        org.junit.jupiter.api.Assertions.assertTrue(teamNode.path("managerName").isMissingNode() || teamNode.get("managerName").isNull());
+        org.junit.jupiter.api.Assertions.assertTrue(teamNode.path("contactPhone").isMissingNode() || teamNode.get("contactPhone").isNull());
     }
 
     private String publishSlot(String accessToken, String teamId, String isoDate) throws Exception {
