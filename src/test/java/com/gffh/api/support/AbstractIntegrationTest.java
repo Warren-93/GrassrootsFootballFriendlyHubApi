@@ -13,6 +13,7 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -129,6 +130,15 @@ public abstract class AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
+    }
+
+    /**
+     * An ISO date the given number of days after today. Availability and
+     * friendly requests reject past dates, so a fixed calendar date in a test
+     * silently starts failing once it goes by.
+     */
+    protected static String daysFromNow(int days) {
+        return LocalDate.now().plusDays(days).toString();
     }
 
     protected void publishAvailability(String accessToken, String teamId, String isoDate) throws Exception {

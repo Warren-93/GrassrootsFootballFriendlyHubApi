@@ -44,8 +44,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Recipient", 56.014582, -3.790261);
         completeTeamProfile(senderOwner.accessToken(), senderTeam);
 
-        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-12");
-        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-12");
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(9));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(9));
 
         String sendBody = """
                 {
@@ -53,7 +53,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
                   "recipientTeamId": "%s",
                   "senderSlotId": "%s",
                   "recipientSlotId": "%s",
-                  "date": "2026-09-12",
+                  "date": "%s",
                   "startTime": "10:00:00",
                   "endTime": "12:00:00",
                   "homeTeamId": "%s",
@@ -61,7 +61,7 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
                   "refereeArrangement": "NONE",
                   "message": "Fancy a friendly?"
                 }
-                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam);
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(9), senderTeam);
 
         String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())
@@ -116,8 +116,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Decline Recipient", 56.014582, -3.790261);
         completeTeamProfile(senderOwner.accessToken(), senderTeam);
 
-        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-19");
-        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-19");
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(16));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(16));
 
         String sendBody = """
                 {
@@ -125,14 +125,14 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
                   "recipientTeamId": "%s",
                   "senderSlotId": "%s",
                   "recipientSlotId": "%s",
-                  "date": "2026-09-19",
+                  "date": "%s",
                   "startTime": "10:00:00",
                   "endTime": "12:00:00",
                   "homeTeamId": "%s",
                   "costShare": "SPLIT",
                   "refereeArrangement": "NONE"
                 }
-                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam);
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(16), senderTeam);
 
         String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())
@@ -169,8 +169,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Counter Recipient", 56.014582, -3.790261);
         completeTeamProfile(senderOwner.accessToken(), senderTeam);
 
-        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, "2026-09-26");
-        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, "2026-09-26");
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(23));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(23));
 
         String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())
@@ -179,10 +179,10 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
                                 {
                                   "senderTeamId": "%s", "recipientTeamId": "%s",
                                   "senderSlotId": "%s", "recipientSlotId": "%s",
-                                  "date": "2026-09-26", "startTime": "10:00:00", "endTime": "12:00:00",
+                                  "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00",
                                   "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"
                                 }
-                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, senderTeam)))
+                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(23), senderTeam)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String requestId = objectMapper.readTree(sendResponse).get("id").asText();

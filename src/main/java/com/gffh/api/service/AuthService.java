@@ -50,7 +50,8 @@ public class AuthService {
         String accessToken = jwtService.issueAccessToken(user.id(), user.email());
         String refreshToken = refreshTokenService.issue(user.id());
         return AuthDtos.TokenResponse.withVerificationToken(
-                accessToken, refreshToken, jwtService.expiresInSeconds(), user, verificationToken);
+                accessToken, refreshToken, jwtService.expiresInSeconds(), user,
+                verificationTokenService.forResponse(verificationToken));
     }
 
     public AuthDtos.TokenResponse login(AuthDtos.LoginRequest request) {
@@ -109,12 +110,14 @@ public class AuthService {
         users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
     }
 
-    /** Returns null when the account is already verified - there's nothing to resend. */
-    public String resendVerification(String userId) {
+    /** Neither a token nor emailSent when the account is already verified - there's nothing to resend. */
+    public AuthDtos.VerificationResendResponse resendVerification(String userId) {
         User user = users.findById(userId).orElseThrow(() -> new BusinessRuleException(
                 "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "That account could not be found."));
-        if (user.emailVerified()) return null;
-        return verificationTokenService.issue(user.id(), VerificationTokenPurpose.EMAIL_VERIFY, user.email());
+        if (user.emailVerified()) return new AuthDtos.VerificationResendResponse(null, false);
+        String token = verificationTokenService.issue(user.id(), VerificationTokenPurpose.EMAIL_VERIFY, user.email());
+        return new AuthDtos.VerificationResendResponse(
+                verificationTokenService.forResponse(token), verificationTokenService.emailsTokens());
     }
 
     public void confirmVerification(AuthDtos.VerifyConfirmRequest request) {
@@ -145,7 +148,8 @@ public class AuthService {
         User updated = users.save(withEmail(user, request.newEmail()));
         String verificationToken = verificationTokenService.issue(
                 updated.id(), VerificationTokenPurpose.EMAIL_VERIFY, updated.email());
-        return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated), verificationToken);
+        return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated),
+                verificationTokenService.forResponse(verificationToken));
     }
 
     private void requireCurrentPassword(User user, String presented) {

@@ -16,11 +16,10 @@ import java.util.Optional;
 /**
  * Issues single-use tokens for email verification and password reset.
  *
- * <p>No email provider is configured (see the Screen Build Specification's
- * SCR-AU-05/06 flows, which assume delivery). Rather than fake success
- * silently, the token is logged at INFO so it can be exercised end-to-end in
- * development; wiring a real provider replaces only {@link #issue} callers'
- * next step, not this class's contract.
+ * <p>Tokens are emailed when {@link EmailService} is configured. Without
+ * an email provider (local development, tests) the token is logged at INFO
+ * instead, and {@link #forResponse} lets the API hand it straight back to the
+ * client so the SCR-AU-05/06 flows can still be exercised end to end.
  */
 @Service
 public class VerificationTokenService {
@@ -30,19 +29,38 @@ public class VerificationTokenService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final VerificationTokenRepository tokens;
+    private final EmailService emailService;
 
-    public VerificationTokenService(VerificationTokenRepository tokens) {
+    public VerificationTokenService(VerificationTokenRepository tokens, EmailService emailService) {
         this.tokens = tokens;
+        this.emailService = emailService;
     }
 
-    /** Returns the raw token so a caller without a real mail provider can still hand it to the user directly. */
+    /** Emails the token when a provider is configured; returns it either way, see {@link #forResponse}. */
     public String issue(String userId, VerificationTokenPurpose purpose, String email) {
         String rawToken = randomToken();
         tokens.save(new VerificationToken(null, userId, rawToken, purpose,
                 Instant.now().plus(TTL_MINUTES, ChronoUnit.MINUTES), false, Instant.now()));
-        log.info("Verification token issued [purpose={}, email={}, token={}] "
-                + "- no email provider configured, logging in place of delivery", purpose, email, rawToken);
+        if (emailService.isConfigured()) {
+            emailService.sendToken(email, purpose, rawToken);
+        } else {
+            log.info("Verification token issued [purpose={}, email={}, token={}] "
+                    + "- no email provider configured, logging in place of delivery", purpose, email, rawToken);
+        }
         return rawToken;
+    }
+
+    /**
+     * The token to put in an API response: only while no email provider is
+     * configured. Once tokens are emailed, receiving the email is the proof
+     * of ownership, so returning the token as well would defeat it.
+     */
+    public String forResponse(String rawToken) {
+        return emailService.isConfigured() ? null : rawToken;
+    }
+
+    public boolean emailsTokens() {
+        return emailService.isConfigured();
     }
 
     public Optional<String> consume(String rawToken, VerificationTokenPurpose purpose) {

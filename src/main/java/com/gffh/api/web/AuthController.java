@@ -53,8 +53,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/verify/resend")
     public ResponseEntity<AuthDtos.VerificationResendResponse> resendVerification(@AuthenticationPrincipal Jwt principal) {
-        String token = authService.resendVerification(principal.getSubject());
-        return ResponseEntity.ok(new AuthDtos.VerificationResendResponse(token));
+        return ResponseEntity.ok(authService.resendVerification(principal.getSubject()));
     }
 
     @PostMapping("/api/v1/auth/verify/confirm")

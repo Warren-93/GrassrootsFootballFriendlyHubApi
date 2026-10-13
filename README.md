@@ -115,16 +115,22 @@ scaffold didn't call out but which turned out to be required connective tissue
 
 Still open:
 
-- **Email verification.** `Team.verification` and `BusinessRuleException.teamNotVerified()`
+- **Email delivery.** `EmailService` sends verification and password-reset
+  links over SMTP once `SPRING_MAIL_HOST`/`_PORT`/`_USERNAME`/`_PASSWORD` and
+  `MAIL_FROM` are set (any provider; links point at `APP_BASE_URL`). Until
+  then tokens are logged and returned to the client, which means account
+  email verification proves nothing in that mode.
+- **Team verification.** `Team.verification` and `BusinessRuleException.teamNotVerified()`
   already gate friendly-request sending on it, but nothing moves a team out of
   `NOT_STARTED`. Verified in this session's smoke test with a direct database
   write, not through the API.
 - **The browser auth flow.** Bearer tokens suit the mobile clients but should not be
   reused for a web client; a cookie-based flow or a backend-for-frontend is
   needed. CORS is configured in anticipation.
-- **JWT signing key persistence.** `JwtKeyConfig` generates a fresh RSA key pair
-  on every startup (see its javadoc for why that's currently fine); this needs
-  to change before horizontal scaling or long-lived refresh tokens.
+- **JWT signing key in deployed environments.** `JwtKeyConfig` signs with the
+  PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
+  startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA
+  -pkeyopt rsa_keygen_bits:2048`) so access tokens survive restarts.
 - **`TeamRepository.findCandidates` takes a single `AgeGroup`, not a tolerance
   range.** `MatchingService` always passes the searching team's exact age group,
   so raising `ageBandTolerance` above zero via `MatchingWeightsProvider` would

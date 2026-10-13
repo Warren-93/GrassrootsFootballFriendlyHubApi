@@ -47,7 +47,7 @@ class ConversationContactabilityIntegrationTest extends AbstractIntegrationTest 
         String teamA = createTeam(ownerA.accessToken(), "Contactability Test C", 56.014582, -3.790261);
         String teamB = createTeam(ownerB.accessToken(), "Contactability Test D", 56.014582, -3.790261);
 
-        publishAvailability(ownerB.accessToken(), teamB, "2026-09-10");
+        publishAvailability(ownerB.accessToken(), teamB, daysFromNow(7));
 
         String startBody = """
                 { "teamId": "%s", "otherTeamId": "%s" }
@@ -115,7 +115,7 @@ class ConversationContactabilityIntegrationTest extends AbstractIntegrationTest 
         TestAccount ownerB = registerAccount("Team H Owner");
         String teamA = createTeam(ownerA.accessToken(), "Contactability Test G", 56.014582, -3.790261);
         String teamB = createTeam(ownerB.accessToken(), "Contactability Test H", 56.014582, -3.790261);
-        publishAvailability(ownerB.accessToken(), teamB, "2026-09-10");
+        publishAvailability(ownerB.accessToken(), teamB, daysFromNow(7));
 
         String firstStart = mockMvc.perform(post("/api/v1/conversations")
                         .header("Authorization", "Bearer " + ownerA.accessToken())
@@ -154,7 +154,7 @@ class ConversationContactabilityIntegrationTest extends AbstractIntegrationTest 
         TestAccount impostor = registerAccount("Impostor");
         String teamA = createTeam(ownerA.accessToken(), "Contactability Test E", 56.014582, -3.790261);
         String teamB = createTeam(ownerB.accessToken(), "Contactability Test F", 56.014582, -3.790261);
-        publishAvailability(ownerB.accessToken(), teamB, "2026-09-10");
+        publishAvailability(ownerB.accessToken(), teamB, daysFromNow(7));
 
         String startBody = """
                 { "teamId": "%s", "otherTeamId": "%s" }

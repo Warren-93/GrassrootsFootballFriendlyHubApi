@@ -62,7 +62,12 @@ public final class AuthDtos {
         }
     }
 
-    public record VerificationResendResponse(String verificationToken) {}
+    /**
+     * {@code verificationToken} is only set while no email provider is
+     * configured; {@code emailSent} is true when a new link was emailed.
+     * Both empty means the account was already verified.
+     */
+    public record VerificationResendResponse(String verificationToken, boolean emailSent) {}
 
     public record UserView(String id, String email, String displayName, boolean emailVerified) {
         public static UserView from(User user) {
