@@ -124,9 +124,12 @@ Still open:
   already gate friendly-request sending on it, but nothing moves a team out of
   `NOT_STARTED`. Verified in this session's smoke test with a direct database
   write, not through the API.
-- **The browser auth flow.** Bearer tokens suit the mobile clients but should not be
-  reused for a web client; a cookie-based flow or a backend-for-frontend is
-  needed. CORS is configured in anticipation.
+- **Browser auth across sites.** The web client's refresh token is an httpOnly
+  `gffh_refresh` cookie (`X-Auth-Mode: cookie`, see `RefreshCookies`). While the
+  web app calls the API cross-site (Vercel to Render) the cookie is
+  `SameSite=None; Partitioned`, which Safari may still block, signing Safari
+  users out on reload. Proxying `/api` through the web app's own domain and
+  setting `AUTH_COOKIE_SAME_SITE=Lax` removes that limit.
 - **JWT signing key in deployed environments.** `JwtKeyConfig` signs with the
   PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
   startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA

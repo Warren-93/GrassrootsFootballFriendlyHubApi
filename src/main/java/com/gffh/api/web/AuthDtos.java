@@ -18,7 +18,8 @@ public final class AuthDtos {
             @NotBlank @Email String email,
             @NotBlank String password) {}
 
-    public record RefreshRequest(@NotBlank String refreshToken) {}
+    /** The token may be omitted when it comes from the refresh cookie instead (see RefreshCookies). */
+    public record RefreshRequest(String refreshToken) {}
 
     public record PasswordResetRequest(@NotBlank @Email String email) {}
 
@@ -59,6 +60,11 @@ public final class AuthDtos {
         public static TokenResponse withVerificationToken(String accessToken, String refreshToken, long expiresIn,
                                                             User user, String verificationToken) {
             return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), verificationToken);
+        }
+
+        /** For the cookie flow, where the refresh token travels only in the httpOnly cookie. */
+        public TokenResponse withoutRefreshToken() {
+            return new TokenResponse(accessToken, null, tokenType, expiresIn, user, verificationToken);
         }
     }
 

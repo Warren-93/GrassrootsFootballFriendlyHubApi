@@ -21,13 +21,10 @@ import java.util.List;
 /**
  * API security.
  *
- * <p>Stateless bearer-token authentication, which suits the mobile clients
- * directly. A future browser client should not reuse this flow: tokens in web
- * storage are exposed to any script on the page. The intended approach is a
- * separate cookie-based flow for browsers - httpOnly, Secure, SameSite - or a
- * backend-for-frontend that holds the token server-side. CORS is configured
- * here in anticipation of that, but the browser auth flow itself is still to be
- * designed.
+ * <p>Stateless bearer-token authentication. The mobile clients hold both
+ * tokens themselves; the web client holds only the access token, in memory,
+ * and its refresh token lives in an httpOnly cookie that is only used by the
+ * /api/v1/auth endpoints (see {@link com.gffh.api.web.RefreshCookies}).
  */
 @Configuration
 @EnableWebSecurity
@@ -45,14 +42,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
-            // Safe only because the API is stateless and token-based. If a
-            // cookie flow is added for the web client, CSRF protection must be
-            // re-enabled for that flow.
+            // Every endpoint except the refresh-cookie ones authenticates with
+            // a bearer header, which a cross-site request can't forge. The
+            // cookie endpoints (refresh, logout) are protected instead by
+            // RefreshCookies: they need a non-safelisted header, so a preflight
+            // from an exact trusted origin, before the cookie is read.
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST,
                         "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh",
+                        "/api/v1/auth/logout",
                         "/api/v1/auth/password-reset", "/api/v1/auth/password-reset/confirm",
                         "/api/v1/auth/verify/confirm").permitAll()
                 // Resend requires knowing who to resend for, and GET /me is
@@ -100,7 +100,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key",
+                com.gffh.api.web.RefreshCookies.MODE_HEADER));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
