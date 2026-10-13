@@ -71,8 +71,11 @@ public class AuthService {
         return issueToken(user);
     }
 
-    public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest request) {
-        String presented = request.refreshToken();
+    public AuthDtos.TokenResponse refresh(String presented) {
+        if (presented == null || presented.isBlank()) {
+            throw new BusinessRuleException("INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED,
+                    "Your session has expired. Please sign in again.");
+        }
         String userId = refreshTokenService.userIdFor(presented)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED,
                         "Your session has expired. Please sign in again."));
@@ -84,6 +87,12 @@ public class AuthService {
                         "Your session has expired. Please sign in again."));
         String accessToken = jwtService.issueAccessToken(user.id(), user.email());
         return AuthDtos.TokenResponse.of(accessToken, rotated, jwtService.expiresInSeconds(), user);
+    }
+
+    public void logout(String presentedRefreshToken) {
+        if (presentedRefreshToken != null && !presentedRefreshToken.isBlank()) {
+            refreshTokenService.revoke(presentedRefreshToken);
+        }
     }
 
     public AuthDtos.UserView me(String userId) {

@@ -54,6 +54,11 @@ public class RefreshTokenService {
         return Optional.of(issue(userId));
     }
 
+    /** Sign-out: the presented token can't be used again. Unknown tokens are ignored. */
+    public void revoke(String presentedToken) {
+        refreshTokens.findByTokenHash(hash(presentedToken)).ifPresent(t -> refreshTokens.revoke(t.id()));
+    }
+
     public Optional<String> userIdFor(String presentedToken) {
         return refreshTokens.findByTokenHash(hash(presentedToken))
                 .filter(t -> t.isUsable(Instant.now()))

@@ -2,6 +2,8 @@ package com.gffh.api.web;
 
 import com.gffh.api.service.AuthService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,24 +15,60 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final RefreshCookies refreshCookies;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, RefreshCookies refreshCookies) {
         this.authService = authService;
+        this.refreshCookies = refreshCookies;
     }
 
     @PostMapping("/api/v1/auth/register")
-    public ResponseEntity<AuthDtos.TokenResponse> register(@Valid @RequestBody AuthDtos.RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public ResponseEntity<AuthDtos.TokenResponse> register(@Valid @RequestBody AuthDtos.RegisterRequest request,
+                                                           HttpServletRequest http, HttpServletResponse response) {
+        return ResponseEntity.ok(deliver(authService.register(request), http, response));
     }
 
     @PostMapping("/api/v1/auth/login")
-    public ResponseEntity<AuthDtos.TokenResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthDtos.TokenResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request,
+                                                        HttpServletRequest http, HttpServletResponse response) {
+        return ResponseEntity.ok(deliver(authService.login(request), http, response));
     }
 
+    /** Takes the refresh token from the body, or from the refresh cookie in the browser flow. */
     @PostMapping("/api/v1/auth/refresh")
-    public ResponseEntity<AuthDtos.TokenResponse> refresh(@Valid @RequestBody AuthDtos.RefreshRequest request) {
-        return ResponseEntity.ok(authService.refresh(request));
+    public ResponseEntity<AuthDtos.TokenResponse> refresh(
+            @RequestBody(required = false) AuthDtos.RefreshRequest request,
+            HttpServletRequest http, HttpServletResponse response) {
+        boolean cookieFlow = refreshCookies.applies(http);
+        try {
+            return ResponseEntity.ok(deliver(authService.refresh(presentedToken(request, http)), http, response));
+        } catch (RuntimeException e) {
+            if (cookieFlow) refreshCookies.clear(response);
+            throw e;
+        }
+    }
+
+    /** Revokes the refresh token so it can't be used again, and clears the refresh cookie. */
+    @PostMapping("/api/v1/auth/logout")
+    public ResponseEntity<Void> logout(@RequestBody(required = false) AuthDtos.RefreshRequest request,
+                                       HttpServletRequest http, HttpServletResponse response) {
+        authService.logout(presentedToken(request, http));
+        if (refreshCookies.applies(http)) refreshCookies.clear(response);
+        return ResponseEntity.noContent().build();
+    }
+
+    private String presentedToken(AuthDtos.RefreshRequest request, HttpServletRequest http) {
+        if (request != null && request.refreshToken() != null && !request.refreshToken().isBlank()) {
+            return request.refreshToken();
+        }
+        return refreshCookies.applies(http) ? refreshCookies.read(http).orElse(null) : null;
+    }
+
+    private AuthDtos.TokenResponse deliver(AuthDtos.TokenResponse tokens, HttpServletRequest http,
+                                           HttpServletResponse response) {
+        if (!refreshCookies.applies(http)) return tokens;
+        refreshCookies.write(response, tokens.refreshToken());
+        return tokens.withoutRefreshToken();
     }
 
     @GetMapping("/api/v1/me")
