@@ -22,7 +22,7 @@ import java.util.Optional;
 @Service
 public class RefreshTokenService {
 
-    private static final long TTL_DAYS = 30;
+    public static final long TTL_DAYS = 30;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RefreshTokenRepository refreshTokens;
@@ -52,6 +52,11 @@ public class RefreshTokenService {
 
         refreshTokens.revoke(found.get().id());
         return Optional.of(issue(userId));
+    }
+
+    /** Revokes the presented token if it exists; unknown or already-revoked tokens are ignored. */
+    public void revoke(String presentedToken) {
+        refreshTokens.findByTokenHash(hash(presentedToken)).ifPresent(t -> refreshTokens.revoke(t.id()));
     }
 
     public Optional<String> userIdFor(String presentedToken) {

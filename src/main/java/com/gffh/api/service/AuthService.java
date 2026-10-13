@@ -86,6 +86,11 @@ public class AuthService {
         return AuthDtos.TokenResponse.of(accessToken, rotated, jwtService.expiresInSeconds(), user);
     }
 
+    /** Ends the session the refresh token belongs to. Idempotent, so signing out twice is harmless. */
+    public void logout(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) refreshTokenService.revoke(refreshToken);
+    }
+
     public AuthDtos.UserView me(String userId) {
         User user = users.findById(userId).orElseThrow(() -> new BusinessRuleException(
                 "USER_NOT_FOUND", HttpStatus.NOT_FOUND, "That account could not be found."));

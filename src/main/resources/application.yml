@@ -35,6 +35,10 @@ gffh:
     # Where the links in emails point: the web app, which has /verify-email
     # and /reset-password pages.
     app-base-url: ${APP_BASE_URL:https://grassroots-football-friendly-hub-we.vercel.app}
+  auth:
+    # Secure flag on the web refresh cookie. Only turn off for plain-http
+    # setups other than localhost (browsers already accept Secure on localhost).
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
   jwt:
     # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
     # deployed environment so tokens survive restarts; when unset, a key is

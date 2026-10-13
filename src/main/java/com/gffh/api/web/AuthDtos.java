@@ -56,6 +56,11 @@ public final class AuthDtos {
             return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), null);
         }
 
+        /** The same response with the refresh token removed, for when it travels in a cookie instead. */
+        public TokenResponse withoutRefreshToken() {
+            return new TokenResponse(accessToken, null, tokenType, expiresIn, user, verificationToken);
+        }
+
         public static TokenResponse withVerificationToken(String accessToken, String refreshToken, long expiresIn,
                                                             User user, String verificationToken) {
             return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), verificationToken);
