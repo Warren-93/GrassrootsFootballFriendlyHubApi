@@ -47,6 +47,11 @@ gffh:
     # - never a wildcard, and a real production deployment overrides this
     # completely via CORS_ALLOWED_ORIGINS rather than extending it.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,https://grassroots-football-friendly-hub-we.vercel.app,https://grassroots-football-friendly-hub-ad.vercel.app}
+  admin:
+    # Whether admin sign-in also asks for an authenticator-app code. Off by
+    # default: password only. Set ADMIN_TOTP_REQUIRED=true to turn it back on
+    # (admins created while it was off then need their secret from bootstrap).
+    totp-required: ${ADMIN_TOTP_REQUIRED:false}
   auth:
     cookie:
       # The web app's refresh-token cookie. SameSite=None while the web app

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/auth")
-@Tag(name = "Admin auth", description = "Platform administrator sign-in with mandatory TOTP second factor (ADM-01)")
+@Tag(name = "Admin auth", description = "Platform administrator sign-in with an optional TOTP second factor (ADM-01, ADMIN_TOTP_REQUIRED)")
 public class AdminAuthController {
 
     private final AdminAuthService adminAuthService;

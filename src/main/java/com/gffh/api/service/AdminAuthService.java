@@ -3,6 +3,7 @@ package com.gffh.api.service;
 import com.gffh.api.domain.PlatformAdmin;
 import com.gffh.api.repository.PlatformAdminRepository;
 import com.gffh.api.web.AdminAuthDtos;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,13 +17,16 @@ public class AdminAuthService {
     private final PasswordEncoder passwordEncoder;
     private final TotpService totpService;
     private final AdminJwtService adminJwtService;
+    private final boolean totpRequired;
 
     public AdminAuthService(PlatformAdminRepository admins, PasswordEncoder passwordEncoder,
-                            TotpService totpService, AdminJwtService adminJwtService) {
+                            TotpService totpService, AdminJwtService adminJwtService,
+                            @Value("${gffh.admin.totp-required:false}") boolean totpRequired) {
         this.admins = admins;
         this.passwordEncoder = passwordEncoder;
         this.totpService = totpService;
         this.adminJwtService = adminJwtService;
+        this.totpRequired = totpRequired;
     }
 
     /**
@@ -38,6 +42,7 @@ public class AdminAuthService {
         String secret = totpService.generateSecret();
         PlatformAdmin admin = admins.save(new PlatformAdmin(null, request.email(),
                 passwordEncoder.encode(request.password()), secret, Instant.now(), null));
+        if (!totpRequired) return new AdminAuthDtos.BootstrapResponse(admin.id(), null, null);
         String uri = totpService.provisioningUri(secret, admin.email(), "Kickabout Admin");
         return new AdminAuthDtos.BootstrapResponse(admin.id(), secret, uri);
     }
@@ -47,7 +52,11 @@ public class AdminAuthService {
                 .filter(a -> passwordEncoder.matches(request.password(), a.passwordHash()))
                 .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
                         "Email or password is incorrect."));
-        return new AdminAuthDtos.LoginStep1Response(adminJwtService.issuePending2faToken(admin.id()));
+        String pendingToken = adminJwtService.issuePending2faToken(admin.id());
+        if (totpRequired) return new AdminAuthDtos.LoginStep1Response(pendingToken, null, null, null, null);
+        AdminAuthDtos.SessionResponse session = startSession(admin);
+        return new AdminAuthDtos.LoginStep1Response(pendingToken, session.accessToken(), session.tokenType(),
+                session.expiresIn(), session.email());
     }
 
     public AdminAuthDtos.SessionResponse verify(AdminAuthDtos.VerifyRequest request) {
@@ -60,9 +69,13 @@ public class AdminAuthService {
         }
         PlatformAdmin admin = admins.findById(adminId).orElseThrow(() -> new BusinessRuleException(
                 "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
-        if (!totpService.verifyCode(admin.totpSecret(), request.code())) {
+        if (totpRequired && !totpService.verifyCode(admin.totpSecret(), request.code())) {
             throw new BusinessRuleException("INVALID_TOTP_CODE", HttpStatus.UNAUTHORIZED, "That code is incorrect.");
         }
+        return startSession(admin);
+    }
+
+    private AdminAuthDtos.SessionResponse startSession(PlatformAdmin admin) {
         admins.save(new PlatformAdmin(admin.id(), admin.email(), admin.passwordHash(), admin.totpSecret(),
                 admin.createdAt(), Instant.now()));
         String accessToken = adminJwtService.issueSessionToken(admin.id(), admin.email());
