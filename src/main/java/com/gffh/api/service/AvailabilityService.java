@@ -4,6 +4,8 @@ import com.gffh.api.domain.AvailabilitySlot;
 import com.gffh.api.domain.AvailabilityStatus;
 import com.gffh.api.domain.Format;
 import com.gffh.api.repository.AvailabilityRepository;
+import com.gffh.api.repository.TeamRepository;
+import com.gffh.api.repository.VenueRepository;
 import com.gffh.api.web.AvailabilityDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,10 +19,28 @@ public class AvailabilityService {
 
     private final AvailabilityRepository availability;
     private final MembershipService memberships;
+    private final TeamRepository teams;
+    private final VenueRepository venues;
 
-    public AvailabilityService(AvailabilityRepository availability, MembershipService memberships) {
+    public AvailabilityService(AvailabilityRepository availability, MembershipService memberships,
+                               TeamRepository teams, VenueRepository venues) {
         this.availability = availability;
         this.memberships = memberships;
+        this.teams = teams;
+        this.venues = venues;
+    }
+
+    /**
+     * A slot with no venue can never be hosted, so matching skips it. When the
+     * caller leaves the venue out (onboarding does), use the team's default,
+     * else the club's default venue.
+     */
+    private String venueOrDefault(String teamId, String venueId) {
+        if (venueId != null && !venueId.isBlank()) return venueId;
+        return teams.findById(teamId).map(t -> t.defaultVenueId() != null ? t.defaultVenueId()
+                : venues.findByClubId(t.clubId()).stream().filter(v -> v.isDefault()).map(v -> v.id())
+                        .findFirst().orElse(null))
+                .orElse(null);
     }
 
     public AvailabilitySlot create(String userId, String teamId, AvailabilityDtos.CreateSlotRequest request) {
@@ -32,7 +52,7 @@ public class AvailabilityService {
         Format format = request.format() == null ? null : Format.valueOf(request.format());
         AvailabilitySlot slot = new AvailabilitySlot(null, teamId, request.date(),
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
-                request.venueId(), format, request.notes(), AvailabilityStatus.AVAILABLE);
+                venueOrDefault(teamId, request.venueId()), format, request.notes(), AvailabilityStatus.AVAILABLE);
         return availability.save(slot);
     }
 
@@ -42,6 +62,7 @@ public class AvailabilityService {
         memberships.requireCanManageTeam(userId, teamId);
         Format format = request.format() == null ? null : Format.valueOf(request.format());
         LocalDate today = LocalDate.now();
+        String venueId = venueOrDefault(teamId, request.venueId());
 
         List<AvailabilityDtos.SlotView> created = new ArrayList<>();
         List<LocalDate> skipped = new ArrayList<>();
@@ -51,7 +72,7 @@ public class AvailabilityService {
                 continue;
             }
             AvailabilitySlot slot = new AvailabilitySlot(null, teamId, date, request.startTime(), request.endTime(),
-                    request.homeAwayPreference(), request.venueId(), format, request.notes(), AvailabilityStatus.AVAILABLE);
+                    request.homeAwayPreference(), venueId, format, request.notes(), AvailabilityStatus.AVAILABLE);
             created.add(AvailabilityDtos.SlotView.from(availability.save(slot)));
         }
         return new AvailabilityDtos.BulkCreateResult(created, skipped);
@@ -91,7 +112,7 @@ public class AvailabilityService {
         Format format = request.format() == null ? null : Format.valueOf(request.format());
         AvailabilitySlot updated = new AvailabilitySlot(current.id(), teamId, request.date(),
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
-                request.venueId(), format, request.notes(), AvailabilityStatus.AVAILABLE);
+                venueOrDefault(teamId, request.venueId()), format, request.notes(), AvailabilityStatus.AVAILABLE);
         return availability.save(updated);
     }
 

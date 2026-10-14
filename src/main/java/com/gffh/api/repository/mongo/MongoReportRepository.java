@@ -57,7 +57,7 @@ public class MongoReportRepository implements ReportRepository {
     private Report withGeneratedId(Report r) {
         Instant now = Instant.now();
         return new Report(UUID.randomUUID().toString(), r.reporterTeamId(), r.reportedTeamId(),
-                r.relatedFixtureId(), r.type(), r.severity(), r.status(), r.assignedAdminId(),
+                r.relatedFixtureId(), r.type(), r.severity(), r.details(), r.status(), r.assignedAdminId(),
                 r.internalNotes(), now, now);
     }
 }

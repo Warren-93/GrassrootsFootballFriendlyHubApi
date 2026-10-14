@@ -5,14 +5,23 @@ import com.gffh.api.domain.Membership;
 import com.gffh.api.domain.Role;
 import com.gffh.api.domain.Team;
 import com.gffh.api.domain.User;
+import com.gffh.api.repository.AvailabilityRepository;
+import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.ClubRepository;
+import com.gffh.api.repository.FixtureRepository;
+import com.gffh.api.repository.FriendlyRequestRepository;
+import com.gffh.api.repository.NotificationPreferenceRepository;
+import com.gffh.api.repository.VenueRepository;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.UserRepository;
 import com.gffh.api.web.PrivacyDtos;
+import com.gffh.api.web.TeamDtos;
+import com.gffh.api.web.VenueDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /** SCR-PR-10 Privacy and data. Purpose: let a user see and remove what the platform holds on them. */
@@ -23,13 +32,30 @@ public class PrivacyService {
     private final MembershipRepository memberships;
     private final TeamRepository teams;
     private final ClubRepository clubs;
+    private final TeamService teamService;
+    private final VenueRepository venues;
+    private final AvailabilityRepository availability;
+    private final FriendlyRequestRepository requests;
+    private final FixtureRepository fixtures;
+    private final BlockRepository blocks;
+    private final NotificationPreferenceRepository notificationPreferences;
 
     public PrivacyService(UserRepository users, MembershipRepository memberships, TeamRepository teams,
-                          ClubRepository clubs) {
+                          ClubRepository clubs, TeamService teamService, VenueRepository venues,
+                          AvailabilityRepository availability, FriendlyRequestRepository requests,
+                          FixtureRepository fixtures, BlockRepository blocks,
+                          NotificationPreferenceRepository notificationPreferences) {
         this.users = users;
         this.memberships = memberships;
         this.teams = teams;
         this.clubs = clubs;
+        this.teamService = teamService;
+        this.venues = venues;
+        this.availability = availability;
+        this.requests = requests;
+        this.fixtures = fixtures;
+        this.blocks = blocks;
+        this.notificationPreferences = notificationPreferences;
     }
 
     public PrivacyDtos.AccountExport export(String userId) {
@@ -37,7 +63,23 @@ public class PrivacyService {
         List<PrivacyDtos.MembershipExport> views = memberships.findByUserId(userId).stream()
                 .map(this::toMembershipExport)
                 .toList();
-        return PrivacyDtos.AccountExport.of(user, views);
+        List<PrivacyDtos.TeamExport> teamExports = teamService.listMine(userId).stream()
+                .filter(t -> teamService.canManage(userId, t.id()))
+                .map(this::toTeamExport)
+                .toList();
+        return PrivacyDtos.AccountExport.of(user, views,
+                notificationPreferences.findByUserId(userId).orElse(null), teamExports);
+    }
+
+    private PrivacyDtos.TeamExport toTeamExport(Team team) {
+        LocalDate from = LocalDate.now().minusYears(5);
+        return new PrivacyDtos.TeamExport(
+                TeamDtos.TeamView.from(team, true),
+                venues.findByClubId(team.clubId()).stream().map(VenueDtos.VenueView::from).toList(),
+                availability.findBookableForTeamBetween(team.id(), from, LocalDate.now().plusYears(2)),
+                requests.findByTeamId(team.id()),
+                fixtures.findByTeamId(team.id()),
+                blocks.findByBlockingTeamId(team.id()));
     }
 
     /**

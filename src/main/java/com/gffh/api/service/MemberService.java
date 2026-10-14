@@ -51,10 +51,14 @@ public class MemberService {
         membershipService.requireCanManageTeam(userId, teamId);
         Team team = findTeam(teamId);
 
-        Stream<Membership> teamScoped = memberships.findByTeamId(teamId).stream();
-        Stream<Membership> clubScoped = memberships.findByClubId(team.clubId()).stream();
+        List<Membership> clubScoped = memberships.findByClubId(team.clubId());
+        // A club admin who also created the team holds both memberships; list them once, by the club role.
+        java.util.Set<String> clubUserIds = clubScoped.stream().map(Membership::userId)
+                .collect(java.util.stream.Collectors.toSet());
+        Stream<Membership> teamScoped = memberships.findByTeamId(teamId).stream()
+                .filter(m -> !clubUserIds.contains(m.userId()));
 
-        return Stream.concat(teamScoped, clubScoped)
+        return Stream.concat(clubScoped.stream(), teamScoped)
                 .map(m -> users.findById(m.userId()).map(user -> MemberDtos.MemberView.from(m, user)).orElse(null))
                 .filter(v -> v != null)
                 .toList();

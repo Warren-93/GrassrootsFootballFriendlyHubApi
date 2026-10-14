@@ -19,6 +19,7 @@ public class ReportDocument {
     public String relatedFixtureId;
     public String type;
     public String severity;
+    public String details;
     public String status;
     public String assignedAdminId;
     public List<InternalNoteDoc> internalNotes;
@@ -33,6 +34,7 @@ public class ReportDocument {
         d.relatedFixtureId = r.relatedFixtureId();
         d.type = r.type().name();
         d.severity = r.severity().name();
+        d.details = r.details();
         d.status = r.status().name();
         d.assignedAdminId = r.assignedAdminId();
         d.internalNotes = r.internalNotes().stream()
@@ -46,7 +48,7 @@ public class ReportDocument {
         List<InternalNote> notes = internalNotes == null ? List.of() : internalNotes.stream()
                 .map(n -> new InternalNote(n.adminId(), n.note(), n.createdAt())).toList();
         return new Report(id, reporterTeamId, reportedTeamId, relatedFixtureId,
-                ReportType.valueOf(type), ReportSeverity.valueOf(severity), ReportStatus.valueOf(status),
+                ReportType.valueOf(type), ReportSeverity.valueOf(severity), details, ReportStatus.valueOf(status),
                 assignedAdminId, notes, createdAt, updatedAt);
     }
 }
