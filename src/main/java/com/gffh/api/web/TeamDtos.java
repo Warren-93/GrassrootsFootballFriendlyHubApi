@@ -12,6 +12,11 @@ import java.time.Instant;
  */
 public final class TeamDtos {
 
+    /** A badge is a link or a small uploaded image (the web app resizes uploads to 256px). Empty clears it. */
+    static final int BADGE_MAX_LENGTH = 300_000;
+    static final String BADGE_PATTERN = "^$|^https?://\\S+$|^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$";
+
+
     private TeamDtos() {}
 
     /**
@@ -22,7 +27,7 @@ public final class TeamDtos {
             String clubId,
             String clubName,
             @NotBlank String name,
-            String badgeUrl,
+            @Size(max = BADGE_MAX_LENGTH) @Pattern(regexp = BADGE_PATTERN, message = "must be an https link or an uploaded image") String badgeUrl,
             @NotNull AgeGroup ageGroup,
             @NotNull Gender gender,
             Format format,
@@ -40,7 +45,7 @@ public final class TeamDtos {
 
     public record UpdateTeamRequest(
             String name,
-            String badgeUrl,
+            @Size(max = BADGE_MAX_LENGTH) @Pattern(regexp = BADGE_PATTERN, message = "must be an https link or an uploaded image") String badgeUrl,
             AgeGroup ageGroup,
             Gender gender,
             Format format,
@@ -62,7 +67,8 @@ public final class TeamDtos {
             String league, String postcode, double longitude, double latitude,
             int travelRadiusMiles, String homeAwayPreference, String managerName,
             String contactPhone, String description, String verification,
-            String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt) {
+            String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt,
+            Boolean canManage) {
 
         public static TeamView from(Team t) {
             return from(t, true);
@@ -83,7 +89,20 @@ public final class TeamDtos {
                     includeContact ? t.managerName() : null,
                     includeContact ? t.contactPhone() : null,
                     t.description(), t.verification().name(), t.defaultVenueId(),
-                    t.completenessPercent(t.defaultVenueId() != null), t.archived(), t.createdAt());
+                    t.completenessPercent(t.defaultVenueId() != null), t.archived(), t.createdAt(), null);
+        }
+
+        /**
+         * GET /teams/mine: says whether the caller can manage the team, so a
+         * member who joined with a code (role USER) gets a read-only app.
+         */
+        public static TeamView mine(Team t, boolean canManage) {
+            TeamView v = from(t, true);
+            return new TeamView(v.id(), v.clubId(), v.name(), v.clubName(), v.badgeUrl(), v.ageGroup(), v.gender(),
+                    v.format(), v.abilityLevel(), v.league(), v.postcode(), v.longitude(), v.latitude(),
+                    v.travelRadiusMiles(), v.homeAwayPreference(), v.managerName(), v.contactPhone(),
+                    v.description(), v.verification(), v.defaultVenueId(), v.completenessPercent(),
+                    v.archived(), v.createdAt(), canManage);
         }
     }
 

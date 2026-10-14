@@ -1,5 +1,10 @@
 package com.gffh.api.web;
 
+import com.gffh.api.domain.AvailabilitySlot;
+import com.gffh.api.domain.Block;
+import com.gffh.api.domain.Fixture;
+import com.gffh.api.domain.FriendlyRequest;
+import com.gffh.api.domain.NotificationPreference;
 import com.gffh.api.domain.User;
 
 import java.time.Instant;
@@ -13,12 +18,19 @@ public final class PrivacyDtos {
     public record MembershipExport(String membershipId, String role, String scope, String teamId, String teamName,
                                     String clubId, String clubName, Instant joinedAt) {}
 
-    public record AccountExport(String userId, String email, String displayName, boolean emailVerified,
-                                 Instant createdAt, List<MembershipExport> memberships) {
+    /** Everything held about one team the user manages. */
+    public record TeamExport(TeamDtos.TeamView team, List<VenueDtos.VenueView> venues,
+                             List<AvailabilitySlot> availability, List<FriendlyRequest> friendlyRequests,
+                             List<Fixture> fixtures, List<Block> blockedTeams) {}
 
-        public static AccountExport of(User user, List<MembershipExport> memberships) {
+    public record AccountExport(String userId, String email, String displayName, boolean emailVerified,
+                                 Instant createdAt, List<MembershipExport> memberships,
+                                 NotificationPreference notificationPreferences, List<TeamExport> teams) {
+
+        public static AccountExport of(User user, List<MembershipExport> memberships,
+                                       NotificationPreference notificationPreferences, List<TeamExport> teams) {
             return new AccountExport(user.id(), user.email(), user.displayName(), user.emailVerified(),
-                    user.createdAt(), memberships);
+                    user.createdAt(), memberships, notificationPreferences, teams);
         }
     }
 }

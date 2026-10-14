@@ -31,7 +31,7 @@ public class ReportService {
         ReportSeverity severity = parse(ReportSeverity.class, request.severity(), "severity");
 
         Report saved = reports.save(new Report(null, reporterTeamId, request.reportedTeamId(),
-                request.relatedFixtureId(), type, severity, ReportStatus.OPEN, null, List.of(), Instant.now(), null));
+                request.relatedFixtureId(), type, severity, blankToNull(request.details()), ReportStatus.OPEN, null, List.of(), Instant.now(), null));
         return ReportDtos.ReportView.from(saved);
     }
 
@@ -46,7 +46,7 @@ public class ReportService {
     public ReportDtos.ReportView assign(String adminId, String id) {
         Report current = find(id);
         Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), current.status(),
+                current.relatedFixtureId(), current.type(), current.severity(), current.details(), current.status(),
                 adminId, current.internalNotes(), current.createdAt(), null);
         reports.save(updated);
         auditLogService.record(adminId, "REPORT_ASSIGNED", "REPORT", id, null);
@@ -58,7 +58,7 @@ public class ReportService {
         List<InternalNote> notes = new ArrayList<>(current.internalNotes());
         notes.add(new InternalNote(adminId, request.note(), Instant.now()));
         Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), current.status(),
+                current.relatedFixtureId(), current.type(), current.severity(), current.details(), current.status(),
                 current.assignedAdminId(), notes, current.createdAt(), null);
         reports.save(updated);
         return get(id);
@@ -80,7 +80,7 @@ public class ReportService {
         notes.add(new InternalNote(adminId, "[" + action + "] " + request.reason(), Instant.now()));
 
         Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), newStatus,
+                current.relatedFixtureId(), current.type(), current.severity(), current.details(), newStatus,
                 current.assignedAdminId(), notes, current.createdAt(), null);
         reports.save(updated);
         auditLogService.record(adminId, "REPORT_" + action.toUpperCase(), "REPORT", id, request.reason());
@@ -99,5 +99,9 @@ public class ReportService {
             throw new BusinessRuleException("INVALID_" + fieldName.toUpperCase(), HttpStatus.BAD_REQUEST,
                     "Invalid " + fieldName + ": " + value);
         }
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 }

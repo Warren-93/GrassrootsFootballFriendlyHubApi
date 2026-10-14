@@ -15,6 +15,7 @@ public record Report(
         String relatedFixtureId,
         ReportType type,
         ReportSeverity severity,
+        String details,
         ReportStatus status,
         String assignedAdminId,
         List<InternalNote> internalNotes,

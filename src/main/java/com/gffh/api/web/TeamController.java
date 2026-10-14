@@ -42,8 +42,9 @@ public class TeamController {
 
     @GetMapping("/mine")
     public ResponseEntity<List<TeamDtos.TeamView>> listMine(@AuthenticationPrincipal Jwt principal) {
-        var views = teamService.listMine(principal.getSubject()).stream()
-                .map(t -> TeamDtos.TeamView.from(t, true)).toList();
+        String userId = principal.getSubject();
+        var views = teamService.listMine(userId).stream()
+                .map(t -> TeamDtos.TeamView.mine(t, teamService.canManage(userId, t.id()))).toList();
         return ResponseEntity.ok(views);
     }
 
@@ -59,7 +60,7 @@ public class TeamController {
     @PatchMapping("/{teamId}")
     public ResponseEntity<TeamDtos.TeamView> update(@AuthenticationPrincipal Jwt principal,
                                                      @PathVariable String teamId,
-                                                     @RequestBody TeamDtos.UpdateTeamRequest request) {
+                                                     @Valid @RequestBody TeamDtos.UpdateTeamRequest request) {
         Team team = teamService.update(principal.getSubject(), teamId, request);
         return ResponseEntity.ok(TeamDtos.TeamView.from(team));
     }
