@@ -38,7 +38,7 @@ public class AdminAuthService {
         String secret = totpService.generateSecret();
         PlatformAdmin admin = admins.save(new PlatformAdmin(null, request.email(),
                 passwordEncoder.encode(request.password()), secret, Instant.now(), null));
-        String uri = totpService.provisioningUri(secret, admin.email(), "GFFH Admin");
+        String uri = totpService.provisioningUri(secret, admin.email(), "Kickabout Admin");
         return new AdminAuthDtos.BootstrapResponse(admin.id(), secret, uri);
     }
 

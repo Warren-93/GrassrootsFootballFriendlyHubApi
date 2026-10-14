@@ -54,7 +54,7 @@ public class EmailService {
         message.setTo(email);
         String link = linkFor(purpose, rawToken);
         if (purpose == VerificationTokenPurpose.PASSWORD_RESET) {
-            message.setSubject("Reset your Grassroots Football Friendly Hub password");
+            message.setSubject("Reset your Kickabout password");
             message.setText("""
                     Someone asked to reset the password for this account. If it was you, follow this link within 30 minutes:
 
@@ -63,7 +63,7 @@ public class EmailService {
                     If you didn't ask for this, you can ignore this email - your password hasn't changed.
                     """.formatted(link));
         } else {
-            message.setSubject("Verify your email for Grassroots Football Friendly Hub");
+            message.setSubject("Verify your email for Kickabout");
             message.setText("""
                     Confirm this is your email address by following this link within 30 minutes:
 

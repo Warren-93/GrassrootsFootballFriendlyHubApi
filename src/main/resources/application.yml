@@ -30,7 +30,7 @@ server:
 
 gffh:
   mail:
-    # Sender address, e.g. "Grassroots Football Friendly Hub <noreply@example.com>".
+    # Sender address, e.g. "Kickabout <noreply@example.com>".
     from: ${MAIL_FROM:}
     # Where the links in emails point: the web app, which has /verify-email
     # and /reset-password pages.
