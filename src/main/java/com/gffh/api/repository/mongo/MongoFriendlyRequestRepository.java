@@ -23,6 +23,11 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     private static final List<String> TERMINAL = Stream.of(RequestStatus.values())
             .filter(RequestStatus::isTerminal).map(Enum::name).toList();
 
+    /** Still being negotiated - see {@link #existsOpenBetween}. ACCEPTED is transient but counts. */
+    private static final List<String> NEGOTIATING = Stream.of(
+            RequestStatus.SENT, RequestStatus.CHANGES_REQUESTED, RequestStatus.UPDATED, RequestStatus.ACCEPTED)
+            .map(Enum::name).toList();
+
     private final MongoTemplate mongoTemplate;
 
     public MongoFriendlyRequestRepository(MongoTemplate mongoTemplate) {
@@ -58,7 +63,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         Criteria pair = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
                 Criteria.where("senderTeamId").is(teamBId).and("recipientTeamId").is(teamAId));
-        Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").nin(TERMINAL)));
+        Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").in(NEGOTIATING)));
         return mongoTemplate.exists(query, FriendlyRequestDocument.class, COLLECTION);
     }
 
