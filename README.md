@@ -153,8 +153,11 @@ provider's keys can't be fetched.
 Until email is configured, verification and password-reset tokens are logged
 and returned to the client instead of emailed, which means account email
 verification proves nothing in that mode, and no fixture confirmation,
-notification or member invitation emails are sent (invitations are still
-created, and still become memberships when the address is verified).
+notification or member invitation emails are sent. Invitations are still
+created, but since a verification link that was never emailed proves nothing,
+they then only become memberships through an admin's "verify email now" or
+Google/Apple sign-in. A verification link only ever verifies the address it
+was sent to, so changing email to another address makes earlier links useless.
 
 Push is optional per platform: the apps can register device tokens
 (`POST /api/v1/me/push-tokens`) whether or not the server has credentials,
@@ -182,8 +185,8 @@ groups within `ageBandTolerance` (still 0 by default, so exact age group only).
 
 Also done since: member invitations (`MemberInviteService`: adding an address
 with no account invites it by email, and the invite becomes a membership once
-that address is verified - by the link, an admin's "verify email now", or
-`acceptPendingInvites` from any other sign-in that proves ownership), and every
+that address is verified - by the emailed link, an admin's "verify email now",
+or `acceptPendingInvites` from any other sign-in that proves ownership), and every
 in-app notification also delivered by email and push (`NotificationDelivery`,
 `PushService`, `FcmSender`, `ApnsSender`), each behind the manager's
 `emailEnabled`/`pushEnabled` preferences.

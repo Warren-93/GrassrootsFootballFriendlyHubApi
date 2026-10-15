@@ -39,7 +39,7 @@ public class VerificationTokenService {
     /** Emails the token when a provider is configured; returns it either way, see {@link #forResponse}. */
     public String issue(String userId, VerificationTokenPurpose purpose, String email) {
         String rawToken = randomToken();
-        tokens.save(new VerificationToken(null, userId, rawToken, purpose,
+        tokens.save(new VerificationToken(null, userId, rawToken, purpose, email,
                 Instant.now().plus(TTL_MINUTES, ChronoUnit.MINUTES), false, Instant.now()));
         if (emailService.isConfigured()) {
             emailService.sendToken(email, purpose, rawToken);
@@ -64,10 +64,15 @@ public class VerificationTokenService {
     }
 
     public Optional<String> consume(String rawToken, VerificationTokenPurpose purpose) {
+        return consumeToken(rawToken, purpose).map(VerificationToken::userId);
+    }
+
+    /** As {@link #consume}, but the whole token, so the caller can check which address it was sent to. */
+    public Optional<VerificationToken> consumeToken(String rawToken, VerificationTokenPurpose purpose) {
         Optional<VerificationToken> found = tokens.findByToken(rawToken, purpose)
                 .filter(t -> t.isUsable(Instant.now()));
         found.ifPresent(t -> tokens.markUsed(t.id()));
-        return found.map(VerificationToken::userId);
+        return found;
     }
 
     private static String randomToken() {

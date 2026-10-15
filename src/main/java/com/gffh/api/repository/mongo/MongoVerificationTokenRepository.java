@@ -47,6 +47,6 @@ public class MongoVerificationTokenRepository implements VerificationTokenReposi
 
     private VerificationToken withGeneratedId(VerificationToken t) {
         return new VerificationToken(UUID.randomUUID().toString(), t.userId(), t.token(), t.purpose(),
-                t.expiresAt(), t.used(), t.createdAt() != null ? t.createdAt() : Instant.now());
+                t.email(), t.expiresAt(), t.used(), t.createdAt() != null ? t.createdAt() : Instant.now());
     }
 }

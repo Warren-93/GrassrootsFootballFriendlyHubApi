@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * SCR-PR-04's invitations: adding an address with no account invites it, and
  * the invite becomes a membership once that address is verified - never on
- * registration alone.
+ * registration alone, nor on a verification link that was never emailed.
  */
 class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
 
@@ -90,7 +90,7 @@ class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("the invite becomes a membership when the address is verified, not when it registers")
+    @DisplayName("the invite becomes a membership when the address is proved, not on registration or an unemailed link")
     void verificationAcceptsTheInvite() throws Exception {
         TestAccount owner = verifiedAccount("Invite Verify Owner");
         String teamId = createTeam(owner.accessToken(), "Invite Verify FC", 56.014582, -3.790261);
@@ -100,7 +100,13 @@ class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
         TestAccount invitee = registerAccount("Invited Manager", email);
         assertNull(findMember(owner, teamId, email), "registering alone must not join the team");
 
+        // Tests run with no email provider, so the link's token came back in
+        // the register response: it proves nothing about who owns the address.
+        // (With email configured the link accepts invites - see AuthServiceTest.)
         verifyEmail(invitee);
+        assertNull(findMember(owner, teamId, email), "a link that was never emailed must not join the team");
+
+        adminVerify(invitee);
 
         JsonNode member = findMember(owner, teamId, email);
         assertNotNull(member);
@@ -124,9 +130,7 @@ class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
         addMember(owner, teamId, email, "USER").andExpect(status().isAccepted());
         TestAccount invitee = registerAccount("Admin Verified Player", email);
 
-        mockMvc.perform(post("/api/v1/admin/users/" + invitee.userId() + "/verify-email")
-                        .header("Authorization", "Bearer " + adminToken()))
-                .andExpect(status().isOk());
+        adminVerify(invitee);
 
         JsonNode member = findMember(owner, teamId, email);
         assertNotNull(member);
@@ -163,7 +167,7 @@ class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + owner.accessToken()))
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verifyEmail(registerAccount("Uninvited Player", email));
+        adminVerify(registerAccount("Uninvited Player", email));
         assertNull(findMember(owner, teamId, email));
     }
 
@@ -209,6 +213,13 @@ class MemberInvitesIntegrationTest extends AbstractIntegrationTest {
         TestAccount account = registerAccount(displayName);
         verifyEmail(account);
         return account;
+    }
+
+    /** An admin's "verify email now", which proves the address in tests where nothing is emailed. */
+    private void adminVerify(TestAccount account) throws Exception {
+        mockMvc.perform(post("/api/v1/admin/users/" + account.userId() + "/verify-email")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk());
     }
 
     private ResultActions addMember(TestAccount owner, String teamId, String email, String role) throws Exception {

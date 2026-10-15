@@ -26,8 +26,8 @@ import java.util.Locale;
  * SCR-PR-04's invitations: adding someone by an email address that has no
  * account yet. The invite is emailed with a link to register, and waits
  * (for {@link MemberInvite#VALIDITY}) until that address is verified - on the
- * verification link, an admin's "verify email now", or Google/Apple sign-in -
- * when {@link #acceptPendingInvites} turns it into a membership.
+ * emailed verification link, an admin's "verify email now", or Google/Apple
+ * sign-in - when {@link #acceptPendingInvites} turns it into a membership.
  */
 @Service
 public class MemberInviteService {
@@ -116,9 +116,10 @@ public class MemberInviteService {
      * Turns every pending invite for {@code user}'s email into a membership with
      * the invited role (club-wide for CLUB_ADMIN, this team otherwise), then
      * deletes those invites. Call it right after the email is marked verified:
-     * on the verification link, an admin's "verify email now", and Google or
-     * Apple sign-in. Does nothing for an unverified user, since an unverified
-     * address proves nothing.
+     * on the verification link (only when it was emailed - see
+     * AuthService#confirmVerification), an admin's "verify email now", and
+     * Google or Apple sign-in. Does nothing for an unverified user, since an
+     * unverified address proves nothing.
      *
      * <p>Teams the user already has a role on are skipped. Never throws: a
      * failure here must not fail the verification or sign-in that called it.

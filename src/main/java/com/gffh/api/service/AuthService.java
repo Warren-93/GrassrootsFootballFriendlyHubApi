@@ -3,6 +3,7 @@ package com.gffh.api.service;
 import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.domain.OAuthProvider;
 import com.gffh.api.domain.User;
+import com.gffh.api.domain.VerificationToken;
 import com.gffh.api.domain.VerificationTokenPurpose;
 import com.gffh.api.repository.UserRepository;
 import com.gffh.api.web.AuthDtos;
@@ -168,13 +169,31 @@ public class AuthService {
                 verificationTokenService.forResponse(token), verificationTokenService.emailsTokens());
     }
 
-    /** Verifying an address also accepts any team invites waiting for it (SCR-PR-04). */
+    /**
+     * Verifies the address the link was sent to. A link sent to an address the
+     * account has since changed away from verifies nothing: otherwise anyone
+     * could change their email to an address they don't own, then confirm a
+     * link from their own inbox.
+     *
+     * <p>Verifying also accepts any team invites waiting for the address
+     * (SCR-PR-04), but only when the link was emailed. Without an email
+     * provider the token goes straight back to whoever registered, which
+     * proves nothing about the address, so invites then wait for an admin's
+     * "verify email now" or a Google/Apple sign-in.
+     */
     public void confirmVerification(AuthDtos.VerifyConfirmRequest request) {
-        String userId = verificationTokenService.consume(request.token(), VerificationTokenPurpose.EMAIL_VERIFY)
-                .orElseThrow(() -> new BusinessRuleException("INVALID_VERIFICATION_TOKEN", HttpStatus.BAD_REQUEST,
-                        "This verification link is invalid or has expired."));
-        User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
-        memberInvites.acceptPendingInvites(users.save(withEmailVerified(user)));
+        VerificationToken token = verificationTokenService
+                .consumeToken(request.token(), VerificationTokenPurpose.EMAIL_VERIFY)
+                .orElseThrow(AuthService::invalidVerificationLink);
+        User user = users.findById(token.userId()).orElseThrow(BusinessRuleException::blocked);
+        if (!token.wasSentTo(user.email())) throw invalidVerificationLink();
+        User verified = users.save(withEmailVerified(user));
+        if (verificationTokenService.emailsTokens()) memberInvites.acceptPendingInvites(verified);
+    }
+
+    private static BusinessRuleException invalidVerificationLink() {
+        return new BusinessRuleException("INVALID_VERIFICATION_TOKEN", HttpStatus.BAD_REQUEST,
+                "This verification link is invalid or has expired.");
     }
 
     public void changePassword(String userId, AuthDtos.ChangePasswordRequest request) {
