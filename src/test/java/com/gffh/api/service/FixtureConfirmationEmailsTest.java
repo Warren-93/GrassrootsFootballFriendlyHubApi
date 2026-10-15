@@ -47,7 +47,8 @@ class FixtureConfirmationEmailsTest {
         when(clubs.findById("club-h")).thenReturn(Optional.of(club("club-h", "secretary@rovers.example")));
         when(clubs.findById("club-a")).thenReturn(Optional.of(club("club-a", null)));
         when(venues.findById("venue-1")).thenReturn(Optional.of(new Venue("venue-1", "club-h", "Rovers Park",
-                "1 Pitch Lane", null, null, List.of(), null, null, null, true, Instant.now())));
+                "1 Pitch Lane", "FK2 7ZX", new GeoPoint(-3.790261, 56.014582), null, List.of(), null, null, null,
+                true, Instant.now())));
         when(memberships.managerUserIdsFor("home")).thenReturn(List.of("u-home"));
         when(memberships.managerUserIdsFor("away")).thenReturn(List.of("u-away", "u-muted", "u-unverified"));
         when(users.findById("u-home")).thenReturn(Optional.of(user("u-home", "Home@Example.com", true)));
@@ -70,8 +71,32 @@ class FixtureConfirmationEmailsTest {
         assertEquals("Fixture confirmed: Rovers U12 v United U12, Sat 24 Oct", first.getSubject());
         assertTrue(first.getText().contains("Saturday 24 October 2026"));
         assertTrue(first.getText().contains("10:00 to 12:00"));
-        assertTrue(first.getText().contains("Rovers Park, 1 Pitch Lane"));
+        assertTrue(first.getText().contains("Venue: Rovers Park, 1 Pitch Lane, FK2 7ZX"));
+        assertTrue(first.getText().contains(
+                "Directions: https://www.google.com/maps/dir/?api=1&destination=56.014582,-3.790261"));
         assertTrue(first.getText().contains("https://app.example.com/fixtures/fx-1"));
+    }
+
+    @Test
+    void aPostcodeAlreadyInTheAddressIsNotRepeatedAndDirectionsFallBackToIt() {
+        Venue typedInAddress = new Venue("v", "c", "Rec Ground", "Mill Lane, Falkirk fk2 7zx", null, null,
+                null, List.of(), null, null, null, true, Instant.now());
+
+        assertEquals("Venue: Rec Ground, Mill Lane, Falkirk fk2 7zx\n"
+                        + "Directions: https://www.google.com/maps/dir/?api=1&destination=FK2+7ZX",
+                FixtureConfirmationEmails.venueLines(typedInAddress));
+    }
+
+    @Test
+    void aFixtureWithNoVenueSaysItIsToBeArranged() {
+        Fixture noVenue = new Fixture("fx-2", "fr-2", "home", "away", LocalDate.of(2026, 10, 24),
+                LocalTime.of(10, 0), null, null, FixtureStatus.CONFIRMED, CostShare.SPLIT, null, Instant.now());
+
+        String body = emails(noAssociations(), "noreply@example.com")
+                .body(noVenue, teams.findById("home").orElseThrow(), teams.findById("away").orElseThrow());
+
+        assertTrue(body.contains("Venue: To be arranged between the teams"));
+        assertFalse(body.contains("Directions:"));
     }
 
     @Test

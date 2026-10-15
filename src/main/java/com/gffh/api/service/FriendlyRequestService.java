@@ -26,6 +26,10 @@ import java.util.Optional;
  * owns the side effects the state machine itself is deliberately silent on:
  * reserving and releasing availability slots, and creating the {@link Fixture}
  * (and emailing both teams its confirmation) the moment a request is accepted.
+ *
+ * <p>A request or fixture with no venue chosen is played at the home team's
+ * default venue, so that is filled in when the request is sent and again when
+ * the fixture is created (see {@link VenueService#homeVenueFor}).
  */
 @Service
 public class FriendlyRequestService {
@@ -43,6 +47,7 @@ public class FriendlyRequestService {
     private final NotificationService notificationService;
     private final TeamReadinessService readiness;
     private final FixtureConfirmationEmails confirmationEmails;
+    private final VenueService venues;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
@@ -51,7 +56,8 @@ public class FriendlyRequestService {
                                   RateLimiter rateLimiter, RateLimitProperties rateLimits,
                                   NotificationService notificationService,
                                   TeamReadinessService readiness,
-                                  FixtureConfirmationEmails confirmationEmails) {
+                                  FixtureConfirmationEmails confirmationEmails,
+                                  VenueService venues) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
@@ -65,6 +71,7 @@ public class FriendlyRequestService {
         this.notificationService = notificationService;
         this.readiness = readiness;
         this.confirmationEmails = confirmationEmails;
+        this.venues = venues;
     }
 
     public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req, String idempotencyKey) {
@@ -112,10 +119,13 @@ public class FriendlyRequestService {
 
         RequestStateMachine.requirePermitted(RequestStatus.DRAFT, RequestStatus.SENT, Actor.SENDER);
 
+        Team home = req.homeTeamId().equals(sender.id()) ? sender : recipient;
+        String venueId = req.venueId() != null && !req.venueId().isBlank() ? req.venueId() : homeVenueId(home);
+
         Instant now = Instant.now();
         FriendlyRequest saved = requests.save(new FriendlyRequest(
                 null, req.senderTeamId(), req.recipientTeamId(), req.senderSlotId(), req.recipientSlotId(),
-                RequestStatus.SENT, req.date(), req.startTime(), req.endTime(), req.venueId(),
+                RequestStatus.SENT, req.date(), req.startTime(), req.endTime(), venueId,
                 req.homeTeamId(), req.costShare(), req.refereeArrangement(), req.message(),
                 userId, now, now, null, null, null, null));
 
@@ -348,8 +358,12 @@ public class FriendlyRequestService {
         availability.findById(fr.senderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
         availability.findById(fr.recipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
 
+        // Requests sent before venues were filled in on send may still have none.
+        String venueId = fr.venueId() != null
+                ? fr.venueId()
+                : teams.findById(fr.homeTeamId()).map(this::homeVenueId).orElse(null);
         Fixture fixture = fixtures.save(new Fixture(null, fr.id(), fr.homeTeamId(), fr.awayTeamId(), fr.date(),
-                fr.startTime(), fr.endTime(), fr.venueId(), FixtureStatus.CONFIRMED,
+                fr.startTime(), fr.endTime(), venueId, FixtureStatus.CONFIRMED,
                 fr.costShare(), fr.refereeArrangement(), Instant.now()));
 
         FriendlyRequest confirmed = requests.save(withStatus(fr, RequestStatus.CONFIRMED));
@@ -368,5 +382,14 @@ public class FriendlyRequestService {
 
     public Optional<Team> team(String teamId) {
         return teams.findById(teamId);
+    }
+
+    /** For describing a request's venues; null or unknown ids are simply empty. */
+    public Optional<Venue> venue(String venueId) {
+        return venues.findById(venueId);
+    }
+
+    private String homeVenueId(Team home) {
+        return venues.homeVenueFor(home).map(Venue::id).orElse(null);
     }
 }

@@ -2,6 +2,7 @@ package com.gffh.api.web;
 
 import com.gffh.api.domain.Fixture;
 import com.gffh.api.domain.Team;
+import com.gffh.api.domain.Venue;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -20,7 +21,7 @@ public final class FixtureDtos {
     public record CancelFixtureRequest(String reason) {}
 
     public record FixtureTeamView(String id, String name, String clubName, String managerName,
-                                   String contactPhone, String venueId) {
+                                   String contactPhone, String venueId, String badgeUrl) {
         /**
          * A team that's turned off "share contact details" still discloses
          * everything else about itself once a fixture is confirmed - only the
@@ -29,20 +30,26 @@ public final class FixtureDtos {
         public static FixtureTeamView from(Team t) {
             boolean share = t.shareContactDetails();
             return new FixtureTeamView(t.id(), t.name(), t.clubName(), share ? t.managerName() : null,
-                    share ? t.contactPhone() : null, t.defaultVenueId());
+                    share ? t.contactPhone() : null, t.defaultVenueId(), t.badgeUrl());
         }
     }
 
+    /**
+     * {@code venue} is the fixture's own venue, else the home team's default
+     * venue at read time (see {@link com.gffh.api.service.FixtureService#venueFor});
+     * null when neither exists.
+     */
     public record FixtureView(
             String id, String friendlyRequestId, FixtureTeamView homeTeam, FixtureTeamView awayTeam,
             LocalDate date, LocalTime startTime, LocalTime endTime, String venueId,
-            String status, String costShare, String refereeArrangement) {
+            String status, String costShare, String refereeArrangement, VenueDtos.VenueSummary venue) {
 
-        public static FixtureView from(Fixture f, Team home, Team away) {
+        public static FixtureView from(Fixture f, Team home, Team away, Venue venue) {
             return new FixtureView(f.id(), f.friendlyRequestId(),
                     FixtureTeamView.from(home), FixtureTeamView.from(away),
                     f.date(), f.startTime(), f.endTime(), f.venueId(),
-                    f.status().name(), f.costShare().name(), f.refereeArrangement().name());
+                    f.status().name(), f.costShare().name(), f.refereeArrangement().name(),
+                    VenueDtos.VenueSummary.from(venue));
         }
     }
 }

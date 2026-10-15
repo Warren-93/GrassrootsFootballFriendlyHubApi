@@ -50,6 +50,7 @@ public class FixtureController {
     private FixtureDtos.FixtureView toView(Fixture fixture) {
         return FixtureDtos.FixtureView.from(fixture,
                 fixtureService.team(fixture.homeTeamId()),
-                fixtureService.team(fixture.awayTeamId()));
+                fixtureService.team(fixture.awayTeamId()),
+                fixtureService.venueFor(fixture));
     }
 }

@@ -57,7 +57,7 @@ public class MongoVenueRepository implements VenueRepository {
     }
 
     private Venue withGeneratedId(Venue v) {
-        return new Venue(UUID.randomUUID().toString(), v.clubId(), v.name(), v.address(), v.location(),
+        return new Venue(UUID.randomUUID().toString(), v.clubId(), v.name(), v.address(), v.postcode(), v.location(),
                 v.pitchSurface(), v.facilities(), v.accessNotes(), v.parkingNotes(), v.pitchNumber(),
                 v.isDefault(), v.createdAt() != null ? v.createdAt() : Instant.now());
     }

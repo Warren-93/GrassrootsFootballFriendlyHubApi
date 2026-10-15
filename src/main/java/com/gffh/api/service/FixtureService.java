@@ -2,6 +2,7 @@ package com.gffh.api.service;
 
 import com.gffh.api.domain.Fixture;
 import com.gffh.api.domain.Team;
+import com.gffh.api.domain.Venue;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.web.FriendlyRequestDtos;
@@ -17,13 +18,15 @@ public class FixtureService {
     private final TeamRepository teams;
     private final MembershipService memberships;
     private final FriendlyRequestService friendlyRequestService;
+    private final VenueService venues;
 
     public FixtureService(FixtureRepository fixtures, TeamRepository teams, MembershipService memberships,
-                          FriendlyRequestService friendlyRequestService) {
+                          FriendlyRequestService friendlyRequestService, VenueService venues) {
         this.fixtures = fixtures;
         this.teams = teams;
         this.memberships = memberships;
         this.friendlyRequestService = friendlyRequestService;
+        this.venues = venues;
     }
 
     public List<Fixture> list(String userId, String teamId) {
@@ -59,6 +62,16 @@ public class FixtureService {
 
     public Team team(String teamId) {
         return teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
+    }
+
+    /**
+     * Where the fixture is being played: its own venue, else the home team's
+     * default venue as it stands now (fixtures confirmed before venues were
+     * filled in on creation have none of their own). Null when neither exists.
+     */
+    public Venue venueFor(Fixture fixture) {
+        if (fixture.venueId() != null) return venues.findById(fixture.venueId()).orElse(null);
+        return teams.findById(fixture.homeTeamId()).flatMap(venues::homeVenueFor).orElse(null);
     }
 
     /** ADM-07's read-only fixture inspector: no team-management check, already gated by PLATFORM_ADMIN at the controller. */
