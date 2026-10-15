@@ -28,7 +28,8 @@ public class ClientConfigService {
         OAuthProperties.Apple apple = oauth.getApple();
         return new ClientConfigDtos.ClientConfigView(supportEmail,
                 new ClientConfigDtos.GoogleConfig(google.isEnabled(), blankToNull(google.getClientId())),
-                new ClientConfigDtos.AppleConfig(apple.isEnabled(), blankToNull(apple.getServicesId())));
+                new ClientConfigDtos.AppleConfig(apple.isEnabled(), blankToNull(apple.getServicesId()),
+                        !apple.getBundleId().isBlank()));
     }
 
     /**

@@ -11,6 +11,10 @@ public final class ClientConfigDtos {
     /** {@code clientId} is null when Google sign-in is off. */
     public record GoogleConfig(boolean enabled, String clientId) {}
 
-    /** {@code servicesId} is null when web sign-in with Apple isn't configured (iOS may still be). */
-    public record AppleConfig(boolean enabled, String servicesId) {}
+    /**
+     * {@code servicesId} is null when web sign-in with Apple isn't configured (iOS may still be).
+     * {@code iosEnabled} says whether the iOS app's own tokens are accepted ({@code APPLE_BUNDLE_ID} set),
+     * so the app doesn't offer a button that can only fail.
+     */
+    public record AppleConfig(boolean enabled, String servicesId, boolean iosEnabled) {}
 }

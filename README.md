@@ -136,6 +136,8 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 
 `GET /api/v1/config` is public and tells the clients the support address and
 which sign-in providers are on, so none of these IDs need building into them.
+`apple.iosEnabled` is true only when `APPLE_BUNDLE_ID` is set, so the iOS app
+doesn't offer Apple sign-in when only the web Services ID is configured.
 
 Google and Apple sign-in check each ID token against the provider's published
 signing keys (fetched from Google and Apple on first use, then cached), its

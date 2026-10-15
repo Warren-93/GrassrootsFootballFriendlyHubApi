@@ -38,6 +38,7 @@ class ClientConfigServiceTest {
         assertNull(view.google().clientId());
         assertFalse(view.apple().enabled());
         assertNull(view.apple().servicesId());
+        assertFalse(view.apple().iosEnabled());
     }
 
     @Test
@@ -67,5 +68,18 @@ class ClientConfigServiceTest {
 
         assertTrue(view.apple().enabled());
         assertNull(view.apple().servicesId());
+        assertTrue(view.apple().iosEnabled());
+    }
+
+    @Test
+    void appleForWebAloneDoesNotTurnOnTheIosButton() {
+        OAuthProperties oauth = new OAuthProperties();
+        oauth.getApple().setServicesId("com.kickabout.web");
+
+        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, "", "").current();
+
+        assertTrue(view.apple().enabled());
+        assertEquals("com.kickabout.web", view.apple().servicesId());
+        assertFalse(view.apple().iosEnabled());
     }
 }
