@@ -2,6 +2,7 @@ package com.gffh.api.service;
 
 import com.gffh.api.domain.*;
 import com.gffh.api.repository.ReportRepository;
+import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.web.ReportDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,12 +18,14 @@ public class ReportService {
     private final ReportRepository reports;
     private final MembershipService membershipService;
     private final AuditLogService auditLogService;
+    private final TeamRepository teams;
 
     public ReportService(ReportRepository reports, MembershipService membershipService,
-                         AuditLogService auditLogService) {
+                         AuditLogService auditLogService, TeamRepository teams) {
         this.reports = reports;
         this.membershipService = membershipService;
         this.auditLogService = auditLogService;
+        this.teams = teams;
     }
 
     public ReportDtos.ReportView submit(String userId, String reporterTeamId, ReportDtos.SubmitRequest request) {
@@ -32,15 +35,15 @@ public class ReportService {
 
         Report saved = reports.save(new Report(null, reporterTeamId, request.reportedTeamId(),
                 request.relatedFixtureId(), type, severity, blankToNull(request.details()), ReportStatus.OPEN, null, List.of(), Instant.now(), null));
-        return ReportDtos.ReportView.from(saved);
+        return view(saved);
     }
 
     public List<ReportDtos.ReportView> queue() {
-        return reports.findByStatus(ReportStatus.OPEN).stream().map(ReportDtos.ReportView::from).toList();
+        return reports.findByStatus(ReportStatus.OPEN).stream().map(this::view).toList();
     }
 
     public ReportDtos.ReportView get(String id) {
-        return ReportDtos.ReportView.from(find(id));
+        return view(find(id));
     }
 
     public ReportDtos.ReportView assign(String adminId, String id) {
@@ -85,6 +88,14 @@ public class ReportService {
         reports.save(updated);
         auditLogService.record(adminId, "REPORT_" + action.toUpperCase(), "REPORT", id, request.reason());
         return get(id);
+    }
+
+    private ReportDtos.ReportView view(Report r) {
+        return ReportDtos.ReportView.from(r, teamName(r.reporterTeamId()), teamName(r.reportedTeamId()));
+    }
+
+    private String teamName(String teamId) {
+        return teamId == null ? null : teams.findById(teamId).map(Team::name).orElse(null);
     }
 
     private Report find(String id) {

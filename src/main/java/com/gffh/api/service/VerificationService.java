@@ -53,22 +53,22 @@ public class VerificationService {
         VerificationRequest saved = requests.save(new VerificationRequest(null, teamId, userId,
                 request.affiliationNumber(), request.contactDetails(), request.evidenceUrls(),
                 VerificationRequestStatus.PENDING, null, null, null, null, Instant.now(), null));
-        return VerificationDtos.VerificationRequestView.from(saved);
+        return VerificationDtos.VerificationRequestView.from(saved, team);
     }
 
     /** The team's own manager checking where their most recent submission stands - null if never submitted. */
     public VerificationDtos.VerificationRequestView getForTeam(String userId, String teamId) {
         membershipService.requireCanManageTeam(userId, teamId);
-        return requests.findLatestByTeamId(teamId).map(VerificationDtos.VerificationRequestView::from).orElse(null);
+        return requests.findLatestByTeamId(teamId).map(this::view).orElse(null);
     }
 
     public List<VerificationDtos.VerificationRequestView> queue() {
         return requests.findByStatus(VerificationRequestStatus.PENDING).stream()
-                .map(VerificationDtos.VerificationRequestView::from).toList();
+                .map(this::view).toList();
     }
 
     public VerificationDtos.VerificationRequestView get(String id) {
-        return VerificationDtos.VerificationRequestView.from(find(id));
+        return view(find(id));
     }
 
     public VerificationDtos.VerificationRequestView approve(String adminId, String id) {
@@ -88,7 +88,7 @@ public class VerificationService {
         auditLogService.record(adminId, "VERIFICATION_APPROVED", "TEAM", current.teamId(), null);
         notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_APPROVED,
                 "Verification approved", "Your team is now verified. " + nextStep(team), null, null);
-        return VerificationDtos.VerificationRequestView.from(updated);
+        return VerificationDtos.VerificationRequestView.from(updated, team);
     }
 
     /**
@@ -130,7 +130,7 @@ public class VerificationService {
                     adminId, request.reason(), null, null, current.submittedAt(), null);
             requests.save(updated);
             auditLogService.record(adminId, "VERIFICATION_REJECT_FIRST_REVIEW", "TEAM", current.teamId(), request.reason());
-            return VerificationDtos.VerificationRequestView.from(updated);
+            return view(updated);
         }
 
         if (current.status() == VerificationRequestStatus.AWAITING_SECOND_REJECTION) {
@@ -150,11 +150,15 @@ public class VerificationService {
             auditLogService.record(adminId, "VERIFICATION_REJECTED", "TEAM", current.teamId(), request.reason());
             notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_REJECTED,
                     "Verification rejected", request.reason(), null, null);
-            return VerificationDtos.VerificationRequestView.from(updated);
+            return VerificationDtos.VerificationRequestView.from(updated, team);
         }
 
         throw new BusinessRuleException("VERIFICATION_NOT_PENDING", HttpStatus.CONFLICT,
                 "This request has already been reviewed.");
+    }
+
+    private VerificationDtos.VerificationRequestView view(VerificationRequest r) {
+        return VerificationDtos.VerificationRequestView.from(r, teams.findById(r.teamId()).orElse(null));
     }
 
     private VerificationRequest find(String id) {
