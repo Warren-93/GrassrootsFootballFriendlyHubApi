@@ -38,6 +38,7 @@ src/main/java/com/gffh/api/
 ├── matching/     The compatibility engine. Pure logic, no Spring, no Mongo.
 ├── request/      Friendly request state machine.
 ├── service/      Orchestration, authorisation, persistence coordination.
+├── push/         FCM (Android) and APNs (iOS) senders.
 ├── repository/   Persistence interfaces.
 ├── web/          Controllers, DTOs, error handling.
 └── config/       Security, CORS, request tracing.
@@ -121,12 +122,15 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 | `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins allowed to call the API (`*.vercel.app` previews are always allowed). |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | SMTP server. With no host, no email is sent. |
 | `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
-| `APP_BASE_URL` | The web app that links in emails point at. |
+| `APP_BASE_URL` | The web app that links in emails point at (including member invitations' `/register?email=` link). |
 | `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
 | `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on; also Android's `serverClientId` and an accepted token audience. |
 | `GOOGLE_ADDITIONAL_CLIENT_IDS` | More accepted Google audiences, comma-separated (e.g. an iOS client ID). |
 | `APPLE_SERVICES_ID` | Apple Services ID for web sign-in (an accepted audience). |
 | `APPLE_BUNDLE_ID` | The iOS app's bundle ID (the audience of native iOS tokens). Either Apple variable turns Apple sign-in on. |
+| `FCM_SERVICE_ACCOUNT_JSON` | Firebase service-account JSON (raw or base64) for Android push through FCM HTTP v1. The project ID is read from it. Unset: no Android pushes. |
+| `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID` | iOS push through APNs with token auth: the .p8 key's ID, the Apple team ID, the .p8 file's PEM contents, and the app's bundle ID (the topic). Off until all four are set. |
+| `APNS_PRODUCTION` | `true` sends to api.push.apple.com (App Store and TestFlight builds); default `false` uses the sandbox, which only development builds receive from. |
 | `ADMIN_TOTP_REQUIRED` | `true` makes admin sign-in also ask for an authenticator code. Default `false`. |
 | `AUTH_COOKIE_SAME_SITE`, `AUTH_COOKIE_SECURE` | The web app's refresh-token cookie. Defaults `None` and `true`. |
 
@@ -135,8 +139,14 @@ which sign-in providers are on, so none of these IDs need building into them.
 
 Until email is configured, verification and password-reset tokens are logged
 and returned to the client instead of emailed, which means account email
-verification proves nothing in that mode, and no fixture confirmation emails
-are sent.
+verification proves nothing in that mode, and no fixture confirmation,
+notification or member invitation emails are sent (invitations are still
+created, and still become memberships when the address is verified).
+
+Push is optional per platform: the apps can register device tokens
+(`POST /api/v1/me/push-tokens`) whether or not the server has credentials,
+and start receiving pushes as soon as it does. Tokens FCM or APNs report as
+invalid are deleted, as are an account's tokens when it is deleted.
 
 ## Outstanding
 
@@ -157,6 +167,14 @@ COMPLETED); venues filled in from the home team's default when a request or
 fixture has none; and `TeamRepository.findCandidates` taking the set of age
 groups within `ageBandTolerance` (still 0 by default, so exact age group only).
 
+Also done since: member invitations (`MemberInviteService`: adding an address
+with no account invites it by email, and the invite becomes a membership once
+that address is verified - by the link, an admin's "verify email now", or
+`acceptPendingInvites` from any other sign-in that proves ownership), and every
+in-app notification also delivered by email and push (`NotificationDelivery`,
+`PushService`, `FcmSender`, `ApnsSender`), each behind the manager's
+`emailEnabled`/`pushEnabled` preferences.
+
 Still open:
 
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
@@ -169,6 +187,11 @@ Still open:
   PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
   startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA
   -pkeyopt rsa_keygen_bits:2048`) so access tokens survive restarts.
+- **Push against the live services.** `FcmSender` and `ApnsSender` are
+  tested against local stand-ins for Google's and Apple's endpoints, not yet
+  against real FCM and APNs. Once `FCM_SERVICE_ACCOUNT_JSON` and the `APNS_*`
+  values are set, send a friendly request to a team whose manager is signed in
+  on a phone, and check the logs for `push rejected` lines.
 - **Venue postcodes.** Venues accept an optional `postcode` on create and
   update, and otherwise take one from the end of the address. Clients that
   collect a postcode only to look up coordinates should send it too, so
