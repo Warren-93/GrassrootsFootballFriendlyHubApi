@@ -24,3 +24,13 @@ services:
         sync: false
       - key: APP_BASE_URL
         sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADDITIONAL_CLIENT_IDS
+        sync: false
+      - key: APPLE_SERVICES_ID
+        sync: false
+      - key: APPLE_BUNDLE_ID
+        sync: false

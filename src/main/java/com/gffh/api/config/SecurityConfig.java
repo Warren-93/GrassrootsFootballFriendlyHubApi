@@ -58,7 +58,9 @@ public class SecurityConfig {
                 // Resend requires knowing who to resend for, and GET /me is
                 // meaningless unauthenticated, so both fall through to
                 // anyRequest().authenticated() below rather than being listed here.
-                .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                // The client config (support email, which sign-in buttons to
+                // show) is needed before anyone has signed in.
+                .requestMatchers(HttpMethod.GET, "/actuator/health", "/api/v1/config").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // Admin sign-in is necessarily unauthenticated (that's the point of
                 // it); every other /api/v1/admin/** route requires the role.

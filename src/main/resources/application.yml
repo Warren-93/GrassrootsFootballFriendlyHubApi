@@ -35,6 +35,23 @@ gffh:
     # Where the links in emails point: the web app, which has /verify-email
     # and /reset-password pages.
     app-base-url: ${APP_BASE_URL:https://grassroots-football-friendly-hub-we.vercel.app}
+    # The help address the clients show (GET /api/v1/config). When unset, the
+    # bare address inside MAIL_FROM is used; with neither, there is none.
+    support-email: ${SUPPORT_EMAIL:}
+  oauth:
+    # Google and Apple sign-in, each off until its IDs are set. Published to
+    # the clients by GET /api/v1/config (see OAuthProperties).
+    google:
+      # The Google OAuth *Web* client ID: the web button, Android Credential
+      # Manager's serverClientId, and an accepted token audience.
+      client-id: ${GOOGLE_CLIENT_ID:}
+      # More accepted audiences, comma-separated (e.g. an iOS client ID).
+      additional-client-ids: ${GOOGLE_ADDITIONAL_CLIENT_IDS:}
+    apple:
+      # Services ID for web sign-in (an accepted audience).
+      services-id: ${APPLE_SERVICES_ID:}
+      # The iOS app's bundle ID (the audience of native iOS tokens).
+      bundle-id: ${APPLE_BUNDLE_ID:}
   jwt:
     # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
     # deployed environment so tokens survive restarts; when unset, a key is
