@@ -28,6 +28,9 @@ public interface TeamRepository {
     /**
      * Candidate opponents, narrowed in the database before scoring.
      *
+     * <p>Results come back nearest first, so {@code limit} keeps the closest
+     * teams within {@code radiusMiles}.
+     *
      * <p>Gender is filtered here rather than in the engine because it is a hard
      * constraint with an index behind it; scoring 400 teams to discard 200 on a
      * boolean would waste the index.

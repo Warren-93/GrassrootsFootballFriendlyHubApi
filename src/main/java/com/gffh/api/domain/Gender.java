@@ -16,8 +16,8 @@ public enum Gender {
         return ageGroup.isYouth() ? List.of(BOYS, GIRLS, MIXED) : List.of(MEN, WOMEN, MIXED);
     }
 
-    /** MIXED plays anything; otherwise the categories must match. */
+    /** Categories must match exactly: a mixed team is matched with mixed teams. */
     public boolean isCompatibleWith(Gender other) {
-        return this == other || this == MIXED || other == MIXED;
+        return this == other;
     }
 }
