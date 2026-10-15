@@ -88,5 +88,13 @@ public class IndexConfig {
         var joinCodes = mongoTemplate.indexOps("joinCodes");
         joinCodes.ensureIndex(new Index("code", org.springframework.data.domain.Sort.Direction.ASC).unique());
         joinCodes.ensureIndex(new Index("teamId", org.springframework.data.domain.Sort.Direction.ASC));
+
+        // One invite per team and address; expired invites are swept by Mongo itself.
+        var memberInvites = mongoTemplate.indexOps("memberInvites");
+        memberInvites.ensureIndex(new CompoundIndexDefinition(
+                new Document("teamId", 1).append("email", 1)).unique());
+        memberInvites.ensureIndex(new Index("email", org.springframework.data.domain.Sort.Direction.ASC));
+        memberInvites.ensureIndex(new Index("expiresAt", org.springframework.data.domain.Sort.Direction.ASC)
+                .expire(java.time.Duration.ZERO));
     }
 }

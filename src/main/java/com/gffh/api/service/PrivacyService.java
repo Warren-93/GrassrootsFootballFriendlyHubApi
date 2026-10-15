@@ -40,12 +40,14 @@ public class PrivacyService {
     private final FixtureRepository fixtures;
     private final BlockRepository blocks;
     private final NotificationPreferenceRepository notificationPreferences;
+    private final MemberInviteService memberInvites;
 
     public PrivacyService(UserRepository users, MembershipRepository memberships, TeamRepository teams,
                           ClubRepository clubs, TeamService teamService, VenueRepository venues,
                           AvailabilityRepository availability, FriendlyRequestRepository requests,
                           FixtureRepository fixtures, BlockRepository blocks,
-                          NotificationPreferenceRepository notificationPreferences) {
+                          NotificationPreferenceRepository notificationPreferences,
+                          MemberInviteService memberInvites) {
         this.users = users;
         this.memberships = memberships;
         this.teams = teams;
@@ -57,6 +59,7 @@ public class PrivacyService {
         this.fixtures = fixtures;
         this.blocks = blocks;
         this.notificationPreferences = notificationPreferences;
+        this.memberInvites = memberInvites;
     }
 
     public PrivacyDtos.AccountExport export(String userId) {
@@ -90,7 +93,7 @@ public class PrivacyService {
      * the same rule SCR-PR-04's member removal enforces.
      */
     public void deleteAccount(String userId) {
-        findUser(userId);
+        User user = findUser(userId);
         List<Membership> own = memberships.findByUserId(userId);
 
         for (Membership m : own) {
@@ -105,6 +108,8 @@ public class PrivacyService {
         }
 
         own.forEach(m -> memberships.delete(m.id()));
+        // Nobody can be added to a team later by an invite to the address it used.
+        memberInvites.deleteInvitesFor(user.email());
         users.delete(userId);
     }
 

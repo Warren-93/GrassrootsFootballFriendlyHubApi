@@ -21,11 +21,13 @@ public class AuthService {
     private final VerificationTokenService verificationTokenService;
     private final RateLimiter rateLimiter;
     private final RateLimitProperties rateLimits;
+    private final MemberInviteService memberInvites;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService,
                        RefreshTokenService refreshTokenService,
                        VerificationTokenService verificationTokenService,
-                       RateLimiter rateLimiter, RateLimitProperties rateLimits) {
+                       RateLimiter rateLimiter, RateLimitProperties rateLimits,
+                       MemberInviteService memberInvites) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -33,6 +35,7 @@ public class AuthService {
         this.verificationTokenService = verificationTokenService;
         this.rateLimiter = rateLimiter;
         this.rateLimits = rateLimits;
+        this.memberInvites = memberInvites;
     }
 
     public AuthDtos.TokenResponse register(AuthDtos.RegisterRequest request) {
@@ -129,12 +132,13 @@ public class AuthService {
                 verificationTokenService.forResponse(token), verificationTokenService.emailsTokens());
     }
 
+    /** Verifying an address also accepts any team invites waiting for it (SCR-PR-04). */
     public void confirmVerification(AuthDtos.VerifyConfirmRequest request) {
         String userId = verificationTokenService.consume(request.token(), VerificationTokenPurpose.EMAIL_VERIFY)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_VERIFICATION_TOKEN", HttpStatus.BAD_REQUEST,
                         "This verification link is invalid or has expired."));
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
-        users.save(withEmailVerified(user));
+        memberInvites.acceptPendingInvites(users.save(withEmailVerified(user)));
     }
 
     public void changePassword(String userId, AuthDtos.ChangePasswordRequest request) {

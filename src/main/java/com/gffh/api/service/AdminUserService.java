@@ -18,15 +18,17 @@ public class AdminUserService {
     private final VerificationTokenService verificationTokenService;
     private final AuditLogService auditLogService;
     private final PrivacyService privacyService;
+    private final MemberInviteService memberInvites;
 
     public AdminUserService(UserRepository users, MembershipRepository memberships,
                             VerificationTokenService verificationTokenService, AuditLogService auditLogService,
-                            PrivacyService privacyService) {
+                            PrivacyService privacyService, MemberInviteService memberInvites) {
         this.users = users;
         this.memberships = memberships;
         this.verificationTokenService = verificationTokenService;
         this.auditLogService = auditLogService;
         this.privacyService = privacyService;
+        this.memberInvites = memberInvites;
     }
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
@@ -72,11 +74,12 @@ public class AdminUserService {
      * A manual bypass for the self-serve email-verification link (see
      * VerificationTokenService's javadoc: there's no real email provider in
      * this build) - lets an admin unblock an account directly instead of
-     * relying on the account holder following the link themselves.
+     * relying on the account holder following the link themselves. Like the
+     * link, it accepts any team invites waiting for the address.
      */
     public AdminUserDtos.AdminUserView verifyEmail(String adminId, String userId) {
         User user = find(userId);
-        users.save(withEmailVerified(user, true));
+        memberInvites.acceptPendingInvites(users.save(withEmailVerified(user, true)));
         auditLogService.record(adminId, "USER_EMAIL_VERIFIED_BY_ADMIN", "USER", userId, null);
         return get(userId);
     }

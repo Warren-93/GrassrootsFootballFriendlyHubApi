@@ -36,14 +36,27 @@ public class MemberService {
     private final UserRepository users;
     private final MembershipService membershipService;
     private final JoinCodeRepository joinCodes;
+    private final MemberInviteService invites;
+    private final MemberEmails emails;
 
     public MemberService(MembershipRepository memberships, TeamRepository teams, UserRepository users,
-                         MembershipService membershipService, JoinCodeRepository joinCodes) {
+                         MembershipService membershipService, JoinCodeRepository joinCodes,
+                         MemberInviteService invites, MemberEmails emails) {
         this.memberships = memberships;
         this.teams = teams;
         this.users = users;
         this.membershipService = membershipService;
         this.joinCodes = joinCodes;
+        this.invites = invites;
+        this.emails = emails;
+    }
+
+    /** What adding by email did: added an existing account ({@code member}), or invited a new address ({@code invite}). */
+    public record AddResult(MemberDtos.MemberView member, MemberDtos.InviteView invite) {
+
+        public boolean invited() {
+            return invite != null;
+        }
     }
 
     /** Direct team memberships plus the club's CLUB_ADMIN memberships, which cascade to every squad the club runs. */
@@ -64,15 +77,21 @@ public class MemberService {
                 .toList();
     }
 
-    public MemberDtos.MemberView add(String userId, String teamId, MemberDtos.AddMemberRequest request) {
+    /**
+     * Adds an existing account straight away and emails them to say so. An
+     * address with no account is invited instead (see {@link MemberInviteService}):
+     * it joins with this role once its owner registers and verifies it.
+     */
+    public AddResult add(String userId, String teamId, MemberDtos.AddMemberRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
         Team team = findTeam(teamId);
-
-        User target = users.findByEmail(request.email()).orElseThrow(() -> new BusinessRuleException(
-                "USER_NOT_FOUND", HttpStatus.NOT_FOUND,
-                "No account found with that email - they'll need to register before they can be added."));
-
         Role role = parseRole(request.role());
+
+        User target = users.findByEmail(request.email().trim()).orElse(null);
+        if (target == null) {
+            return new AddResult(null, invites.invite(userId, team, request.email(), role));
+        }
+
         if (memberships.findTeamMembership(target.id(), teamId).isPresent()
                 || memberships.findClubMembership(target.id(), team.clubId()).isPresent()) {
             throw new BusinessRuleException("ALREADY_A_MEMBER", HttpStatus.CONFLICT,
@@ -80,7 +99,9 @@ public class MemberService {
         }
 
         Membership saved = memberships.save(scoped(null, target.id(), team, role, Instant.now()));
-        return MemberDtos.MemberView.from(saved, target);
+        String inviterName = users.findById(userId).map(MemberInviteService::inviterName).orElse("A team manager");
+        emails.sendAdded(target.email(), inviterName, team, role);
+        return new AddResult(MemberDtos.MemberView.from(saved, target), null);
     }
 
     public MemberDtos.MemberView updateRole(String userId, String teamId, String membershipId,
@@ -174,7 +195,7 @@ public class MemberService {
     }
 
     /** CLUB_ADMIN always cascades club-wide, so it is club-scoped; every other role is scoped to this exact team. */
-    private static Membership scoped(String id, String userId, Team team, Role role, Instant createdAt) {
+    static Membership scoped(String id, String userId, Team team, Role role, Instant createdAt) {
         return role == Role.CLUB_ADMIN
                 ? new Membership(id, userId, null, team.clubId(), role, createdAt)
                 : new Membership(id, userId, team.id(), null, role, createdAt);
