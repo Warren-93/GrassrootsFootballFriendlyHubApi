@@ -44,17 +44,20 @@ public class MatchingService {
     private final BlockRepository blocks;
     private final MembershipService memberships;
     private final MatchingWeightsProvider weightsProvider;
+    private final TeamReadinessService readiness;
 
     public MatchingService(TeamRepository teams,
                            AvailabilityRepository availability,
                            BlockRepository blocks,
                            MembershipService memberships,
-                           MatchingWeightsProvider weightsProvider) {
+                           MatchingWeightsProvider weightsProvider,
+                           TeamReadinessService readiness) {
         this.teams = teams;
         this.availability = availability;
         this.blocks = blocks;
         this.memberships = memberships;
         this.weightsProvider = weightsProvider;
+        this.readiness = readiness;
     }
 
     public MatchDtos.SearchResponse search(String userId, MatchDtos.SearchRequest request) {
@@ -139,7 +142,10 @@ public class MatchingService {
 
         List<MatchDtos.MatchSummary> page = ranked.stream()
                 .limit(request.limitOrDefault())
-                .map(r -> MatchDtos.MatchSummary.from(r, byId.get(r.teamId())))
+                .map(r -> {
+                    Team team = byId.get(r.teamId());
+                    return MatchDtos.MatchSummary.from(r, team, readiness.isReady(team));
+                })
                 .toList();
 
         return new MatchDtos.SearchResponse(

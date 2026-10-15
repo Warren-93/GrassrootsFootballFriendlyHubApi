@@ -27,15 +27,17 @@ public class VerificationService {
     private final MembershipService membershipService;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final TeamReadinessService readiness;
 
     public VerificationService(VerificationRequestRepository requests, TeamRepository teams,
                                MembershipService membershipService, AuditLogService auditLogService,
-                               NotificationService notificationService) {
+                               NotificationService notificationService, TeamReadinessService readiness) {
         this.requests = requests;
         this.teams = teams;
         this.membershipService = membershipService;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
+        this.readiness = readiness;
     }
 
     public VerificationDtos.VerificationRequestView submit(String userId, String teamId,
@@ -85,7 +87,7 @@ public class VerificationService {
         requests.save(updated);
         auditLogService.record(adminId, "VERIFICATION_APPROVED", "TEAM", current.teamId(), null);
         notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_APPROVED,
-                "Verification approved", "Your team is now verified.", null, null);
+                "Verification approved", "Your team is now verified. " + nextStep(team), null, null);
         return VerificationDtos.VerificationRequestView.from(updated);
     }
 
@@ -102,7 +104,14 @@ public class VerificationService {
         teams.save(withVerification(team, VerificationStatus.VERIFIED));
         auditLogService.record(adminId, "TEAM_VERIFIED_BY_ADMIN", "TEAM", teamId, null);
         notificationService.notifyTeam(teamId, NotificationType.VERIFICATION_APPROVED,
-                "Verification approved", "An admin verified your team directly.", null, null);
+                "Verification approved", "An admin verified your team directly. " + nextStep(team), null, null);
+    }
+
+    /** Verified teams can send and receive requests once they also have a venue. */
+    private String nextStep(Team team) {
+        return readiness.hasVenue(team)
+                ? "You can now send and receive friendly requests."
+                : "Add a venue to start sending and receiving friendly requests.";
     }
 
     /**

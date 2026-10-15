@@ -4,6 +4,7 @@ import com.gffh.api.domain.*;
 import jakarta.validation.constraints.*;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Wire types for team creation and management. Not part of the README's
@@ -61,6 +62,11 @@ public final class TeamDtos {
             String description,
             String defaultVenueId) {}
 
+    /**
+     * {@code readyForRequests} is the gate on sending and receiving friendly
+     * requests (verified + has a venue); {@code profileChecklist} lists what
+     * is still to do, so clients can tell a manager exactly what's missing.
+     */
     public record TeamView(
             String id, String clubId, String name, String clubName, String badgeUrl,
             String ageGroup, String gender, String format, String abilityLevel,
@@ -68,20 +74,17 @@ public final class TeamDtos {
             int travelRadiusMiles, String homeAwayPreference, String managerName,
             String contactPhone, String description, String verification,
             String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt,
-            Boolean canManage) {
-
-        public static TeamView from(Team t) {
-            return from(t, true);
-        }
+            Boolean canManage, boolean readyForRequests, List<Team.ChecklistItem> profileChecklist) {
 
         /**
          * {@code includeContact} is false when the caller doesn't manage this
          * team - contact details are only disclosed to the team's own
          * managers here, mirroring the CONFIRMED-only disclosure rule
          * {@link com.gffh.api.request.RequestStateMachine#disclosesContactDetails}
-         * applies to fixtures and friendly requests.
+         * applies to fixtures and friendly requests. The checklist is likewise
+         * only for the team's own managers.
          */
-        public static TeamView from(Team t, boolean includeContact) {
+        public static TeamView from(Team t, boolean includeContact, boolean hasVenue) {
             return new TeamView(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
                     t.ageGroup().name(), t.gender().name(), t.format().name(), t.abilityLevel().name(),
                     t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
@@ -89,20 +92,22 @@ public final class TeamDtos {
                     includeContact ? t.managerName() : null,
                     includeContact ? t.contactPhone() : null,
                     t.description(), t.verification().name(), t.defaultVenueId(),
-                    t.completenessPercent(t.defaultVenueId() != null), t.archived(), t.createdAt(), null);
+                    t.completenessPercent(hasVenue), t.archived(), t.createdAt(), null,
+                    t.readyForRequests(hasVenue),
+                    includeContact ? t.profileChecklist(hasVenue) : List.of());
         }
 
         /**
          * GET /teams/mine: says whether the caller can manage the team, so a
          * member who joined with a code (role USER) gets a read-only app.
          */
-        public static TeamView mine(Team t, boolean canManage) {
-            TeamView v = from(t, true);
+        public static TeamView mine(Team t, boolean canManage, boolean hasVenue) {
+            TeamView v = from(t, true, hasVenue);
             return new TeamView(v.id(), v.clubId(), v.name(), v.clubName(), v.badgeUrl(), v.ageGroup(), v.gender(),
                     v.format(), v.abilityLevel(), v.league(), v.postcode(), v.longitude(), v.latitude(),
                     v.travelRadiusMiles(), v.homeAwayPreference(), v.managerName(), v.contactPhone(),
                     v.description(), v.verification(), v.defaultVenueId(), v.completenessPercent(),
-                    v.archived(), v.createdAt(), canManage);
+                    v.archived(), v.createdAt(), canManage, v.readyForRequests(), v.profileChecklist());
         }
     }
 

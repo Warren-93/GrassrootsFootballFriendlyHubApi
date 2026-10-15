@@ -1,6 +1,7 @@
 package com.gffh.api.domain;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * A squad. The matching engine operates entirely on this type plus the team's
@@ -47,9 +48,37 @@ public record Team(
     public boolean matchingFieldsLocked() { return firstFixtureConfirmedAt != null; }
 
     /**
-     * Drives the 80% gate on sending invitations (Volume 2, section 11).
-     * Weighted by contribution to match quality rather than by field count, so
-     * completing a decorative field cannot unlock sending on its own.
+     * The only gate on sending and receiving friendly requests: the team is
+     * verified and has somewhere to play. Profile completeness is guidance
+     * shown in {@link #profileChecklist(boolean)}, not a gate.
+     */
+    public boolean readyForRequests(boolean hasVenue) {
+        return isVerified() && hasVenue;
+    }
+
+    /**
+     * What a manager still has to do, in the order the app shows it. Items
+     * with {@code requiredForRequests} are the {@link #readyForRequests} gate;
+     * the rest improve the profile opponents see.
+     */
+    public List<ChecklistItem> profileChecklist(boolean hasVenue) {
+        return List.of(
+                new ChecklistItem("VERIFICATION", "Get your team verified", isVerified(), true),
+                new ChecklistItem("VENUE", "Add a venue", hasVenue, true),
+                new ChecklistItem("MANAGER_NAME", "Add a manager name", notBlank(managerName), false),
+                new ChecklistItem("BADGE", "Upload a team badge", notBlank(badgeUrl), false),
+                new ChecklistItem("DESCRIPTION", "Write a short team description", notBlank(description), false),
+                new ChecklistItem("LEAGUE", "Add your league", notBlank(league), false),
+                new ChecklistItem("CONTACT_PHONE", "Add a contact phone number", notBlank(contactPhone), false));
+    }
+
+    /** One line of {@link #profileChecklist(boolean)}. */
+    public record ChecklistItem(String key, String label, boolean done, boolean requiredForRequests) {}
+
+    /**
+     * A guide to how complete the profile looks to opponents (Volume 2,
+     * section 11). Weighted by contribution to match quality rather than by
+     * field count. No longer gates requests - see {@link #readyForRequests}.
      */
     public int completenessPercent(boolean hasVenue) {
         int score = 0;

@@ -41,13 +41,15 @@ public class FriendlyRequestService {
     private final RateLimiter rateLimiter;
     private final RateLimitProperties rateLimits;
     private final NotificationService notificationService;
+    private final TeamReadinessService readiness;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
                                   FixtureRepository fixtures, MembershipService memberships,
                                   UserRepository users, IdempotencyKeyRepository idempotencyKeys,
                                   RateLimiter rateLimiter, RateLimitProperties rateLimits,
-                                  NotificationService notificationService) {
+                                  NotificationService notificationService,
+                                  TeamReadinessService readiness) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
@@ -59,6 +61,7 @@ public class FriendlyRequestService {
         this.rateLimiter = rateLimiter;
         this.rateLimits = rateLimits;
         this.notificationService = notificationService;
+        this.readiness = readiness;
     }
 
     public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req, String idempotencyKey) {
@@ -83,8 +86,7 @@ public class FriendlyRequestService {
         User senderUser = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         if (!senderUser.emailVerified()) throw BusinessRuleException.emailNotVerified();
 
-        int completeness = sender.completenessPercent(sender.defaultVenueId() != null);
-        if (completeness < 80) throw BusinessRuleException.profileIncomplete(completeness);
+        readiness.requireCanSend(sender);
 
         if (blocks.blockedTeamIdsEitherDirection(req.senderTeamId()).contains(req.recipientTeamId())) {
             throw BusinessRuleException.blocked();
@@ -92,6 +94,7 @@ public class FriendlyRequestService {
         if (requests.existsOpenBetween(req.senderTeamId(), req.recipientTeamId())) {
             throw BusinessRuleException.duplicateRequest();
         }
+        readiness.requireCanReceive(recipient);
         if (!req.homeTeamId().equals(req.senderTeamId()) && !req.homeTeamId().equals(req.recipientTeamId())) {
             throw new BusinessRuleException("INVALID_HOME_TEAM", HttpStatus.BAD_REQUEST,
                     "The home team must be one of the two teams in the request.");

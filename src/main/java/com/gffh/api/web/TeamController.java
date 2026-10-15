@@ -2,6 +2,7 @@ package com.gffh.api.web;
 
 import com.gffh.api.domain.Team;
 import com.gffh.api.service.MemberService;
+import com.gffh.api.service.TeamReadinessService;
 import com.gffh.api.service.TeamService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,24 +20,30 @@ public class TeamController {
 
     private final TeamService teamService;
     private final MemberService memberService;
+    private final TeamReadinessService readiness;
 
-    public TeamController(TeamService teamService, MemberService memberService) {
+    public TeamController(TeamService teamService, MemberService memberService, TeamReadinessService readiness) {
         this.teamService = teamService;
         this.memberService = memberService;
+        this.readiness = readiness;
+    }
+
+    private TeamDtos.TeamView view(Team team, boolean includeContact) {
+        return TeamDtos.TeamView.from(team, includeContact, readiness.hasVenue(team));
     }
 
     @PostMapping
     public ResponseEntity<TeamDtos.TeamView> create(@AuthenticationPrincipal Jwt principal,
                                                      @Valid @RequestBody TeamDtos.CreateTeamRequest request) {
         Team team = teamService.create(principal.getSubject(), request);
-        return ResponseEntity.ok(TeamDtos.TeamView.from(team));
+        return ResponseEntity.ok(view(team, true));
     }
 
     @GetMapping
     public ResponseEntity<List<TeamDtos.TeamView>> listByClub(@AuthenticationPrincipal Jwt principal,
                                                                @RequestParam String clubId) {
         var views = teamService.listByClub(principal.getSubject(), clubId).stream()
-                .map(t -> TeamDtos.TeamView.from(t, true)).toList();
+                .map(t -> view(t, true)).toList();
         return ResponseEntity.ok(views);
     }
 
@@ -44,7 +51,7 @@ public class TeamController {
     public ResponseEntity<List<TeamDtos.TeamView>> listMine(@AuthenticationPrincipal Jwt principal) {
         String userId = principal.getSubject();
         var views = teamService.listMine(userId).stream()
-                .map(t -> TeamDtos.TeamView.mine(t, teamService.canManage(userId, t.id()))).toList();
+                .map(t -> TeamDtos.TeamView.mine(t, teamService.canManage(userId, t.id()), readiness.hasVenue(t))).toList();
         return ResponseEntity.ok(views);
     }
 
@@ -54,7 +61,7 @@ public class TeamController {
         String userId = principal.getSubject();
         Team team = teamService.get(userId, teamId);
         boolean canManage = teamService.canManage(userId, teamId);
-        return ResponseEntity.ok(TeamDtos.TeamView.from(team, canManage));
+        return ResponseEntity.ok(view(team, canManage));
     }
 
     @PatchMapping("/{teamId}")
@@ -62,7 +69,7 @@ public class TeamController {
                                                      @PathVariable String teamId,
                                                      @Valid @RequestBody TeamDtos.UpdateTeamRequest request) {
         Team team = teamService.update(principal.getSubject(), teamId, request);
-        return ResponseEntity.ok(TeamDtos.TeamView.from(team));
+        return ResponseEntity.ok(view(team, true));
     }
 
     @PostMapping("/{teamId}/archive")

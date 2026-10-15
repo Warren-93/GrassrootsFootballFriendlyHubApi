@@ -40,10 +40,22 @@ public class BusinessRuleException extends RuntimeException {
                 "Verify your email address before sending invitations.");
     }
 
-    public static BusinessRuleException profileIncomplete(int percent) {
+    /**
+     * Keeps the PROFILE_INCOMPLETE code clients already map, but the rule is
+     * now "verified and has a venue" rather than a completeness percentage.
+     */
+    public static BusinessRuleException teamNotReady(boolean verified, boolean hasVenue) {
+        String needed;
+        if (!verified && !hasVenue) needed = "get your team verified and add a venue";
+        else if (!verified) needed = "get your team verified";
+        else needed = "add a venue";
         return new BusinessRuleException("PROFILE_INCOMPLETE", HttpStatus.FORBIDDEN,
-                "Your team profile is " + percent + "% complete. It must reach 80% "
-                        + "before you can invite another team.");
+                "Before you can send friendly requests, " + needed + ".");
+    }
+
+    public static BusinessRuleException recipientNotReady() {
+        return new BusinessRuleException("RECIPIENT_NOT_READY", HttpStatus.CONFLICT,
+                "That team can't receive friendly requests yet. They need to be verified and add a venue first.");
     }
 
     public static BusinessRuleException duplicateRequest() {
