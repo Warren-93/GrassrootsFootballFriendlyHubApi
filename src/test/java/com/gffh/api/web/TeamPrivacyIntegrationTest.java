@@ -56,8 +56,8 @@ class TeamPrivacyIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Privacy Fixture FC Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Privacy Fixture FC Recipient", 56.014582, -3.790261);
-        completeTeamProfile(senderOwner.accessToken(), senderTeam);
-        completeTeamProfile(recipientOwner.accessToken(), recipientTeam);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
 
         mockMvc.perform(patch("/api/v1/teams/" + senderTeam + "/privacy")
                         .header("Authorization", "Bearer " + senderOwner.accessToken())

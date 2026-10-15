@@ -46,7 +46,11 @@ public final class MatchDtos {
             WeightsView weights,
             String nextCursor) {}
 
-    /** One ranked opponent, as rendered on SCR-FF-03. */
+    /**
+     * One ranked opponent, as rendered on SCR-FF-03. {@code canReceiveRequests}
+     * is false until the opponent is verified and has a venue; such teams are
+     * still listed, but the invite button is disabled.
+     */
     public record MatchSummary(
             TeamSummary team,
             int score,
@@ -54,9 +58,10 @@ public final class MatchDtos {
             double milesApart,
             List<String> reasons,
             List<FactorView> factors,
-            OverlapView earliestOverlap) {
+            OverlapView earliestOverlap,
+            boolean canReceiveRequests) {
 
-        public static MatchSummary from(MatchResult result, Team team) {
+        public static MatchSummary from(MatchResult result, Team team, boolean canReceiveRequests) {
             MatchResult.SlotOverlap first = result.earliestOverlap();
             return new MatchSummary(
                     TeamSummary.from(team),
@@ -70,7 +75,8 @@ public final class MatchDtos {
                             first.ours().overlapStartWith(first.theirs()).toString(),
                             first.overlapMinutes(),
                             first.ours().id(),
-                            first.theirs().id()));
+                            first.theirs().id()),
+                    canReceiveRequests);
         }
     }
 
