@@ -40,6 +40,7 @@ public class PrivacyService {
     private final FixtureRepository fixtures;
     private final BlockRepository blocks;
     private final NotificationPreferenceRepository notificationPreferences;
+    private final PushService pushService;
     private final MemberInviteService memberInvites;
 
     public PrivacyService(UserRepository users, MembershipRepository memberships, TeamRepository teams,
@@ -47,7 +48,7 @@ public class PrivacyService {
                           AvailabilityRepository availability, FriendlyRequestRepository requests,
                           FixtureRepository fixtures, BlockRepository blocks,
                           NotificationPreferenceRepository notificationPreferences,
-                          MemberInviteService memberInvites) {
+                          PushService pushService, MemberInviteService memberInvites) {
         this.users = users;
         this.memberships = memberships;
         this.teams = teams;
@@ -59,6 +60,7 @@ public class PrivacyService {
         this.fixtures = fixtures;
         this.blocks = blocks;
         this.notificationPreferences = notificationPreferences;
+        this.pushService = pushService;
         this.memberInvites = memberInvites;
     }
 
@@ -108,7 +110,9 @@ public class PrivacyService {
         }
 
         own.forEach(m -> memberships.delete(m.id()));
-        // Nobody can be added to a team later by an invite to the address it used.
+        // The account's devices stop getting pushes, and nobody can be added
+        // to a team later by an invite to the address it used.
+        pushService.deleteAllFor(userId);
         memberInvites.deleteInvitesFor(user.email());
         users.delete(userId);
     }

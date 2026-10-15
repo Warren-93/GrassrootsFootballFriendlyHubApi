@@ -13,6 +13,9 @@ public class NotificationPreferenceDocument {
     public boolean fixtures;
     public boolean verification;
     public boolean messages;
+    /** Boxed: rows saved before these existed have neither, and both default to on. */
+    public Boolean emailEnabled;
+    public Boolean pushEnabled;
 
     public static NotificationPreferenceDocument from(NotificationPreference p) {
         NotificationPreferenceDocument d = new NotificationPreferenceDocument();
@@ -21,10 +24,13 @@ public class NotificationPreferenceDocument {
         d.fixtures = p.fixtures();
         d.verification = p.verification();
         d.messages = p.messages();
+        d.emailEnabled = p.emailEnabled();
+        d.pushEnabled = p.pushEnabled();
         return d;
     }
 
     public NotificationPreference toDomain() {
-        return new NotificationPreference(userId, friendlyRequests, fixtures, verification, messages);
+        return new NotificationPreference(userId, friendlyRequests, fixtures, verification, messages,
+                emailEnabled == null || emailEnabled, pushEnabled == null || pushEnabled);
     }
 }

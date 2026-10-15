@@ -34,3 +34,15 @@ services:
         sync: false
       - key: APPLE_BUNDLE_ID
         sync: false
+      - key: FCM_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: APNS_KEY_ID
+        sync: false
+      - key: APNS_TEAM_ID
+        sync: false
+      - key: APNS_PRIVATE_KEY
+        sync: false
+      - key: APNS_BUNDLE_ID
+        sync: false
+      - key: APNS_PRODUCTION
+        sync: false

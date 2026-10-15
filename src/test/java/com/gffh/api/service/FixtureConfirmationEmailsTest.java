@@ -50,14 +50,19 @@ class FixtureConfirmationEmailsTest {
                 "1 Pitch Lane", "FK2 7ZX", new GeoPoint(-3.790261, 56.014582), null, List.of(), null, null, null,
                 true, Instant.now())));
         when(memberships.managerUserIdsFor("home")).thenReturn(List.of("u-home"));
-        when(memberships.managerUserIdsFor("away")).thenReturn(List.of("u-away", "u-muted", "u-unverified"));
+        when(memberships.managerUserIdsFor("away"))
+                .thenReturn(List.of("u-away", "u-muted", "u-unverified", "u-no-email"));
         when(users.findById("u-home")).thenReturn(Optional.of(user("u-home", "Home@Example.com", true)));
         when(users.findById("u-away")).thenReturn(Optional.of(user("u-away", "away@example.com", true)));
         when(users.findById("u-muted")).thenReturn(Optional.of(user("u-muted", "muted@example.com", true)));
         when(users.findById("u-unverified")).thenReturn(Optional.of(user("u-unverified", "new@example.com", false)));
+        when(users.findById("u-no-email")).thenReturn(Optional.of(user("u-no-email", "quiet@example.com", true)));
         when(preferences.findByUserId(anyString())).thenReturn(Optional.empty());
         when(preferences.findByUserId("u-muted"))
-                .thenReturn(Optional.of(new NotificationPreference("u-muted", true, false, true, true)));
+                .thenReturn(Optional.of(new NotificationPreference("u-muted", true, false, true, true, true, true)));
+        // Wants fixture notifications in the app, but no emails at all.
+        when(preferences.findByUserId("u-no-email"))
+                .thenReturn(Optional.of(new NotificationPreference("u-no-email", true, true, true, true, false, true)));
     }
 
     @Test

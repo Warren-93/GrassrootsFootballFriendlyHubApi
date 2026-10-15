@@ -31,9 +31,9 @@ import java.util.concurrent.Executors;
  * Emails a fixture confirmation to both teams once a friendly is accepted.
  *
  * <p>Each team's contacts are its managers (verified emails, unless they've
- * turned fixture notifications off) plus its club's contact email. Anything an
- * {@link AssociationRecipients} bean returns is added too, which is how
- * associations will be copied in later.
+ * turned fixture notifications or emails off) plus its club's contact email.
+ * Anything an {@link AssociationRecipients} bean returns is added too, which
+ * is how associations will be copied in later.
  *
  * <p>Sending happens off the request thread: an SMTP server can take seconds to
  * answer, and accepting a friendly must never wait on, or fail because of, email.
@@ -118,14 +118,16 @@ public class FixtureConfirmationEmails {
         }
     }
 
-    /** A team's contact addresses: its managers who want fixture updates, then its club's contact email. */
+    /**
+     * A team's contact addresses: its managers who want fixture updates by
+     * email, then its club's contact email.
+     */
     Set<String> contactsFor(Team team) {
         Set<String> out = new LinkedHashSet<>();
         for (String userId : memberships.managerUserIdsFor(team.id())) {
-            boolean wantsFixtures = preferences.findByUserId(userId)
-                    .orElseGet(() -> NotificationPreference.defaultsFor(userId))
-                    .allows(NotificationCategory.FIXTURES);
-            if (!wantsFixtures) continue;
+            NotificationPreference preference = preferences.findByUserId(userId)
+                    .orElseGet(() -> NotificationPreference.defaultsFor(userId));
+            if (!preference.allows(NotificationCategory.FIXTURES) || !preference.emailEnabled()) continue;
             users.findById(userId)
                     .filter(u -> u.emailVerified() && !u.suspended())
                     .map(User::email)
