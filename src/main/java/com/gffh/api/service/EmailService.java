@@ -14,7 +14,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Delivers verification and password-reset links over SMTP.
+ * Delivers verification and password-reset links, and fixture confirmations,
+ * over SMTP.
  *
  * <p>Any SMTP provider works: Spring Boot only creates a {@link JavaMailSender}
  * when {@code SPRING_MAIL_HOST} is set, and {@code MAIL_FROM} names the sender.
@@ -78,6 +79,34 @@ public class EmailService {
         } catch (MailException e) {
             log.warn("Could not send {} email: {}", purpose, e.getMessage());
         }
+    }
+
+    /**
+     * Sends a plain-text email to one address. Like {@link #sendToken}, failures
+     * are logged rather than thrown, and nothing is sent until the provider is
+     * configured.
+     */
+    public void send(String to, String subject, String text) {
+        if (!isConfigured()) {
+            log.info("Email not configured; skipped \"{}\"", subject);
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
+        try {
+            mailSender.send(message);
+            log.info("Sent \"{}\" email", subject);
+        } catch (MailException e) {
+            log.warn("Could not send \"{}\" email: {}", subject, e.getMessage());
+        }
+    }
+
+    /** An absolute link into the web app, e.g. {@code /fixtures/123}. */
+    public String appLink(String path) {
+        return appBaseUrl + path;
     }
 
     String linkFor(VerificationTokenPurpose purpose, String rawToken) {

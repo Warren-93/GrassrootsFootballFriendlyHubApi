@@ -25,7 +25,7 @@ import java.util.Optional;
  * Drives friendly requests through {@link RequestStateMachine}. This class
  * owns the side effects the state machine itself is deliberately silent on:
  * reserving and releasing availability slots, and creating the {@link Fixture}
- * the moment a request is accepted.
+ * (and emailing both teams its confirmation) the moment a request is accepted.
  */
 @Service
 public class FriendlyRequestService {
@@ -42,6 +42,7 @@ public class FriendlyRequestService {
     private final RateLimitProperties rateLimits;
     private final NotificationService notificationService;
     private final TeamReadinessService readiness;
+    private final FixtureConfirmationEmails confirmationEmails;
 
     public FriendlyRequestService(FriendlyRequestRepository requests, TeamRepository teams,
                                   AvailabilityRepository availability, BlockRepository blocks,
@@ -49,7 +50,8 @@ public class FriendlyRequestService {
                                   UserRepository users, IdempotencyKeyRepository idempotencyKeys,
                                   RateLimiter rateLimiter, RateLimitProperties rateLimits,
                                   NotificationService notificationService,
-                                  TeamReadinessService readiness) {
+                                  TeamReadinessService readiness,
+                                  FixtureConfirmationEmails confirmationEmails) {
         this.requests = requests;
         this.teams = teams;
         this.availability = availability;
@@ -62,6 +64,7 @@ public class FriendlyRequestService {
         this.rateLimits = rateLimits;
         this.notificationService = notificationService;
         this.readiness = readiness;
+        this.confirmationEmails = confirmationEmails;
     }
 
     public FriendlyRequest send(String userId, FriendlyRequestDtos.SendRequest req, String idempotencyKey) {
@@ -345,11 +348,13 @@ public class FriendlyRequestService {
         availability.findById(fr.senderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
         availability.findById(fr.recipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
 
-        fixtures.save(new Fixture(null, fr.id(), fr.homeTeamId(), fr.awayTeamId(), fr.date(),
+        Fixture fixture = fixtures.save(new Fixture(null, fr.id(), fr.homeTeamId(), fr.awayTeamId(), fr.date(),
                 fr.startTime(), fr.endTime(), fr.venueId(), FixtureStatus.CONFIRMED,
                 fr.costShare(), fr.refereeArrangement(), Instant.now()));
 
-        return requests.save(withStatus(fr, RequestStatus.CONFIRMED));
+        FriendlyRequest confirmed = requests.save(withStatus(fr, RequestStatus.CONFIRMED));
+        confirmationEmails.sendFor(fixture);
+        return confirmed;
     }
 
     private void cancelFixtureIfAny(FriendlyRequest fr) {
