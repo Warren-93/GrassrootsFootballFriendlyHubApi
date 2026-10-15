@@ -69,23 +69,26 @@ class MatchingEngineTest {
     }
 
     @Test
-    @DisplayName("the tighter of the two teams' travel radii bounds the match")
-    void excludesBeyondTighterTravelRadius() {
+    @DisplayName("a team beyond the travel radius is still shown, ranked below a nearby one")
+    void keepsTeamsBeyondTravelRadius() {
         // ~35 miles apart. We would travel 50, they only 10.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 50, 55.76, -4.17);
-        Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
+        Team far = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 10, 56.20, -4.30);
+        Team near = team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 10, 55.77, -4.18);
 
-        Optional<MatchResult> result = new MatchingEngine()
-                .score(a, List.of(saturdaySlot("a", "venue")), b, List.of(saturdaySlot("b", "venue")));
+        List<MatchResult> ranked = new MatchingEngine().rank(a, List.of(saturdaySlot("a", "venue")), List.of(
+                new MatchingEngine.Candidate(far, List.of(saturdaySlot("b", "venue"))),
+                new MatchingEngine.Candidate(near, List.of(saturdaySlot("c", "venue")))));
 
-        assertTrue(result.isEmpty());
+        assertEquals(List.of("c", "b"), ranked.stream().map(MatchResult::teamId).toList());
     }
 
     @Test
-    @DisplayName("two away-only teams cannot match - nobody can host")
-    void excludesWhenNobodyCanHost() {
+    @DisplayName("two away-only teams are shown, but with no usable shared dates")
+    void showsWhenNobodyCanHostWithoutOverlap() {
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.AWAY, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
@@ -96,12 +99,13 @@ class MatchingEngineTest {
         List<AvailabilitySlot> bSlots = List.of(
                 slot("av_b", "b", "2026-08-22", "10:00", "14:00", HomeAwayPreference.AWAY, null));
 
-        assertTrue(new MatchingEngine().score(a, aSlots, b, bSlots).isEmpty());
+        MatchResult m = new MatchingEngine().score(a, aSlots, b, bSlots).orElseThrow();
+        assertNull(m.earliestOverlap(), "nobody can host, so no slot pair is offered");
     }
 
     @Test
-    @DisplayName("an overlap shorter than the match duration is excluded")
-    void excludesWhenOverlapTooShort() {
+    @DisplayName("an overlap shorter than the match duration is not offered as a date")
+    void noOverlapWhenTooShort() {
         // U13 needs 60 minutes; this overlap is 30.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
@@ -113,7 +117,44 @@ class MatchingEngineTest {
         List<AvailabilitySlot> bSlots = List.of(
                 slot("av_b", "b", "2026-08-22", "11:00", "13:00", HomeAwayPreference.EITHER, "v2"));
 
-        assertTrue(new MatchingEngine().score(a, aSlots, b, bSlots).isEmpty());
+        assertNull(new MatchingEngine().score(a, aSlots, b, bSlots).orElseThrow().earliestOverlap());
+    }
+
+    @Test
+    @DisplayName("a new team with no availability still sees opponents, ranked below ones with shared dates")
+    void newTeamWithoutAvailabilitySeesOpponents() {
+        Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+        Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+
+        MatchResult m = new MatchingEngine().score(ours, List.of(), b, List.of()).orElseThrow();
+        FactorResult availability = m.factors().stream()
+                .filter(f -> f.factor() == MatchFactor.AVAILABILITY).findFirst().orElseThrow();
+        assertAll("no availability",
+                () -> assertEquals(0.0, availability.ratio()),
+                () -> assertEquals("No shared dates yet", availability.reason()),
+                () -> assertNull(m.earliestOverlap()));
+    }
+
+    @Test
+    @DisplayName("gender must match exactly: mixed only plays mixed")
+    void requiresExactGender() {
+        Team mixed = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+        Team girls = withGender(team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.GIRLS);
+        Team boys = withGender(team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.BOYS);
+        Team otherMixed = team("d", "cd", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+
+        MatchingEngine engine = new MatchingEngine();
+        assertAll("gender",
+                () -> assertTrue(engine.score(mixed, List.of(), girls, List.of()).isEmpty()),
+                () -> assertTrue(engine.score(girls, List.of(), boys, List.of()).isEmpty()),
+                () -> assertTrue(engine.score(mixed, List.of(), otherMixed, List.of()).isPresent()),
+                () -> assertTrue(engine.score(boys, List.of(), withGender(otherMixed, Gender.BOYS), List.of()).isPresent()));
     }
 
     @Test
@@ -129,7 +170,7 @@ class MatchingEngineTest {
     }
 
     @Test
-    @DisplayName("format gap: two steps apart cannot produce a fixture, one step is scored not excluded")
+    @DisplayName("format gap: shown either way, a one-step gap scores better than a two-step one")
     void handlesFormatGap() {
         Team a = team("a", "ca", AgeGroup.U13, Format.SEVEN_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
@@ -138,12 +179,15 @@ class MatchingEngineTest {
         Team adjacent = team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
-        assertTrue(new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
-                wide, List.of(saturdaySlot("b", "v2"))).isEmpty(),
-                "a two-step format gap cannot produce a fixture");
-        assertTrue(new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
-                adjacent, List.of(saturdaySlot("c", "v3"))).isPresent(),
-                "a one-step format gap is scored, not excluded");
+        Optional<MatchResult> wideResult = new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
+                wide, List.of(saturdaySlot("b", "v2")));
+        Optional<MatchResult> adjacentResult = new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
+                adjacent, List.of(saturdaySlot("c", "v3")));
+
+        assertTrue(wideResult.isPresent(), "a two-step format gap is still shown");
+        assertTrue(adjacentResult.isPresent(), "a one-step format gap is shown");
+        assertTrue(adjacentResult.orElseThrow().score() > wideResult.orElseThrow().score(),
+                "the closer format ranks higher");
     }
 
     @Test
@@ -255,6 +299,15 @@ class MatchingEngineTest {
                 "G74", new GeoPoint(lon, lat), radius, pref,
                 "Manager", "07000 000000", "A team", VerificationStatus.VERIFIED,
                 "venue_" + id, null, Instant.now(), Instant.now(), false, false, true, true);
+    }
+
+    private static Team withGender(Team t, Gender gender) {
+        return new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
+                t.ageGroup(), gender, t.format(), t.abilityLevel(), t.league(),
+                t.postcode(), t.location(), t.travelRadiusMiles(), t.homeAwayPreference(),
+                t.managerName(), t.contactPhone(), t.description(), t.verification(),
+                t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
+                t.suspended(), t.archived(), t.searchVisible(), t.shareContactDetails());
     }
 
     private static AvailabilitySlot slot(String id, String teamId, String date,

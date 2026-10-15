@@ -6,11 +6,8 @@ import com.gffh.api.domain.Gender;
 import com.gffh.api.domain.Team;
 import com.gffh.api.domain.VerificationStatus;
 import com.gffh.api.repository.TeamRepository;
-import org.springframework.data.geo.Circle;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.Metrics;
-import org.springframework.data.geo.Point;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
@@ -30,6 +27,7 @@ import java.util.UUID;
 public class MongoTeamRepository implements TeamRepository {
 
     private static final String COLLECTION = "teams";
+    private static final double METRES_PER_MILE = 1609.344;
 
     private final MongoTemplate mongoTemplate;
 
@@ -83,21 +81,21 @@ public class MongoTeamRepository implements TeamRepository {
     public List<Team> findCandidates(GeoPoint centre, int radiusMiles, AgeGroup ageGroup, Gender gender,
                                      List<String> formats, List<String> abilityLevels,
                                      boolean verifiedOnly, String excludeClubId, int limit) {
-        Circle circle = new Circle(new Point(centre.longitude(), centre.latitude()),
-                new Distance(radiusMiles, Metrics.MILES));
-
-        Criteria criteria = Criteria.where("location").withinSphere(circle)
+        // $nearSphere rather than $geoWithin so the candidate cap keeps the
+        // closest teams: matching no longer has a travel-radius wall, and the
+        // cap must not drop nearby teams in favour of distant ones. GeoJSON
+        // distances are in metres.
+        Criteria criteria = Criteria.where("location")
+                .nearSphere(new GeoJsonPoint(centre.longitude(), centre.latitude()))
+                .maxDistance(radiusMiles * METRES_PER_MILE)
                 .and("ageGroup").is(ageGroup.name())
                 .and("clubId").ne(excludeClubId)
                 .and("suspended").ne(true)
                 .and("archived").ne(true)
                 .and("searchVisible").ne(false);
 
-        // MIXED is compatible with everything, so only a non-mixed search team
-        // narrows the candidate set by gender.
-        if (gender != Gender.MIXED) {
-            criteria = criteria.and("gender").in(gender.name(), Gender.MIXED.name());
-        }
+        // Gender must match exactly - see Gender.isCompatibleWith.
+        criteria = criteria.and("gender").is(gender.name());
         if (formats != null && !formats.isEmpty()) {
             criteria = criteria.and("format").in(formats);
         }

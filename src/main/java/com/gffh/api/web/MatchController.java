@@ -22,9 +22,10 @@ public class MatchController {
 
     @PostMapping("/search")
     @Operation(summary = "Find compatible opponents",
-            description = "Returns ranked opponents with a compatibility score and "
-                    + "server-generated reasons. Both quick match and manual search use "
-                    + "this endpoint; they differ only in which filters the client supplies.")
+            description = "Returns every opponent with the same age group and gender, ranked "
+                    + "by a compatibility score with server-generated reasons. Ability, format, "
+                    + "distance and shared availability affect the ranking, not who is shown. "
+                    + "The optional filters are kept for older clients.")
     public ResponseEntity<MatchDtos.SearchResponse> search(
             @AuthenticationPrincipal Jwt principal,
             @Valid @RequestBody MatchDtos.SearchRequest request) {

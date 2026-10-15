@@ -20,9 +20,9 @@ import java.util.Optional;
  *
  * <p>Two categories of rule exist:
  * <ul>
- *   <li><b>Exclusions</b> - conditions under which no fixture is possible at
- *       all. These return no result rather than a low score, because showing a
- *       team that cannot play you is worse than showing nothing.</li>
+ *   <li><b>Exclusions</b> - the only hard rules: the same team or club, a
+ *       different age group, or a different gender category. These return no
+ *       result rather than a low score.</li>
  *   <li><b>Scored factors</b> - the six weighted factors, each producing a ratio
  *       and a human-readable reason.</li>
  * </ul>
@@ -54,22 +54,9 @@ public final class MatchingEngine {
     public List<MatchResult> rank(Team ourTeam,
                                   List<AvailabilitySlot> ourSlots,
                                   List<Candidate> candidates) {
-        return rank(ourTeam, ourSlots, candidates, false);
-    }
-
-    /**
-     * @param ignoreTravelRadius when true, a candidate beyond either team's
-     *        configured travel radius is still scored and returned rather
-     *        than excluded - the radius stays a preference (it still drives
-     *        the distance factor's score) rather than a hard wall.
-     */
-    public List<MatchResult> rank(Team ourTeam,
-                                  List<AvailabilitySlot> ourSlots,
-                                  List<Candidate> candidates,
-                                  boolean ignoreTravelRadius) {
         List<MatchResult> results = new ArrayList<>();
         for (Candidate candidate : candidates) {
-            score(ourTeam, ourSlots, candidate.team(), candidate.slots(), ignoreTravelRadius)
+            score(ourTeam, ourSlots, candidate.team(), candidate.slots())
                     .ifPresent(results::add);
         }
         results.sort(MatchResult.RANKING);
@@ -79,53 +66,42 @@ public final class MatchingEngine {
     /**
      * Scores a single potential opponent.
      *
+     * <p>Only the team's identity, age group and gender can exclude a
+     * candidate. Everything else - shared dates, format, distance, ability,
+     * home/away - is scored, so a brand-new team with no availability yet
+     * still sees every team it could play, ranked by fit, rather than an empty
+     * list.
+     *
      * @return empty when an exclusion applies and no fixture is possible
      */
     public Optional<MatchResult> score(Team ourTeam,
                                        List<AvailabilitySlot> ourSlots,
                                        Team theirTeam,
                                        List<AvailabilitySlot> theirSlots) {
-        return score(ourTeam, ourSlots, theirTeam, theirSlots, false);
-    }
-
-    public Optional<MatchResult> score(Team ourTeam,
-                                       List<AvailabilitySlot> ourSlots,
-                                       Team theirTeam,
-                                       List<AvailabilitySlot> theirSlots,
-                                       boolean ignoreTravelRadius) {
 
         // ---- Exclusions -----------------------------------------------------
 
         if (ourTeam.id().equals(theirTeam.id())) return Optional.empty();
         if (ourTeam.clubId().equals(theirTeam.clubId())) return Optional.empty();
 
-        // Gender categories are a hard constraint, never a scored preference.
+        // Gender categories are a hard constraint, never a scored preference,
+        // and must match exactly.
         if (!ourTeam.gender().isCompatibleWith(theirTeam.gender())) return Optional.empty();
 
         int ageBands = ourTeam.ageGroup().bandsApart(theirTeam.ageGroup());
         if (ageBands > weights.ageBandTolerance()) return Optional.empty();
 
-        // Distance is bounded by the tighter of the two radii by default: a team
-        // that will not normally travel this far scores it down rather than up.
-        // ignoreTravelRadius turns that preference into an explicit "show me
-        // everything" search - the radius still drives the distance factor's
-        // score below, it just stops excluding.
+        // ---- Scored factors -------------------------------------------------
+
+        // Distance, format and availability used to exclude; they now only
+        // rank. The travel radius still shapes the distance score, so a team
+        // beyond it sits lower in the list rather than vanishing from it.
         double miles = ourTeam.location().milesTo(theirTeam.location());
         int radiusLimit = Math.min(ourTeam.travelRadiusMiles(), theirTeam.travelRadiusMiles());
-        if (!ignoreTravelRadius && miles > radiusLimit) return Optional.empty();
 
-        // Formats more than one step apart cannot produce a fixture at all:
-        // a 7v7 squad cannot field an 11v11 side. One step apart is negotiable
-        // and is scored rather than excluded.
-        if (ourTeam.format().stepsApart(theirTeam.format()) > 1) return Optional.empty();
-
-        // A fixture needs a window long enough to actually play the match.
         int requiredMinutes = ourTeam.ageGroup().defaultMatchMinutes();
         List<MatchResult.SlotOverlap> overlaps =
                 findOverlaps(ourSlots, theirSlots, requiredMinutes);
-        if (overlaps.isEmpty()) return Optional.empty();
-
-        // ---- Scored factors -------------------------------------------------
 
         List<FactorResult> factors = List.of(
                 scoreAge(ourTeam, theirTeam, ageBands),
@@ -167,6 +143,12 @@ public final class MatchingEngine {
      */
     private FactorResult scoreAvailability(List<MatchResult.SlotOverlap> overlaps,
                                            int requiredMinutes) {
+        if (overlaps.isEmpty()) {
+            // Not an exclusion: either side can still add dates, and a new
+            // team needs to see who is out there before it publishes any.
+            return new FactorResult(MatchFactor.AVAILABILITY, 0.0, weights.availability(),
+                    "No shared dates", "No shared dates", "No shared dates yet");
+        }
         MatchResult.SlotOverlap best = overlaps.get(0);
         int slack = best.overlapMinutes() - requiredMinutes;
         double ratio = slack <= 0 ? 0.60
@@ -182,10 +164,10 @@ public final class MatchingEngine {
     }
 
     private FactorResult scoreFormat(Team ours, Team theirs) {
-        // Gaps beyond one step are excluded before scoring, so only 0 and 1
-        // reach here.
+        // One step apart is negotiable; further apart is shown but scores
+        // nothing, so the teams can still talk if they want to.
         int steps = ours.format().stepsApart(theirs.format());
-        double ratio = steps == 0 ? 1.0 : 0.40;
+        double ratio = steps == 0 ? 1.0 : steps == 1 ? 0.40 : 0.0;
         String reason = steps == 0
                 ? "Same format (" + ours.format().label() + ")"
                 : "Formats differ - " + ours.format().label()

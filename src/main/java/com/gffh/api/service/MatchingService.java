@@ -32,8 +32,8 @@ public class MatchingService {
     private static final int CANDIDATE_LIMIT = 500;
 
     /**
-     * Stand-in for "no distance limit" when ignoreTravelRadius is set - a
-     * $centerSphere query needs a numeric radius, and any value at or beyond
+     * Stand-in for "no distance limit", the default - the geo query needs a
+     * numeric radius, and any value at or beyond
      * half the Earth's circumference (~12,450 miles, the farthest two points
      * can be from each other) covers the whole globe.
      */
@@ -85,23 +85,20 @@ public class MatchingService {
         LocalDate from = request.fromDate() != null ? request.fromDate() : LocalDate.now();
         LocalDate to = request.toDate() != null ? request.toDate() : from.plusWeeks(8);
 
+        // A team with no availability yet still sees its opponents: shared
+        // dates are scored, not required, so new accounts are not met with
+        // an empty list.
         List<AvailabilitySlot> ourSlots =
                 availability.findBookableForTeamBetween(ourTeam.id(), from, to);
-        if (ourSlots.isEmpty()) {
-            // Quick match is meaningless without published availability. The
-            // client blocks this, but a direct API caller must be told why.
-            return empty(weights);
-        }
 
         // Narrow in the database before scoring in memory. The 2dsphere index
         // and the ageGroup/format/gender compound index carry this query; see
-        // section 10 of the Technical Specification.
-        boolean ignoreTravelRadius = Boolean.TRUE.equals(request.ignoreTravelRadius());
-        int radius = ignoreTravelRadius
-                ? UNLIMITED_RADIUS_MILES
-                : request.maxDistanceMiles() != null
-                        ? Math.min(request.maxDistanceMiles(), ourTeam.travelRadiusMiles())
-                        : ourTeam.travelRadiusMiles();
+        // section 10 of the Technical Specification. With no filters (the
+        // default) every team of the same age group and gender is a
+        // candidate, nearest first; distance only affects the ranking.
+        int radius = request.maxDistanceMiles() != null && !Boolean.TRUE.equals(request.ignoreTravelRadius())
+                ? request.maxDistanceMiles()
+                : UNLIMITED_RADIUS_MILES;
 
         List<Team> candidates = teams.findCandidates(
                 ourTeam.location(),
@@ -133,10 +130,9 @@ public class MatchingService {
         List<MatchingEngine.Candidate> scored = candidates.stream()
                 .map(t -> new MatchingEngine.Candidate(
                         t, slotsByTeam.getOrDefault(t.id(), List.of())))
-                .filter(c -> !c.slots().isEmpty())
                 .toList();
 
-        List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored, ignoreTravelRadius);
+        List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored);
 
         Map<String, Team> byId = candidates.stream()
                 .collect(Collectors.toMap(Team::id, t -> t));
