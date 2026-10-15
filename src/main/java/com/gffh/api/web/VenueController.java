@@ -39,7 +39,7 @@ public class VenueController {
     @PatchMapping("/{venueId}")
     public ResponseEntity<VenueDtos.VenueView> update(@AuthenticationPrincipal Jwt principal,
                                                        @PathVariable String venueId,
-                                                       @RequestBody VenueDtos.UpdateVenueRequest request) {
+                                                       @Valid @RequestBody VenueDtos.UpdateVenueRequest request) {
         return ResponseEntity.ok(VenueDtos.VenueView.from(venueService.update(principal.getSubject(), venueId, request)));
     }
 

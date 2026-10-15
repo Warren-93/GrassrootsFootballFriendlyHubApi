@@ -22,6 +22,7 @@ import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -148,6 +149,54 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.venue.name").value("Test Park"));
     }
 
+    @Test
+    @DisplayName("a request can only name a venue of one of its two clubs, and venue postcodes are capped on update too")
+    void venuesMustBelongToTheTwoClubs() throws Exception {
+        Pair p = readyPair("Stranger");
+        String senderVenue = defaultVenueId(p.sender().accessToken(), p.senderTeam());
+        TestAccount outsider = registerAccount("Stranger Outsider Owner");
+        String outsiderTeam = createTeam(outsider.accessToken(), "Stranger FC Outsider", 56.014582, -3.790261);
+        makeTeamReadyForRequests(outsider.accessToken(), outsiderTeam);
+        String outsiderVenue = defaultVenueId(outsider.accessToken(), outsiderTeam);
+
+        // Another club's venue would otherwise show its details to both teams.
+        send(p, daysFromNow(33), p.senderTeam(), outsiderVenue)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_VENUE"));
+        send(p, daysFromNow(33), p.senderTeam(), "no-such-venue")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_VENUE"));
+
+        String requestId = id(send(p, daysFromNow(33), p.senderTeam(), senderVenue)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.venue.id").value(senderVenue)));
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/suggestChanges")
+                        .header("Authorization", "Bearer " + p.recipient().accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reason": "Somewhere else?", "proposedVenueId": "%s" }
+                                """.formatted(outsiderVenue)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_VENUE"));
+
+        mockMvc.perform(patch("/api/v1/venues/" + senderVenue)
+                        .header("Authorization", "Bearer " + p.sender().accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "postcode": "FK2 7ZX FK2 7ZX" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(patch("/api/v1/venues/" + senderVenue)
+                        .header("Authorization", "Bearer " + p.sender().accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "postcode": "fk2 7zx" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postcode").value("FK2 7ZX"));
+    }
+
     // ---- Helpers --------------------------------------------------------
 
     private record Pair(TestAccount sender, TestAccount recipient, String senderTeam, String recipientTeam) {}
@@ -190,6 +239,11 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
 
     /** Sends a request with no venueId, on fresh slots for {@code isoDate}. */
     private ResultActions send(Pair p, String isoDate, String homeTeamId) throws Exception {
+        return send(p, isoDate, homeTeamId, null);
+    }
+
+    /** Sends a request naming {@code venueId} (left out when null), on fresh slots for {@code isoDate}. */
+    private ResultActions send(Pair p, String isoDate, String homeTeamId, String venueId) throws Exception {
         String senderSlot = slot(p.sender().accessToken(), p.senderTeam(), isoDate);
         String recipientSlot = slot(p.recipient().accessToken(), p.recipientTeam(), isoDate);
         return mockMvc.perform(post("/api/v1/friendly-requests")
@@ -200,10 +254,10 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
                           "senderTeamId": "%s", "recipientTeamId": "%s",
                           "senderSlotId": "%s", "recipientSlotId": "%s",
                           "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00",
-                          "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"
+                          "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"%s
                         }
                         """.formatted(p.senderTeam(), p.recipientTeam(), senderSlot, recipientSlot, isoDate,
-                        homeTeamId)));
+                        homeTeamId, venueId == null ? "" : ", \"venueId\": \"" + venueId + "\"")));
     }
 
     private String id(ResultActions result) throws Exception {

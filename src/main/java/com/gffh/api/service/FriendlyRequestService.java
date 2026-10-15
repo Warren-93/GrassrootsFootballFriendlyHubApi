@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Drives friendly requests through {@link RequestStateMachine}. This class
@@ -109,6 +110,7 @@ public class FriendlyRequestService {
             throw new BusinessRuleException("INVALID_HOME_TEAM", HttpStatus.BAD_REQUEST,
                     "The home team must be one of the two teams in the request.");
         }
+        requireVenueOfEitherTeam(req.venueId(), req.senderTeamId(), req.recipientTeamId());
 
         AvailabilitySlot senderSlot = bookableSlot(req.senderSlotId(), req.senderTeamId());
         AvailabilitySlot recipientSlot = bookableSlot(req.recipientSlotId(), req.recipientTeamId());
@@ -160,6 +162,7 @@ public class FriendlyRequestService {
         FriendlyRequest updated;
         if (action.equals("suggestChanges") && request != null
                 && (request.proposedStartTime() != null || request.proposedEndTime() != null || request.proposedVenueId() != null)) {
+            requireVenueOfEitherTeam(request.proposedVenueId(), fr.senderTeamId(), fr.recipientTeamId());
             updated = withStatus(fr, transition.to(), reason,
                     request.proposedStartTime(), request.proposedEndTime(), request.proposedVenueId());
         } else if (action.equals("acceptChanges")) {
@@ -391,5 +394,23 @@ public class FriendlyRequestService {
 
     private String homeVenueId(Team home) {
         return venues.homeVenueFor(home).map(Venue::id).orElse(null);
+    }
+
+    /**
+     * A venue named on a request must belong to one of the two teams' clubs.
+     * Venues are otherwise private to their club, and the request (and later
+     * the fixture) shows both teams the venue's address and access notes.
+     */
+    private void requireVenueOfEitherTeam(String venueId, String teamAId, String teamBId) {
+        if (venueId == null || venueId.isBlank()) return;
+        String clubId = venues.findById(venueId).map(Venue::clubId).orElse(null);
+        boolean ours = clubId != null && Stream.of(teamAId, teamBId)
+                .map(teams::findById)
+                .flatMap(Optional::stream)
+                .anyMatch(t -> clubId.equals(t.clubId()));
+        if (!ours) {
+            throw new BusinessRuleException("INVALID_VENUE", HttpStatus.BAD_REQUEST,
+                    "Choose a venue that belongs to one of the two teams.");
+        }
     }
 }
