@@ -7,11 +7,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,6 +51,31 @@ class AdminNamesIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("a request rejected once stays in the queue until a second admin confirms")
+    void onceRejectedRequestStaysQueuedForSecondAdmin() throws Exception {
+        TestAccount owner = registerAccount("Second Review Owner");
+        String teamId = createTeamInClub(owner.accessToken(), "Second Review U12s", "Second Review Club");
+
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/verification")
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "contactDetails": "Sam, 07700900000", "evidenceUrls": ["https://example.com/fa.png"] }
+                                """))
+                .andExpect(status().isOk());
+        String id = findBy(adminGet("/api/v1/admin/verifications"), "teamId", teamId).get("id").asText();
+
+        reject(id).andExpect(jsonPath("$.status").value("AWAITING_SECOND_REJECTION"));
+        assertEquals("AWAITING_SECOND_REJECTION",
+                findBy(adminGet("/api/v1/admin/verifications"), "id", id).get("status").asText());
+
+        // adminToken() mints a different admin each call, so this is the second reviewer.
+        reject(id).andExpect(jsonPath("$.status").value("REJECTED"));
+        assertFalse(StreamSupport.stream(adminGet("/api/v1/admin/verifications").spliterator(), false)
+                .anyMatch(n -> id.equals(n.path("id").asText())));
+    }
+
+    @Test
     @DisplayName("report queue items carry the reporter's and the reported team's names")
     void reportQueueNamesBothTeams() throws Exception {
         TestAccount reporter = registerAccount("Names Reporter Owner");
@@ -72,6 +99,14 @@ class AdminNamesIntegrationTest extends AbstractIntegrationTest {
 
     private String adminToken() {
         return adminJwtService.issueSessionToken("it-admin-" + UUID.randomUUID(), "admin@example.com");
+    }
+
+    private ResultActions reject(String verificationId) throws Exception {
+        return mockMvc.perform(post("/api/v1/admin/verifications/" + verificationId + "/reject")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"reason\": \"Evidence unreadable\" }"))
+                .andExpect(status().isOk());
     }
 
     private JsonNode adminGet(String path) throws Exception {

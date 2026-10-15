@@ -12,7 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * SCR-PR-07's submission and ADM-03's review queue - previously "verification
@@ -62,8 +64,17 @@ public class VerificationService {
         return requests.findLatestByTeamId(teamId).map(this::view).orElse(null);
     }
 
+    /**
+     * Everything still waiting on an admin: new requests, and ones rejected
+     * once that need a second admin to confirm (otherwise they drop out of
+     * ADM-03 and the two-person rejection can never be finished).
+     */
     public List<VerificationDtos.VerificationRequestView> queue() {
-        return requests.findByStatus(VerificationRequestStatus.PENDING).stream()
+        return Stream.concat(
+                        requests.findByStatus(VerificationRequestStatus.PENDING).stream(),
+                        requests.findByStatus(VerificationRequestStatus.AWAITING_SECOND_REJECTION).stream())
+                .sorted(Comparator.comparing(VerificationRequest::submittedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(this::view).toList();
     }
 
