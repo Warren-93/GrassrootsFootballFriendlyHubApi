@@ -1,10 +1,12 @@
 package com.gffh.api.service;
 
 import com.gffh.api.config.RateLimitProperties;
+import com.gffh.api.domain.OAuthProvider;
 import com.gffh.api.domain.User;
 import com.gffh.api.domain.VerificationTokenPurpose;
 import com.gffh.api.repository.UserRepository;
 import com.gffh.api.web.AuthDtos;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,12 +24,13 @@ public class AuthService {
     private final RateLimiter rateLimiter;
     private final RateLimitProperties rateLimits;
     private final MemberInviteService memberInvites;
+    private final OAuthTokenVerifier oauthTokens;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService,
                        RefreshTokenService refreshTokenService,
                        VerificationTokenService verificationTokenService,
                        RateLimiter rateLimiter, RateLimitProperties rateLimits,
-                       MemberInviteService memberInvites) {
+                       MemberInviteService memberInvites, OAuthTokenVerifier oauthTokens) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -36,6 +39,7 @@ public class AuthService {
         this.rateLimiter = rateLimiter;
         this.rateLimits = rateLimits;
         this.memberInvites = memberInvites;
+        this.oauthTokens = oauthTokens;
     }
 
     public AuthDtos.TokenResponse register(AuthDtos.RegisterRequest request) {
@@ -58,20 +62,52 @@ public class AuthService {
     }
 
     public AuthDtos.TokenResponse login(AuthDtos.LoginRequest request) {
-        // Keyed on the attempted email, not the caller, so brute-forcing one
-        // account is capped regardless of how many IPs it's spread across.
-        if (!rateLimiter.tryConsume("auth:" + request.email().toLowerCase(), rateLimits.getAuthAttemptsPerHour())) {
-            throw BusinessRuleException.rateLimited();
-        }
+        requireWithinAuthLimit(request.email());
         User user = users.findByEmail(request.email())
                 .filter(u -> passwordEncoder.matches(request.password(), u.passwordHash()))
                 .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
                         "Email or password is incorrect."));
-        if (user.suspended()) {
-            throw new BusinessRuleException("ACCOUNT_SUSPENDED", HttpStatus.FORBIDDEN,
-                    "This account has been suspended.");
-        }
+        requireNotSuspended(user);
         return issueToken(user);
+    }
+
+    /**
+     * Google or Apple sign-in. The provider has proved the caller owns the
+     * address, so an existing account with it is signed in, and otherwise a
+     * verified account is created with no password - password sign-in then
+     * fails until they use "Forgot password". Either way any team invites
+     * waiting for the address are accepted. Shares login's rate limit and
+     * suspension check.
+     *
+     * <p>An existing account that wasn't verified yet is verified now, but
+     * loses its password and its sessions: nobody had proved they owned the
+     * address when that password was set, so it may belong to someone who
+     * registered it first to wait for the owner to verify it.
+     */
+    public AuthDtos.TokenResponse signInWith(OAuthProvider provider, AuthDtos.OAuthSignInRequest request) {
+        OAuthTokenVerifier.Identity identity = oauthTokens.verify(provider, request.idToken());
+        requireWithinAuthLimit(identity.email());
+
+        boolean created = false;
+        User user = users.findByEmail(identity.email()).orElse(null);
+        if (user == null) {
+            try {
+                user = users.save(new User(null, identity.email(), null,
+                        identity.displayName(request.displayName()), true, Instant.now(), false));
+                created = true;
+            } catch (DuplicateKeyException e) {
+                // A double tap raced us to creating the account: sign in to that one.
+                user = users.findByEmail(identity.email()).orElseThrow(() -> e);
+            }
+        }
+        requireNotSuspended(user);
+        if (!user.emailVerified()) {
+            refreshTokenService.revokeAll(user.id());
+            user = users.save(new User(user.id(), user.email(), null, user.displayName(),
+                    true, user.createdAt(), user.suspended()));
+        }
+        memberInvites.acceptPendingInvites(user);
+        return issueToken(user).withNewUser(created);
     }
 
     public AuthDtos.TokenResponse refresh(String presented) {
@@ -163,6 +199,21 @@ public class AuthService {
                 updated.id(), VerificationTokenPurpose.EMAIL_VERIFY, updated.email());
         return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated),
                 verificationTokenService.forResponse(verificationToken));
+    }
+
+    // Keyed on the email, not the caller, so brute-forcing one account is
+    // capped regardless of how many IPs it's spread across.
+    private void requireWithinAuthLimit(String email) {
+        if (!rateLimiter.tryConsume("auth:" + email.toLowerCase(), rateLimits.getAuthAttemptsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
+    }
+
+    private static void requireNotSuspended(User user) {
+        if (user.suspended()) {
+            throw new BusinessRuleException("ACCOUNT_SUSPENDED", HttpStatus.FORBIDDEN,
+                    "This account has been suspended.");
+        }
     }
 
     private void requireCurrentPassword(User user, String presented) {

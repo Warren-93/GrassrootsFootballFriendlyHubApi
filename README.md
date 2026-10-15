@@ -124,10 +124,10 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 | `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
 | `APP_BASE_URL` | The web app that links in emails point at (including member invitations' `/register?email=` link). |
 | `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
-| `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on; also Android's `serverClientId` and an accepted token audience. |
-| `GOOGLE_ADDITIONAL_CLIENT_IDS` | More accepted Google audiences, comma-separated (e.g. an iOS client ID). |
+| `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on (`POST /api/v1/auth/oauth/google`); also Android's `serverClientId` and an accepted token audience. |
+| `GOOGLE_ADDITIONAL_CLIENT_IDS` | More accepted Google audiences, comma-separated (e.g. an iOS client ID). A Google token for any other client is refused. |
 | `APPLE_SERVICES_ID` | Apple Services ID for web sign-in (an accepted audience). |
-| `APPLE_BUNDLE_ID` | The iOS app's bundle ID (the audience of native iOS tokens). Either Apple variable turns Apple sign-in on. |
+| `APPLE_BUNDLE_ID` | The iOS app's bundle ID (the audience of native iOS tokens). Either Apple variable turns Apple sign-in on (`POST /api/v1/auth/oauth/apple`). |
 | `FCM_SERVICE_ACCOUNT_JSON` | Firebase service-account JSON (raw or base64) for Android push through FCM HTTP v1. The project ID is read from it. Unset: no Android pushes. |
 | `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID` | iOS push through APNs with token auth: the .p8 key's ID, the Apple team ID, the .p8 file's PEM contents, and the app's bundle ID (the topic). Off until all four are set. |
 | `APNS_PRODUCTION` | `true` sends to api.push.apple.com (App Store and TestFlight builds); default `false` uses the sandbox, which only development builds receive from. |
@@ -136,6 +136,19 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 
 `GET /api/v1/config` is public and tells the clients the support address and
 which sign-in providers are on, so none of these IDs need building into them.
+
+Google and Apple sign-in check each ID token against the provider's published
+signing keys (fetched from Google and Apple on first use, then cached), its
+issuer, its audience (one of the IDs above) and its expiry; Google must also
+have verified the email. The account with that email is signed in, or created
+already verified and with no password (password sign-in then needs "Forgot
+password" first). An existing account that wasn't verified yet is verified,
+and loses its password and other sessions, since nobody had proved they owned
+the address when that password was set. The answer is the same as
+`POST /api/v1/auth/login`'s, cookie flow included, plus `newUser`. A provider
+that isn't configured answers 400 `OAUTH_PROVIDER_DISABLED`, a bad token 401
+`INVALID_OAUTH_TOKEN`, and 503 `OAUTH_PROVIDER_UNAVAILABLE` when the
+provider's keys can't be fetched.
 
 Until email is configured, verification and password-reset tokens are logged
 and returned to the client instead of emailed, which means account email
@@ -175,6 +188,11 @@ in-app notification also delivered by email and push (`NotificationDelivery`,
 `PushService`, `FcmSender`, `ApnsSender`), each behind the manager's
 `emailEnabled`/`pushEnabled` preferences.
 
+Also done since: Google and Apple sign-in (`POST /api/v1/auth/oauth/google`
+and `/apple`, checked by `OAuthTokenVerifier` against `OAuthTokenConfig`'s
+rules), sharing login's rate limit, suspension check and refresh cookie, and
+accepting waiting team invites since the provider has proved the address.
+
 Still open:
 
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
@@ -192,6 +210,13 @@ Still open:
   against real FCM and APNs. Once `FCM_SERVICE_ACCOUNT_JSON` and the `APNS_*`
   values are set, send a friendly request to a team whose manager is signed in
   on a phone, and check the logs for `push rejected` lines.
+- **Google and Apple sign-in against the live providers.** Token checks are
+  tested with a locally generated key standing in for Google's and Apple's
+  published ones. Once `GOOGLE_CLIENT_ID` (plus any iOS client in
+  `GOOGLE_ADDITIONAL_CLIENT_IDS`) and the `APPLE_*` IDs are set, sign in from
+  each client and check the logs: a `sign-in token rejected` line ending
+  `The aud claim is not valid` means that client's ID is missing from those
+  settings.
 - **Venue postcodes.** Venues accept an optional `postcode` on create and
   update, and otherwise take one from the end of the address. Clients that
   collect a postcode only to look up coordinates should send it too, so

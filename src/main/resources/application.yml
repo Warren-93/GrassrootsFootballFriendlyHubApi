@@ -39,8 +39,11 @@ gffh:
     # bare address inside MAIL_FROM is used; with neither, there is none.
     support-email: ${SUPPORT_EMAIL:}
   oauth:
-    # Google and Apple sign-in, each off until its IDs are set. Published to
-    # the clients by GET /api/v1/config (see OAuthProperties).
+    # Google and Apple sign-in (POST /api/v1/auth/oauth/google and /apple),
+    # each off until its IDs are set. Published to the clients by
+    # GET /api/v1/config (see OAuthProperties). A token is accepted only when
+    # its audience is one of these IDs; the providers' signing keys are
+    # fetched from their published key sets (see OAuthTokenConfig).
     google:
       # The Google OAuth *Web* client ID: the web button, Android Credential
       # Manager's serverClientId, and an accepted token audience.

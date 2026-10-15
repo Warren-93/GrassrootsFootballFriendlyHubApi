@@ -99,6 +99,25 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Google and Apple sign-in are refused with 400 while they aren't configured")
+    void oauthProvidersAreOffByDefault() throws Exception {
+        mockMvc.perform(get("/api/v1/config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.google.enabled").value(false))
+                .andExpect(jsonPath("$.apple.enabled").value(false));
+
+        for (String provider : new String[] {"google", "apple"}) {
+            mockMvc.perform(post("/api/v1/auth/oauth/" + provider)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    { "idToken": "header.payload.signature" }
+                                    """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("OAUTH_PROVIDER_DISABLED"));
+        }
+    }
+
+    @Test
     @DisplayName("a malformed bearer token is rejected, not treated as anonymous")
     void rejectsMalformedToken() throws Exception {
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer not-a-real-jwt"))
