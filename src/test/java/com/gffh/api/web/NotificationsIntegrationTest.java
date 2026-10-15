@@ -38,7 +38,8 @@ class NotificationsIntegrationTest extends AbstractIntegrationTest {
     private TestAccount sendAFriendlyRequestTo(TestAccount recipientOwner, String recipientTeam) throws Exception {
         TestAccount senderOwner = registerAccount("Notif Sender Owner");
         String senderTeam = createTeam(senderOwner.accessToken(), "Notif FC Sender", 56.014582, -3.790261);
-        completeTeamProfile(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
         verifyEmail(senderOwner);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(9));

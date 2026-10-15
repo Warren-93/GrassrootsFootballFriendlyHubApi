@@ -42,7 +42,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Recipient", 56.014582, -3.790261);
-        completeTeamProfile(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(9));
         String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(9));
@@ -114,7 +115,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Decline Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Decline Recipient", 56.014582, -3.790261);
-        completeTeamProfile(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(16));
         String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(16));
@@ -167,7 +169,8 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         verifyEmail(senderOwner);
         String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Counter Sender", 56.014582, -3.790261);
         String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Counter Recipient", 56.014582, -3.790261);
-        completeTeamProfile(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
 
         String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(23));
         String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(23));
@@ -222,5 +225,69 @@ class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
         JsonNode fixture = objectMapper.readTree(fixturesResponse).get(0);
         assertEquals("14:00:00", fixture.get("startTime").asText(), "the fixture should carry the accepted proposal, not the original time");
         assertEquals("16:00:00", fixture.get("endTime").asText());
+    }
+
+    @Test
+    @DisplayName("requests need both teams verified with a venue, and the checklist says what's missing")
+    void requestsNeedVerifiedTeamsWithAVenue() throws Exception {
+        TestAccount senderOwner = registerAccount("Gate Sender Owner");
+        TestAccount recipientOwner = registerAccount("Gate Recipient Owner");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Gate FC Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Gate FC Recipient", 56.014582, -3.790261);
+
+        mockMvc.perform(get("/api/v1/teams/" + senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.readyForRequests").value(false))
+                .andExpect(jsonPath("$.profileChecklist[0].key").value("VERIFICATION"))
+                .andExpect(jsonPath("$.profileChecklist[0].done").value(false))
+                .andExpect(jsonPath("$.profileChecklist[0].requiredForRequests").value(true))
+                .andExpect(jsonPath("$.profileChecklist[1].key").value("VENUE"))
+                .andExpect(jsonPath("$.profileChecklist[1].done").value(false));
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(30));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(30));
+        String sendBody = """
+                {
+                  "senderTeamId": "%s",
+                  "recipientTeamId": "%s",
+                  "senderSlotId": "%s",
+                  "recipientSlotId": "%s",
+                  "date": "%s",
+                  "startTime": "10:00:00",
+                  "endTime": "12:00:00",
+                  "homeTeamId": "%s",
+                  "costShare": "SPLIT",
+                  "refereeArrangement": "NONE"
+                }
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(30), senderTeam);
+
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("PROFILE_INCOMPLETE"));
+
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        mockMvc.perform(get("/api/v1/teams/" + senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(jsonPath("$.readyForRequests").value(true));
+
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("RECIPIENT_NOT_READY"));
+
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SENT"));
     }
 }

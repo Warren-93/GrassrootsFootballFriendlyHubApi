@@ -5,6 +5,7 @@ import com.gffh.api.domain.Membership;
 import com.gffh.api.domain.Role;
 import com.gffh.api.domain.Team;
 import com.gffh.api.domain.User;
+import com.gffh.api.domain.Venue;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.ClubRepository;
@@ -73,9 +74,10 @@ public class PrivacyService {
 
     private PrivacyDtos.TeamExport toTeamExport(Team team) {
         LocalDate from = LocalDate.now().minusYears(5);
+        List<Venue> clubVenues = venues.findByClubId(team.clubId());
         return new PrivacyDtos.TeamExport(
-                TeamDtos.TeamView.from(team, true),
-                venues.findByClubId(team.clubId()).stream().map(VenueDtos.VenueView::from).toList(),
+                TeamDtos.TeamView.from(team, true, team.defaultVenueId() != null || !clubVenues.isEmpty()),
+                clubVenues.stream().map(VenueDtos.VenueView::from).toList(),
                 availability.findBookableForTeamBetween(team.id(), from, LocalDate.now().plusYears(2)),
                 requests.findByTeamId(team.id()),
                 fixtures.findByTeamId(team.id()),

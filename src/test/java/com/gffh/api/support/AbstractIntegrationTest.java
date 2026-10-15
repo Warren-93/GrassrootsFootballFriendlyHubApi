@@ -2,6 +2,9 @@ package com.gffh.api.support;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gffh.api.domain.Team;
+import com.gffh.api.domain.VerificationStatus;
+import com.gffh.api.repository.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +19,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +54,9 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected TeamRepository teamRepository;
 
     /** A fresh, uniquely-emailed account so tests never collide on state or the per-email login rate limit. */
     protected record TestAccount(String email, String accessToken, String userId, String verificationToken) {}
@@ -113,8 +120,12 @@ public abstract class AbstractIntegrationTest {
         return objectMapper.readTree(response).get("id").asText();
     }
 
-    /** Pushes Team.completenessPercent() past the 80% a friendly request requires - see FriendlyRequestService's PROFILE_INCOMPLETE gate. */
-    protected void completeTeamProfile(String accessToken, String teamId) throws Exception {
+    /**
+     * Fills in the profile, adds a club venue and verifies the team, so it can
+     * send and receive friendly requests - see TeamReadinessService. Verification
+     * is set directly on the repository, standing in for an admin approval.
+     */
+    protected void makeTeamReadyForRequests(String accessToken, String teamId) throws Exception {
         String body = """
                 {
                   "managerName": "Test Manager",
@@ -130,6 +141,33 @@ public abstract class AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk());
+
+        String clubId = objectMapper.readTree(mockMvc.perform(get("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("clubId").asText();
+
+        mockMvc.perform(post("/api/v1/venues")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clubId": "%s",
+                                  "name": "Test Park",
+                                  "address": "1 Test Road",
+                                  "latitude": 56.014582,
+                                  "longitude": -3.790261
+                                }
+                                """.formatted(clubId)))
+                .andExpect(status().isOk());
+
+        Team team = teamRepository.findById(teamId).orElseThrow();
+        teamRepository.save(new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
+                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.league(), team.postcode(),
+                team.location(), team.travelRadiusMiles(), team.homeAwayPreference(), team.managerName(),
+                team.contactPhone(), team.description(), VerificationStatus.VERIFIED, team.defaultVenueId(),
+                team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(),
+                team.archived(), team.searchVisible(), team.shareContactDetails()));
     }
 
     /**
