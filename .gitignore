@@ -15,7 +15,25 @@ Thumbs.db
 # Logs
 *.log
 
-# Local environment overrides
+# Secrets - never commit these. Real values live in Render, Vercel and
+# GitHub Actions secrets; commit a .env.example with blank values instead.
 .env
-application-local.yml
-application-local.properties
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+keystore.properties
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+application-local.*
+application-prod.*
+secrets/
+*.secret
+id_rsa*
+.vercel
