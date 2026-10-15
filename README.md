@@ -80,9 +80,11 @@ mvn spring-boot:run
 
 The app needs a reachable MongoDB (`MONGODB_URI`, default
 `mongodb://localhost:27017/db-gffh`) — `docker-compose.yml` provides one with a
-named volume so data survives a restart. It generates its own RSA signing key at
-startup for issuing bearer tokens — there is no external identity provider yet
-(see `JwtKeyConfig`), so restarting the API invalidates outstanding tokens.
+named volume so data survives a restart. It signs bearer tokens itself with the
+RSA key in `JWT_PRIVATE_KEY`, or with a throwaway key generated per startup
+when that is unset (see `JwtKeyConfig`), in which case a restart invalidates
+outstanding tokens. Everything else it reads is listed under Configuration
+below.
 
 `MatchingEngineTest` and `RequestStateMachineTest` are the deterministic
 matching test scenarios required by section 22 of the Technical
@@ -104,6 +106,38 @@ score chip's three bands never fired, making the number decorative. The current
 curves produce a realistic spread — a near-perfect match scores 99, a marginal
 one 64 — so the bands carry information.
 
+## Configuration
+
+All environment variables are optional except `MONGODB_URI` in a deployed
+environment. `render.yaml` declares the ones a deployment is expected to set
+(Render supplies `PORT` itself); `application.yml` shows their defaults, and the
+`SPRING_MAIL_*` ones bind straight to Spring Boot's `spring.mail.*`.
+
+| Variable | What it does |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string. Default `mongodb://localhost:27017/db-gffh`. |
+| `PORT` | HTTP port. Default 8090. |
+| `JWT_PRIVATE_KEY` | PKCS#8 PEM RSA key that signs access tokens. Unset: a key is generated per startup. |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins allowed to call the API (`*.vercel.app` previews are always allowed). |
+| `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | SMTP server. With no host, no email is sent. |
+| `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
+| `APP_BASE_URL` | The web app that links in emails point at. |
+| `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
+| `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on; also Android's `serverClientId` and an accepted token audience. |
+| `GOOGLE_ADDITIONAL_CLIENT_IDS` | More accepted Google audiences, comma-separated (e.g. an iOS client ID). |
+| `APPLE_SERVICES_ID` | Apple Services ID for web sign-in (an accepted audience). |
+| `APPLE_BUNDLE_ID` | The iOS app's bundle ID (the audience of native iOS tokens). Either Apple variable turns Apple sign-in on. |
+| `ADMIN_TOTP_REQUIRED` | `true` makes admin sign-in also ask for an authenticator code. Default `false`. |
+| `AUTH_COOKIE_SAME_SITE`, `AUTH_COOKIE_SECURE` | The web app's refresh-token cookie. Defaults `None` and `true`. |
+
+`GET /api/v1/config` is public and tells the clients the support address and
+which sign-in providers are on, so none of these IDs need building into them.
+
+Until email is configured, verification and password-reset tokens are logged
+and returned to the client instead of emailed, which means account email
+verification proves nothing in that mode, and no fixture confirmation emails
+are sent.
+
 ## Outstanding
 
 Done since the scaffold above was written: auth (self-issued JWT, no external
@@ -113,17 +147,18 @@ implementations for every persistence interface; explicit index creation
 scaffold didn't call out but which turned out to be required connective tissue
 - nothing else has a team to act on without it.
 
+Also done since: email delivery over SMTP (`EmailService`: verification and
+password-reset links, and fixture confirmations to both teams via
+`FixtureConfirmationEmails`); team verification through the API (submission,
+ADM-03's two-admin review queue, and an admin "verify now" override in
+`VerificationService`); automatic fixture completion (`FixtureCompletionJob`
+checks hourly and moves CONFIRMED fixtures whose date has passed to
+COMPLETED); venues filled in from the home team's default when a request or
+fixture has none; and `TeamRepository.findCandidates` taking the set of age
+groups within `ageBandTolerance` (still 0 by default, so exact age group only).
+
 Still open:
 
-- **Email delivery.** `EmailService` sends verification and password-reset
-  links over SMTP once `SPRING_MAIL_HOST`/`_PORT`/`_USERNAME`/`_PASSWORD` and
-  `MAIL_FROM` are set (any provider; links point at `APP_BASE_URL`). Until
-  then tokens are logged and returned to the client, which means account
-  email verification proves nothing in that mode.
-- **Team verification.** `Team.verification` and `BusinessRuleException.teamNotVerified()`
-  already gate friendly-request sending on it, but nothing moves a team out of
-  `NOT_STARTED`. Verified in this session's smoke test with a direct database
-  write, not through the API.
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
   `gffh_refresh` cookie (`X-Auth-Mode: cookie`, see `RefreshCookies`). While the
   web app calls the API cross-site (Vercel to Render) the cookie is
@@ -134,16 +169,11 @@ Still open:
   PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
   startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA
   -pkeyopt rsa_keygen_bits:2048`) so access tokens survive restarts.
-- **`TeamRepository.findCandidates` takes a single `AgeGroup`, not a tolerance
-  range.** `MatchingService` always passes the searching team's exact age group,
-  so raising `ageBandTolerance` above zero via `MatchingWeightsProvider` would
-  not surface the wider candidates the engine is otherwise willing to score.
-  Harmless at the MVP default (tolerance 0), but worth fixing before that knob
-  is exposed to admins.
-- **Fixture completion.** `RequestStateMachine` models `CONFIRMED → COMPLETED`
-  as a `SYSTEM` transition, implying a scheduled job once the fixture date has
-  passed. No scheduler exists yet; fixtures stay `CONFIRMED` indefinitely.
+- **Venue postcodes.** Venues accept an optional `postcode` on create and
+  update, and otherwise take one from the end of the address. Clients that
+  collect a postcode only to look up coordinates should send it too, so
+  fixture emails and venue details can show it.
 - The six open questions in section 16 of the UI/UX Technical Specification.
-  Age-band tolerance is already parameterised in `MatchingWeights`, so resolving
-  that one is a configuration change rather than a code change (modulo the
-  `findCandidates` gap above).
+  Age-band tolerance is already parameterised in `MatchingWeights` and honoured
+  by the candidate query, so resolving that one is a configuration change
+  rather than a code change.
