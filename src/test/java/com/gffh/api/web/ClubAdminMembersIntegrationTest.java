@@ -40,6 +40,8 @@ class ClubAdminMembersIntegrationTest extends AbstractIntegrationTest {
         TestAccount manager = verifiedAccount("Admin Guard Manager");
         String managerMembership = membershipId(addMember(owner, teamId, manager.email(), "TEAM_MANAGER")
                 .andExpect(status().isOk()));
+        // Running a club of their own must not count towards this one.
+        String managerOwnTeamId = createTeam(manager.accessToken(), "Admin Guard Elsewhere FC", 56.014582, -3.790261);
         // A second club admin, so LAST_CLUB_ADMIN can't be what refuses the demotions below.
         TestAccount secondAdmin = registerAccount("Admin Guard Second Admin");
         String secondAdminMembership = membershipId(addMember(owner, teamId, secondAdmin.email(), "CLUB_ADMIN")
@@ -74,8 +76,8 @@ class ClubAdminMembersIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/teams/mine")
                         .header("Authorization", "Bearer " + manager.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(teamId))
-                .andExpect(jsonPath("$[0].canManageClub").value(false));
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManageClub", teamId).value(false))
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManageClub", managerOwnTeamId).value(true));
     }
 
     @Test
