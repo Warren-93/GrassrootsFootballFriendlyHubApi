@@ -18,6 +18,15 @@ public final class AuthDtos {
             @NotBlank @Email String email,
             @NotBlank String password) {}
 
+    /**
+     * Google or Apple sign-in. {@code displayName} names a brand-new account
+     * when the token has no name: Apple gives the name only to the app, and
+     * only the first time.
+     */
+    public record OAuthSignInRequest(
+            @NotBlank String idToken,
+            @Size(max = 100) String displayName) {}
+
     /** The token may be omitted when it comes from the refresh cookie instead (see RefreshCookies). */
     public record RefreshRequest(String refreshToken) {}
 
@@ -49,22 +58,31 @@ public final class AuthDtos {
      * own credentials/session produced this response (registration, resend)
      * - never for an unauthenticated request like password reset, where
      * returning it would let anyone probe whether an email is registered.
+     *
+     * <p>{@code newUser} is only set by Google and Apple sign-in: true when
+     * that sign-in created the account, so the client starts onboarding as it
+     * does after registering. Absent for every other way of signing in.
      */
     public record TokenResponse(
             String accessToken, String refreshToken, String tokenType, long expiresIn, UserView user,
-            String verificationToken) {
+            String verificationToken, Boolean newUser) {
         public static TokenResponse of(String accessToken, String refreshToken, long expiresIn, User user) {
-            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), null);
+            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), null, null);
         }
 
         public static TokenResponse withVerificationToken(String accessToken, String refreshToken, long expiresIn,
                                                             User user, String verificationToken) {
-            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user), verificationToken);
+            return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, UserView.from(user),
+                    verificationToken, null);
         }
 
         /** For the cookie flow, where the refresh token travels only in the httpOnly cookie. */
         public TokenResponse withoutRefreshToken() {
-            return new TokenResponse(accessToken, null, tokenType, expiresIn, user, verificationToken);
+            return new TokenResponse(accessToken, null, tokenType, expiresIn, user, verificationToken, newUser);
+        }
+
+        public TokenResponse withNewUser(boolean created) {
+            return new TokenResponse(accessToken, refreshToken, tokenType, expiresIn, user, verificationToken, created);
         }
     }
 

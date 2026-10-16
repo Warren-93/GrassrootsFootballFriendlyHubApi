@@ -46,6 +46,25 @@ public class MembershipServiceImpl implements MembershipService {
     }
 
     @Override
+    public boolean canReadTeam(String userId, String teamId) {
+        if (memberships.findTeamMembership(userId, teamId).isPresent()) return true;
+
+        Team team = teams.findById(teamId).orElse(null);
+        return team != null && memberships.findClubMembership(userId, team.clubId()).isPresent();
+    }
+
+    @Override
+    public boolean canManageAnyTeamInClub(String userId, String clubId) {
+        Role clubRole = roleForClub(userId, clubId);
+        if (clubRole != null && clubRole.canManageClub()) return true;
+
+        return memberships.findByUserId(userId).stream()
+                .filter(m -> m.teamId() != null && m.role().canManageTeam())
+                .map(m -> teams.findById(m.teamId()).orElse(null))
+                .anyMatch(t -> t != null && clubId.equals(t.clubId()));
+    }
+
+    @Override
     public List<String> managerUserIdsFor(String teamId) {
         Team team = teams.findById(teamId).orElse(null);
         if (team == null) return List.of();

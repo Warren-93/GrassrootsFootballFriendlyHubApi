@@ -40,6 +40,11 @@ public class BusinessRuleException extends RuntimeException {
                 "Verify your email address before sending invitations.");
     }
 
+    public static BusinessRuleException clubAdminOnly() {
+        return new BusinessRuleException("CLUB_ADMIN_ONLY", HttpStatus.FORBIDDEN,
+                "Only a club admin can add, change or remove club admins.");
+    }
+
     /**
      * Keeps the PROFILE_INCOMPLETE code clients already map, but the rule is
      * now "verified and has a venue" rather than a completeness percentage.

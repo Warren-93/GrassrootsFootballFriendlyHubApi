@@ -83,4 +83,45 @@ class AccountSecurityIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.email").value(newEmail))
                 .andExpect(jsonPath("$.emailVerified").value(true));
     }
+
+    @Test
+    @DisplayName("a link sent to the old address can't verify the new one")
+    void oldLinkCannotVerifyNewAddress() throws Exception {
+        // Registered with an address they own, so they hold its link...
+        TestAccount account = registerAccount("Email Swap Tester");
+        // ...then switched to one they don't.
+        String newEmail = "someone_else_" + account.email();
+        String response = mockMvc.perform(post("/api/v1/me/email")
+                        .header("Authorization", "Bearer " + account.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "newEmail": "%s", "currentPassword": "TestPass123!" }
+                                """.formatted(newEmail)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        mockMvc.perform(post("/api/v1/auth/verify/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(account.verificationToken())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_VERIFICATION_TOKEN"));
+        mockMvc.perform(get("/api/v1/me")
+                        .header("Authorization", "Bearer " + account.accessToken()))
+                .andExpect(jsonPath("$.email").value(newEmail))
+                .andExpect(jsonPath("$.emailVerified").value(false));
+
+        // The link sent to the new address still works.
+        String token = objectMapper.readTree(response).get("verificationToken").asText();
+        mockMvc.perform(post("/api/v1/auth/verify/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(token)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/me")
+                        .header("Authorization", "Bearer " + account.accessToken()))
+                .andExpect(jsonPath("$.emailVerified").value(true));
+    }
 }

@@ -21,7 +21,11 @@ public final class NotificationDtos {
 
     public record UnreadCountView(long count) {}
 
-    public record PreferenceView(boolean friendlyRequests, boolean fixtures, boolean verification, boolean messages) {}
+    /** The four category toggles, then whether those notifications also go out by email and by push. */
+    public record PreferenceView(boolean friendlyRequests, boolean fixtures, boolean verification, boolean messages,
+                                 boolean emailEnabled, boolean pushEnabled) {}
 
-    public record UpdatePreferenceRequest(boolean friendlyRequests, boolean fixtures, boolean verification, boolean messages) {}
+    /** Every field is optional: null keeps the current setting, so a partial body switches nothing else off. */
+    public record UpdatePreferenceRequest(Boolean friendlyRequests, Boolean fixtures, Boolean verification, Boolean messages,
+                                          Boolean emailEnabled, Boolean pushEnabled) {}
 }

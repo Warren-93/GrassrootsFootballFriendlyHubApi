@@ -63,6 +63,11 @@ public abstract class AbstractIntegrationTest {
 
     protected TestAccount registerAccount(String displayName) throws Exception {
         String email = "it_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12) + "@example.com";
+        return registerAccount(displayName, email);
+    }
+
+    /** For tests where the address matters, e.g. one that was invited before it had an account. */
+    protected TestAccount registerAccount(String displayName, String email) throws Exception {
         String body = """
                 {
                   "email": "%s",

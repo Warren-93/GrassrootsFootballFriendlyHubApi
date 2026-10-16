@@ -1,5 +1,8 @@
 package com.gffh.api.domain;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Age groups supported by the platform.
  *
@@ -51,5 +54,18 @@ public enum AgeGroup {
         if (isYouth() != other.isYouth()) return Integer.MAX_VALUE;
         if (!isYouth() && this != other) return Integer.MAX_VALUE;
         return Math.abs(ordinal() - other.ordinal());
+    }
+
+    /**
+     * This group plus every group within {@code tolerance} bands of it, by
+     * {@link #bandsApart} - the age groups a candidate search admits. Zero
+     * (the default) is this group alone.
+     */
+    public Set<AgeGroup> withinBands(int tolerance) {
+        Set<AgeGroup> out = EnumSet.of(this);
+        for (AgeGroup other : values()) {
+            if (bandsApart(other) <= tolerance) out.add(other);
+        }
+        return out;
     }
 }

@@ -30,16 +30,18 @@ public final class ReportDtos {
         }
     }
 
+    /** The team names are for ADM-04's queue; either is null if that team no longer exists. */
     public record ReportView(
             String id, String reporterTeamId, String reportedTeamId, String relatedFixtureId,
             String type, String severity, String details, String status, String assignedAdminId,
-            List<InternalNoteView> internalNotes, Instant createdAt, Instant updatedAt) {
+            List<InternalNoteView> internalNotes, Instant createdAt, Instant updatedAt,
+            String reporterTeamName, String reportedTeamName) {
 
-        public static ReportView from(Report r) {
+        public static ReportView from(Report r, String reporterTeamName, String reportedTeamName) {
             return new ReportView(r.id(), r.reporterTeamId(), r.reportedTeamId(), r.relatedFixtureId(),
                     r.type().name(), r.severity().name(), r.details(), r.status().name(), r.assignedAdminId(),
                     r.internalNotes().stream().map(InternalNoteView::from).toList(),
-                    r.createdAt(), r.updatedAt());
+                    r.createdAt(), r.updatedAt(), reporterTeamName, reportedTeamName);
         }
     }
 }

@@ -32,9 +32,48 @@ gffh:
   mail:
     # Sender address, e.g. "Kickabout <noreply@example.com>".
     from: ${MAIL_FROM:}
-    # Where the links in emails point: the web app, which has /verify-email
-    # and /reset-password pages.
+    # Where the links in emails point: the web app, which has /verify-email,
+    # /reset-password and /register?email= (member invitations) pages.
     app-base-url: ${APP_BASE_URL:https://grassroots-football-friendly-hub-we.vercel.app}
+    # The help address the clients show (GET /api/v1/config). When unset, the
+    # bare address inside MAIL_FROM is used; with neither, there is none.
+    support-email: ${SUPPORT_EMAIL:}
+  oauth:
+    # Google and Apple sign-in (POST /api/v1/auth/oauth/google and /apple),
+    # each off until its IDs are set. Published to the clients by
+    # GET /api/v1/config (see OAuthProperties). A token is accepted only when
+    # its audience is one of these IDs; the providers' signing keys are
+    # fetched from their published key sets (see OAuthTokenConfig).
+    google:
+      # The Google OAuth *Web* client ID: the web button, Android Credential
+      # Manager's serverClientId, and an accepted token audience.
+      client-id: ${GOOGLE_CLIENT_ID:}
+      # More accepted audiences, comma-separated (e.g. an iOS client ID).
+      additional-client-ids: ${GOOGLE_ADDITIONAL_CLIENT_IDS:}
+    apple:
+      # Services ID for web sign-in (an accepted audience).
+      services-id: ${APPLE_SERVICES_ID:}
+      # The iOS app's bundle ID (the audience of native iOS tokens).
+      bundle-id: ${APPLE_BUNDLE_ID:}
+  push:
+    # Push notifications, each platform off until its credentials are set
+    # (see FcmSender and ApnsSender). Clients can register device tokens
+    # either way; they just receive nothing until the server can send.
+    fcm:
+      # Android: the Firebase service-account JSON, raw or base64. The project
+      # ID is read from it.
+      service-account-json: ${FCM_SERVICE_ACCOUNT_JSON:}
+    apns:
+      # iOS: token-based auth with a .p8 key from the Apple Developer account.
+      key-id: ${APNS_KEY_ID:}
+      team-id: ${APNS_TEAM_ID:}
+      # The .p8 file's contents (PEM).
+      private-key: ${APNS_PRIVATE_KEY:}
+      # The iOS app's bundle ID, sent as the apns-topic.
+      bundle-id: ${APNS_BUNDLE_ID:}
+      # true for App Store/TestFlight builds; false uses the sandbox, which
+      # only development builds can receive from.
+      production: ${APNS_PRODUCTION:false}
   jwt:
     # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
     # deployed environment so tokens survive restarts; when unset, a key is

@@ -28,7 +28,21 @@ public final class FriendlyRequestDtos {
             String message) {}
 
     /** Contact details, populated only once {@link RequestStateMachine#disclosesContactDetails} is true. */
-    public record TeamContact(String teamId, String managerName, String contactPhone, String venueId) {}
+    public record TeamContact(String teamId, String teamName, String managerName, String contactPhone,
+                              String venueId) {
+
+        public static TeamContact from(Team t) {
+            return new TeamContact(t.id(), t.name(), t.managerName(), t.contactPhone(), t.defaultVenueId());
+        }
+    }
+
+    /** Who is on each side of a request, so clients can show names and badges without another lookup. */
+    public record TeamRef(String id, String name, String clubName, String badgeUrl) {
+
+        public static TeamRef from(Team t) {
+            return new TeamRef(t.id(), t.name(), t.clubName(), t.badgeUrl());
+        }
+    }
 
     /**
      * Body for {@code POST /{id}/actions/{action}} - {@code reason} is optional
@@ -40,16 +54,24 @@ public final class FriendlyRequestDtos {
     public record ActionRequest(
             String reason, LocalTime proposedStartTime, LocalTime proposedEndTime, String proposedVenueId) {}
 
+    /**
+     * {@code venue} is the currently agreed venue ({@code venueId}) and
+     * {@code proposedVenue} the one a pending change proposes; either may be
+     * null. {@code senderTeam}/{@code recipientTeam} are always populated
+     * while the team exists.
+     */
     public record FriendlyRequestView(
             String id, String senderTeamId, String recipientTeamId, String status,
             LocalDate date, LocalTime startTime, LocalTime endTime, String venueId,
             String homeTeamId, String awayTeamId, String costShare, String refereeArrangement,
             String message, String actionReason, List<String> availableActions,
             TeamContact senderContact, TeamContact recipientContact,
-            LocalTime proposedStartTime, LocalTime proposedEndTime, String proposedVenueId) {
+            LocalTime proposedStartTime, LocalTime proposedEndTime, String proposedVenueId,
+            VenueDtos.VenueSummary venue, VenueDtos.VenueSummary proposedVenue,
+            TeamRef senderTeam, TeamRef recipientTeam) {
 
         public static FriendlyRequestView from(FriendlyRequest r, boolean isSender,
-                                               TeamContact senderContact, TeamContact recipientContact) {
+                                               Team sender, Team recipient, Venue venue, Venue proposedVenue) {
             List<String> actions = RequestStateMachine.transitionsFor(r.status(), isSender).stream()
                     .map(RequestStateMachine.Transition::action)
                     .toList();
@@ -58,8 +80,12 @@ public final class FriendlyRequestDtos {
                     r.id(), r.senderTeamId(), r.recipientTeamId(), r.status().name(),
                     r.date(), r.startTime(), r.endTime(), r.venueId(), r.homeTeamId(), r.awayTeamId(),
                     r.costShare().name(), r.refereeArrangement().name(), r.message(), r.actionReason(), actions,
-                    disclose ? senderContact : null, disclose ? recipientContact : null,
-                    r.proposedStartTime(), r.proposedEndTime(), r.proposedVenueId());
+                    disclose && sender != null ? TeamContact.from(sender) : null,
+                    disclose && recipient != null ? TeamContact.from(recipient) : null,
+                    r.proposedStartTime(), r.proposedEndTime(), r.proposedVenueId(),
+                    VenueDtos.VenueSummary.from(venue), VenueDtos.VenueSummary.from(proposedVenue),
+                    sender == null ? null : TeamRef.from(sender),
+                    recipient == null ? null : TeamRef.from(recipient));
         }
     }
 }

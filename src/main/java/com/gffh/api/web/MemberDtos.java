@@ -1,6 +1,8 @@
 package com.gffh.api.web;
 
+import com.gffh.api.domain.MemberInvite;
 import com.gffh.api.domain.Membership;
+import com.gffh.api.domain.Team;
 import com.gffh.api.domain.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,11 +15,29 @@ public final class MemberDtos {
     private MemberDtos() {}
 
     /**
-     * No email provider is connected (see VerificationTokenService), so this
-     * adds an existing account directly rather than sending an invitation -
-     * the target must already be registered.
+     * Adds an existing account directly (200 with a {@link MemberView}). An
+     * address with no account is invited instead (202 with an
+     * {@link InvitedView}) and joins once its owner registers and verifies it.
      */
     public record AddMemberRequest(@NotBlank @Email String email, @NotBlank String role) {}
+
+    /** A pending invitation to an address with no account yet. Expires 30 days after it was last sent. */
+    public record InviteView(String id, String email, String role, String teamId, String teamName,
+                             Instant createdAt, Instant expiresAt) {
+
+        public static InviteView from(MemberInvite invite, Team team) {
+            return new InviteView(invite.id(), invite.email(), invite.role().name(), invite.teamId(), team.name(),
+                    invite.createdAt(), invite.expiresAt());
+        }
+    }
+
+    /** The 202 body when adding by email sent an invitation instead; {@code status} is always "INVITED". */
+    public record InvitedView(String status, InviteView invite) {
+
+        public static InvitedView of(InviteView invite) {
+            return new InvitedView("INVITED", invite);
+        }
+    }
 
     public record UpdateRoleRequest(@NotBlank String role) {}
 

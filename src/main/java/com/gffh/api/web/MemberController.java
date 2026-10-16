@@ -1,5 +1,6 @@
 package com.gffh.api.web;
 
+import com.gffh.api.service.MemberInviteService;
 import com.gffh.api.service.MemberService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,9 +17,11 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberInviteService inviteService;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService, MemberInviteService inviteService) {
         this.memberService = memberService;
+        this.inviteService = inviteService;
     }
 
     @GetMapping
@@ -27,11 +30,30 @@ public class MemberController {
         return ResponseEntity.ok(memberService.list(principal.getSubject(), teamId));
     }
 
+    /** 200 with the new member for an existing account; 202 with the invite for an address with no account yet. */
     @PostMapping
-    public ResponseEntity<MemberDtos.MemberView> add(@AuthenticationPrincipal Jwt principal,
-                                                      @PathVariable String teamId,
-                                                      @Valid @RequestBody MemberDtos.AddMemberRequest request) {
-        return ResponseEntity.ok(memberService.add(principal.getSubject(), teamId, request));
+    public ResponseEntity<?> add(@AuthenticationPrincipal Jwt principal,
+                                 @PathVariable String teamId,
+                                 @Valid @RequestBody MemberDtos.AddMemberRequest request) {
+        MemberService.AddResult result = memberService.add(principal.getSubject(), teamId, request);
+        if (result.invited()) {
+            return ResponseEntity.accepted().body(MemberDtos.InvitedView.of(result.invite()));
+        }
+        return ResponseEntity.ok(result.member());
+    }
+
+    @GetMapping("/invites")
+    public ResponseEntity<List<MemberDtos.InviteView>> listInvites(@AuthenticationPrincipal Jwt principal,
+                                                                   @PathVariable String teamId) {
+        return ResponseEntity.ok(inviteService.list(principal.getSubject(), teamId));
+    }
+
+    @DeleteMapping("/invites/{inviteId}")
+    public ResponseEntity<Void> cancelInvite(@AuthenticationPrincipal Jwt principal,
+                                             @PathVariable String teamId,
+                                             @PathVariable String inviteId) {
+        inviteService.cancel(principal.getSubject(), teamId, inviteId);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{membershipId}")

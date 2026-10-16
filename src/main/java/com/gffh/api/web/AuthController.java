@@ -1,5 +1,6 @@
 package com.gffh.api.web;
 
+import com.gffh.api.domain.OAuthProvider;
 import com.gffh.api.service.AuthService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,7 +12,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@Tag(name = "Auth", description = "Account registration, bearer-token issuance and account recovery")
+@Tag(name = "Auth", description = "Account registration, Google and Apple sign-in, bearer-token issuance and account recovery")
 public class AuthController {
 
     private final AuthService authService;
@@ -32,6 +33,23 @@ public class AuthController {
     public ResponseEntity<AuthDtos.TokenResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request,
                                                         HttpServletRequest http, HttpServletResponse response) {
         return ResponseEntity.ok(deliver(authService.login(request), http, response));
+    }
+
+    /**
+     * Signs in with a Google ID token, creating the account on first use.
+     * Answers exactly like login (cookie flow included), plus {@code newUser}.
+     */
+    @PostMapping("/api/v1/auth/oauth/google")
+    public ResponseEntity<AuthDtos.TokenResponse> google(@Valid @RequestBody AuthDtos.OAuthSignInRequest request,
+                                                         HttpServletRequest http, HttpServletResponse response) {
+        return ResponseEntity.ok(deliver(authService.signInWith(OAuthProvider.GOOGLE, request), http, response));
+    }
+
+    /** As {@link #google}, with an Apple identity token. */
+    @PostMapping("/api/v1/auth/oauth/apple")
+    public ResponseEntity<AuthDtos.TokenResponse> apple(@Valid @RequestBody AuthDtos.OAuthSignInRequest request,
+                                                        HttpServletRequest http, HttpServletResponse response) {
+        return ResponseEntity.ok(deliver(authService.signInWith(OAuthProvider.APPLE, request), http, response));
     }
 
     /** Takes the refresh token from the body, or from the refresh cookie in the browser flow. */

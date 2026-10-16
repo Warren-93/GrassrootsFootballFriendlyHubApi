@@ -16,6 +16,7 @@ public class VenueDocument {
     public String clubId;
     public String name;
     public String address;
+    public String postcode;
     public GeoJsonPoint location;
     public String pitchSurface;
     public List<String> facilities;
@@ -31,6 +32,7 @@ public class VenueDocument {
         d.clubId = v.clubId();
         d.name = v.name();
         d.address = v.address();
+        d.postcode = v.postcode();
         d.location = v.location() == null ? null : new GeoJsonPoint(v.location().longitude(), v.location().latitude());
         d.pitchSurface = v.pitchSurface() == null ? null : v.pitchSurface().name();
         d.facilities = v.facilities() == null ? List.of() : v.facilities().stream().map(Enum::name).toList();
@@ -43,7 +45,7 @@ public class VenueDocument {
     }
 
     public Venue toDomain() {
-        return new Venue(id, clubId, name, address,
+        return new Venue(id, clubId, name, address, postcode,
                 location == null ? null : new GeoPoint(location.getX(), location.getY()),
                 pitchSurface == null ? null : PitchSurface.valueOf(pitchSurface),
                 facilities == null ? List.of() : facilities.stream().map(VenueFacility::valueOf).toList(),

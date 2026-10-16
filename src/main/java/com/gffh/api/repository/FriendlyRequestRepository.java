@@ -15,7 +15,12 @@ public interface FriendlyRequestRepository {
     /** CONFIRMED requests whose date has already passed - the fixture auto-completion job's input. */
     List<FriendlyRequest> findConfirmedBefore(LocalDate date);
 
-    /** Whether an open (non-terminal) negotiation already exists between these two teams. */
+    /**
+     * Whether these two teams are still negotiating a request (SENT,
+     * CHANGES_REQUESTED, UPDATED or ACCEPTED). A CONFIRMED friendly doesn't
+     * count, so two teams can arrange a second game once the first is agreed;
+     * each availability slot is still only booked once.
+     */
     boolean existsOpenBetween(String teamAId, String teamBId);
 
     /** Whether any request, of any status, has ever existed between these two teams - past or present relationship. */

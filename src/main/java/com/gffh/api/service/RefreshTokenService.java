@@ -59,6 +59,11 @@ public class RefreshTokenService {
         refreshTokens.findByTokenHash(hash(presentedToken)).ifPresent(t -> refreshTokens.revoke(t.id()));
     }
 
+    /** Signs the user out everywhere: none of their refresh tokens can be used again. */
+    public void revokeAll(String userId) {
+        refreshTokens.revokeAllForUser(userId);
+    }
+
     public Optional<String> userIdFor(String presentedToken) {
         return refreshTokens.findByTokenHash(hash(presentedToken))
                 .filter(t -> t.isUsable(Instant.now()))

@@ -15,6 +15,8 @@ public class VerificationTokenDocument {
     public String userId;
     public String token;
     public String purpose;
+    /** Null on tokens saved before the address was recorded. */
+    public String email;
     public Instant expiresAt;
     public boolean used;
     public Instant createdAt;
@@ -25,6 +27,7 @@ public class VerificationTokenDocument {
         d.userId = t.userId();
         d.token = t.token();
         d.purpose = t.purpose().name();
+        d.email = t.email();
         d.expiresAt = t.expiresAt();
         d.used = t.used();
         d.createdAt = t.createdAt();
@@ -33,6 +36,6 @@ public class VerificationTokenDocument {
 
     public VerificationToken toDomain() {
         return new VerificationToken(id, userId, token, VerificationTokenPurpose.valueOf(purpose),
-                expiresAt, used, createdAt);
+                email, expiresAt, used, createdAt);
     }
 }

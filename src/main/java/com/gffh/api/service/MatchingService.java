@@ -98,7 +98,8 @@ public class MatchingService {
         // and the ageGroup/format/gender compound index carry this query; see
         // section 10 of the Technical Specification. With no filters (the
         // default) every team of the same age group and gender is a
-        // candidate, nearest first; distance only affects the ranking.
+        // candidate, nearest first; distance only affects the ranking. The
+        // age groups widen only if the age band tolerance is raised above 0.
         int radius = request.maxDistanceMiles() != null && !Boolean.TRUE.equals(request.ignoreTravelRadius())
                 ? request.maxDistanceMiles()
                 : UNLIMITED_RADIUS_MILES;
@@ -106,7 +107,7 @@ public class MatchingService {
         List<Team> candidates = teams.findCandidates(
                 ourTeam.location(),
                 radius,
-                ourTeam.ageGroup(),
+                ourTeam.ageGroup().withinBands(weights.ageBandTolerance()),
                 ourTeam.gender(),
                 request.formats(),
                 request.abilityLevels(),

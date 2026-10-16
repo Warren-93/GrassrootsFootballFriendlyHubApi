@@ -35,7 +35,48 @@ public interface MembershipService {
         }
     }
 
+    /**
+     * CLUB_ADMIN carries club-wide powers (venues, the club itself, every
+     * squad), so only a club admin may grant it, or change or remove a
+     * membership that has it - otherwise a team manager could promote
+     * themselves. A 403 rather than a not-found: the caller already manages
+     * the team, so there is nothing left to hide.
+     */
+    default void requireCanManageClubAdmins(String userId, String clubId) {
+        Role role = roleForClub(userId, clubId);
+        if (role == null || !role.canManageClub()) throw BusinessRuleException.clubAdminOnly();
+    }
+
     Role roleForClub(String userId, String clubId);
+
+    /**
+     * Read-only reach over a team: any membership of the team itself (a plain
+     * USER who joined with a code included), or any club-scoped membership of
+     * its club. Enough to see the team's fixtures, never to act on them. The
+     * public team profile needs none of this - see {@link TeamService#get}.
+     */
+    boolean canReadTeam(String userId, String teamId);
+
+    default void requireCanReadTeam(String userId, String teamId) {
+        if (!canReadTeam(userId, teamId)) {
+            throw new BusinessRuleException("TEAM_NOT_FOUND", HttpStatus.NOT_FOUND,
+                    "That team could not be found.");
+        }
+    }
+
+    /**
+     * Whether this user manages the club itself (CLUB_ADMIN) or at least one
+     * team it runs (TEAM_MANAGER) - the reach needed to see the club's venues
+     * when arranging a game, though not to change them.
+     */
+    boolean canManageAnyTeamInClub(String userId, String clubId);
+
+    default void requireCanManageAnyTeamInClub(String userId, String clubId) {
+        if (!canManageAnyTeamInClub(userId, clubId)) {
+            throw new BusinessRuleException("CLUB_NOT_FOUND", HttpStatus.NOT_FOUND,
+                    "That club could not be found.");
+        }
+    }
 
     /** Every user who can currently manage this team - direct team managers plus the club's admins. */
     List<String> managerUserIdsFor(String teamId);

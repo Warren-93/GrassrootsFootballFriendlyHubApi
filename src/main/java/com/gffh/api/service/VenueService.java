@@ -1,6 +1,7 @@
 package com.gffh.api.service;
 
 import com.gffh.api.domain.GeoPoint;
+import com.gffh.api.domain.Team;
 import com.gffh.api.domain.Venue;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.VenueRepository;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VenueService {
@@ -31,6 +33,7 @@ public class VenueService {
         boolean isFirst = venues.findByClubId(request.clubId()).isEmpty();
 
         Venue venue = venues.save(new Venue(null, request.clubId(), request.name(), request.address(),
+                blankToNull(request.postcode()),
                 new GeoPoint(request.longitude(), request.latitude()), request.pitchSurface(),
                 request.facilities() == null ? List.of() : request.facilities(),
                 request.accessNotes(), request.parkingNotes(), request.pitchNumber(),
@@ -38,8 +41,12 @@ public class VenueService {
         return venue;
     }
 
+    /**
+     * Any of the club's managers can see its venues - a team manager picks one
+     * when arranging a game - but only its club admins add, change or remove them.
+     */
     public List<Venue> list(String userId, String clubId) {
-        membershipService.requireCanManageClub(userId, clubId);
+        membershipService.requireCanManageAnyTeamInClub(userId, clubId);
         return venues.findByClubId(clubId);
     }
 
@@ -54,6 +61,7 @@ public class VenueService {
         Venue updated = new Venue(current.id(), current.clubId(),
                 orDefault(request.name(), current.name()),
                 orDefault(request.address(), current.address()),
+                request.postcode() != null ? blankToNull(request.postcode()) : current.postcode(),
                 location,
                 request.pitchSurface() != null ? request.pitchSurface() : current.pitchSurface(),
                 request.facilities() != null ? request.facilities() : current.facilities(),
@@ -70,8 +78,8 @@ public class VenueService {
         membershipService.requireCanManageClub(userId, current.clubId());
         venues.clearDefaultForClub(current.clubId());
         return venues.save(new Venue(current.id(), current.clubId(), current.name(), current.address(),
-                current.location(), current.pitchSurface(), current.facilities(), current.accessNotes(),
-                current.parkingNotes(), current.pitchNumber(), true, current.createdAt()));
+                current.postcode(), current.location(), current.pitchSurface(), current.facilities(),
+                current.accessNotes(), current.parkingNotes(), current.pitchNumber(), true, current.createdAt()));
     }
 
     public void delete(String userId, String venueId) {
@@ -84,6 +92,27 @@ public class VenueService {
         venues.delete(venueId);
     }
 
+    /**
+     * Where a team plays at home when nothing more specific was agreed: its own
+     * default venue, else its club's default (venues are club-scoped, and a
+     * club's first venue becomes its default automatically). Empty if neither
+     * exists. No permission check - only used to fill in or describe a request
+     * or fixture the caller is already part of.
+     */
+    public Optional<Venue> homeVenueFor(Team team) {
+        if (team.defaultVenueId() != null) {
+            Optional<Venue> own = venues.findById(team.defaultVenueId());
+            if (own.isPresent()) return own;
+        }
+        if (team.clubId() == null) return Optional.empty();
+        return venues.findByClubId(team.clubId()).stream().filter(Venue::isDefault).findFirst();
+    }
+
+    /** A venue by id, with no permission check - for the same read-only uses as {@link #homeVenueFor}. */
+    public Optional<Venue> findById(String venueId) {
+        return venueId == null || venueId.isBlank() ? Optional.empty() : venues.findById(venueId);
+    }
+
     private Venue find(String venueId) {
         return venues.findById(venueId).orElseThrow(() -> new BusinessRuleException(
                 "VENUE_NOT_FOUND", HttpStatus.NOT_FOUND, "That venue could not be found."));
@@ -91,5 +120,9 @@ public class VenueService {
 
     private static String orDefault(String value, String fallback) {
         return value != null ? value : fallback;
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 }

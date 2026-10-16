@@ -6,6 +6,7 @@ import com.gffh.api.domain.NotificationCategory;
 import com.gffh.api.domain.NotificationPreference;
 import com.gffh.api.domain.Team;
 import com.gffh.api.domain.User;
+import com.gffh.api.domain.Venue;
 import com.gffh.api.repository.ClubRepository;
 import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.TeamRepository;
@@ -30,9 +31,9 @@ import java.util.concurrent.Executors;
  * Emails a fixture confirmation to both teams once a friendly is accepted.
  *
  * <p>Each team's contacts are its managers (verified emails, unless they've
- * turned fixture notifications off) plus its club's contact email. Anything an
- * {@link AssociationRecipients} bean returns is added too, which is how
- * associations will be copied in later.
+ * turned fixture notifications or emails off) plus its club's contact email.
+ * Anything an {@link AssociationRecipients} bean returns is added too, which
+ * is how associations will be copied in later.
  *
  * <p>Sending happens off the request thread: an SMTP server can take seconds to
  * answer, and accepting a friendly must never wait on, or fail because of, email.
@@ -117,14 +118,16 @@ public class FixtureConfirmationEmails {
         }
     }
 
-    /** A team's contact addresses: its managers who want fixture updates, then its club's contact email. */
+    /**
+     * A team's contact addresses: its managers who want fixture updates by
+     * email, then its club's contact email.
+     */
     Set<String> contactsFor(Team team) {
         Set<String> out = new LinkedHashSet<>();
         for (String userId : memberships.managerUserIdsFor(team.id())) {
-            boolean wantsFixtures = preferences.findByUserId(userId)
-                    .orElseGet(() -> NotificationPreference.defaultsFor(userId))
-                    .allows(NotificationCategory.FIXTURES);
-            if (!wantsFixtures) continue;
+            NotificationPreference preference = preferences.findByUserId(userId)
+                    .orElseGet(() -> NotificationPreference.defaultsFor(userId));
+            if (!preference.allows(NotificationCategory.FIXTURES) || !preference.emailEnabled()) continue;
             users.findById(userId)
                     .filter(u -> u.emailVerified() && !u.suspended())
                     .map(User::email)
@@ -138,8 +141,8 @@ public class FixtureConfirmationEmails {
 
     String body(Fixture fixture, Team home, Team away) {
         String venue = Optional.ofNullable(fixture.venueId()).flatMap(venues::findById)
-                .map(v -> v.address() == null || v.address().isBlank() ? v.name() : v.name() + ", " + v.address())
-                .orElse("To be arranged between the teams");
+                .map(FixtureConfirmationEmails::venueLines)
+                .orElse("Venue: To be arranged between the teams");
         String time = fixture.startTime().format(TIME)
                 + (fixture.endTime() != null ? " to " + fixture.endTime().format(TIME) : "");
 
@@ -149,7 +152,7 @@ public class FixtureConfirmationEmails {
                 %s (home) v %s (away)
                 Date: %s
                 Time: %s
-                Venue: %s
+                %s
 
                 Home manager: %s
                 Away manager: %s
@@ -163,6 +166,26 @@ public class FixtureConfirmationEmails {
                 fixture.date().format(DATE), time, venue,
                 orDash(home.managerName()), orDash(away.managerName()),
                 email.appLink("/fixtures/" + fixture.id()));
+    }
+
+    /**
+     * "Venue: name, address, postcode" (the postcode only when the address
+     * doesn't already include it), then a Google Maps directions line.
+     */
+    static String venueLines(Venue v) {
+        StringBuilder line = new StringBuilder("Venue: ").append(v.name());
+        if (v.address() != null && !v.address().isBlank()) line.append(", ").append(v.address().strip());
+        String postcode = v.displayPostcode();
+        if (postcode != null && !squashed(v.address()).contains(squashed(postcode))) {
+            line.append(", ").append(postcode);
+        }
+        String directions = v.directionsUrl();
+        if (directions != null) line.append("\nDirections: ").append(directions);
+        return line.toString();
+    }
+
+    private static String squashed(String s) {
+        return s == null ? "" : s.replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
     }
 
     private static String displayName(Team team) {

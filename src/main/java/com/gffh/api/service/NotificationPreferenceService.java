@@ -16,17 +16,37 @@ public class NotificationPreferenceService {
     }
 
     public NotificationDtos.PreferenceView get(String userId) {
-        NotificationPreference p = preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
-        return toView(p);
+        return toView(current(userId));
     }
 
+    /**
+     * A partial update: any flag left out keeps its current value rather than
+     * turning off, so a client built before the email and push switches
+     * existed, or one sending only the switch the user just flipped, changes
+     * nothing else.
+     */
     public NotificationDtos.PreferenceView update(String userId, NotificationDtos.UpdatePreferenceRequest request) {
-        NotificationPreference saved = preferences.save(new NotificationPreference(userId, request.friendlyRequests(),
-                request.fixtures(), request.verification(), request.messages()));
+        NotificationPreference current = current(userId);
+        NotificationPreference saved = preferences.save(new NotificationPreference(userId,
+                orCurrent(request.friendlyRequests(), current.friendlyRequests()),
+                orCurrent(request.fixtures(), current.fixtures()),
+                orCurrent(request.verification(), current.verification()),
+                orCurrent(request.messages(), current.messages()),
+                orCurrent(request.emailEnabled(), current.emailEnabled()),
+                orCurrent(request.pushEnabled(), current.pushEnabled())));
         return toView(saved);
     }
 
+    private NotificationPreference current(String userId) {
+        return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+    }
+
+    private static boolean orCurrent(Boolean requested, boolean current) {
+        return requested != null ? requested : current;
+    }
+
     private NotificationDtos.PreferenceView toView(NotificationPreference p) {
-        return new NotificationDtos.PreferenceView(p.friendlyRequests(), p.fixtures(), p.verification(), p.messages());
+        return new NotificationDtos.PreferenceView(p.friendlyRequests(), p.fixtures(), p.verification(), p.messages(),
+                p.emailEnabled(), p.pushEnabled());
     }
 }

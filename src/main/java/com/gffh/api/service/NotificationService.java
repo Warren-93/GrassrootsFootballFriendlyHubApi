@@ -17,6 +17,8 @@ import java.util.List;
 /**
  * SCR-HM-02's notification centre. Fans a single event out to every manager of
  * a team, skipping anyone who has muted that event's category (SCR-PR-09).
+ * Each notification is also handed to {@link NotificationDelivery} for email
+ * and push.
  *
  * <p>Deliberately defensive: creating a notification is a side effect of some
  * other action succeeding (a request was sent, a fixture confirmed, ...), so a
@@ -32,12 +34,14 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final NotificationPreferenceRepository preferences;
     private final MembershipService membershipService;
+    private final NotificationDelivery delivery;
 
     public NotificationService(NotificationRepository notifications, NotificationPreferenceRepository preferences,
-                               MembershipService membershipService) {
+                               MembershipService membershipService, NotificationDelivery delivery) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.membershipService = membershipService;
+        this.delivery = delivery;
     }
 
     public void notifyTeam(String teamId, NotificationType type, String title, String body,
@@ -50,8 +54,9 @@ public class NotificationService {
         try {
             for (String userId : membershipService.managerUserIdsFor(teamId)) {
                 if (!preferenceFor(userId).allows(type.category())) continue;
-                notifications.save(new Notification(null, userId, type, title, body, teamId,
+                Notification saved = notifications.save(new Notification(null, userId, type, title, body, teamId,
                         relatedRequestId, relatedFixtureId, relatedConversationId, false, Instant.now()));
+                delivery.deliver(saved);
             }
         } catch (Exception e) {
             log.warn("Failed to fan out notification type={} teamId={}", type, teamId, e);

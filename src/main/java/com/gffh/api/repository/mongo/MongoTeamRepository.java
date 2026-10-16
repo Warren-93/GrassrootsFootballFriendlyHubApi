@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,8 +79,8 @@ public class MongoTeamRepository implements TeamRepository {
     }
 
     @Override
-    public List<Team> findCandidates(GeoPoint centre, int radiusMiles, AgeGroup ageGroup, Gender gender,
-                                     List<String> formats, List<String> abilityLevels,
+    public List<Team> findCandidates(GeoPoint centre, int radiusMiles, Collection<AgeGroup> ageGroups,
+                                     Gender gender, List<String> formats, List<String> abilityLevels,
                                      boolean verifiedOnly, String excludeClubId, int limit) {
         // $nearSphere rather than $geoWithin so the candidate cap keeps the
         // closest teams: matching no longer has a travel-radius wall, and the
@@ -88,7 +89,7 @@ public class MongoTeamRepository implements TeamRepository {
         Criteria criteria = Criteria.where("location")
                 .nearSphere(new GeoJsonPoint(centre.longitude(), centre.latitude()))
                 .maxDistance(radiusMiles * METRES_PER_MILE)
-                .and("ageGroup").is(ageGroup.name())
+                .and("ageGroup").in(ageGroups.stream().map(Enum::name).toList())
                 .and("clubId").ne(excludeClubId)
                 .and("suspended").ne(true)
                 .and("archived").ne(true)
