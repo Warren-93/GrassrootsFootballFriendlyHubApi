@@ -1,5 +1,6 @@
 package com.gffh.api.domain;
 
+import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -13,9 +14,20 @@ public record RefreshToken(
         String tokenHash,
         Instant expiresAt,
         boolean revoked,
-        Instant createdAt) {
+        Instant createdAt,
+        Instant rotatedAt) {
 
     public boolean isUsable(Instant now) {
         return !revoked && now.isBefore(expiresAt);
+    }
+
+    /**
+     * Replaced by a newer token less than {@code grace} ago, and not revoked
+     * any other way. The browser may never have received the replacement: a
+     * reload while the refresh was in flight drops the response, and two tabs
+     * opened together both present the same cookie.
+     */
+    public boolean isRecentlyRotated(Instant now, Duration grace) {
+        return revoked && rotatedAt != null && now.isBefore(rotatedAt.plus(grace)) && now.isBefore(expiresAt);
     }
 }

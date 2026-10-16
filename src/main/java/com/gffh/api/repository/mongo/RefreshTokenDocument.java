@@ -16,6 +16,7 @@ public class RefreshTokenDocument {
     public Instant expiresAt;
     public boolean revoked;
     public Instant createdAt;
+    public Instant rotatedAt;
 
     public static RefreshTokenDocument from(RefreshToken t) {
         RefreshTokenDocument d = new RefreshTokenDocument();
@@ -25,10 +26,11 @@ public class RefreshTokenDocument {
         d.expiresAt = t.expiresAt();
         d.revoked = t.revoked();
         d.createdAt = t.createdAt();
+        d.rotatedAt = t.rotatedAt();
         return d;
     }
 
     public RefreshToken toDomain() {
-        return new RefreshToken(id, userId, tokenHash, expiresAt, revoked, createdAt);
+        return new RefreshToken(id, userId, tokenHash, expiresAt, revoked, createdAt, rotatedAt);
     }
 }
