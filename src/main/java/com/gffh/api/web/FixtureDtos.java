@@ -13,6 +13,8 @@ import java.time.LocalTime;
  * and venue are safe to disclose here because a fixture only exists once a
  * request has reached CONFIRMED, the state {@link
  * com.gffh.api.request.RequestStateMachine#disclosesContactDetails} allows it.
+ * The manager name and phone still only go to the two teams' managers - see
+ * {@link FixtureTeamView#from}.
  */
 public final class FixtureDtos {
 
