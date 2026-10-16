@@ -198,6 +198,14 @@ and `/apple`, checked by `OAuthTokenVerifier` against `OAuthTokenConfig`'s
 rules), sharing login's rate limit, suspension check and refresh cookie, and
 accepting waiting team invites since the provider has proved the address.
 
+Also done since: read-only reach below management (`MembershipService`'s
+`canReadTeam` and `canManageAnyTeamInClub`). Anyone on a team, including a
+member who joined with a code, can list and open its fixtures, without the
+managers' contact details and without being able to cancel; any team manager
+in a club can list its venues, which only club admins can change; and every
+notification preference flag is optional on update, so a partial body
+switches nothing else off.
+
 Still open:
 
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
