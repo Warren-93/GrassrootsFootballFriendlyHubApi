@@ -59,8 +59,9 @@ public class MemberInviteService {
     /**
      * Creates the invite, or refreshes the existing one for this team and
      * address (new role, a fresh 30 days, the email sent again). The caller
-     * has already checked the inviter may manage {@code team} and that the
-     * address has no account.
+     * has already checked the inviter may manage {@code team} (and its club,
+     * for a CLUB_ADMIN invite - see MemberService#add) and that the address
+     * has no account.
      *
      * <p>Invites email an address nobody has proved they own yet, so the
      * inviter must have verified their own email first, and each team can send

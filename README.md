@@ -210,6 +210,18 @@ so can add, edit, make default and delete the club's venues), both left out of
 every other team view, so clients can hide what a team manager or member would
 be refused.
 
+Also done since: only a club admin can grant the club admin role (adding a
+member or inviting an address as `CLUB_ADMIN`, or changing someone's role to
+it) or change or remove a membership that has it
+(`MembershipService.requireCanManageClubAdmins`). A team manager still adds,
+invites, changes and removes players and other team managers, but gets 403
+`CLUB_ADMIN_ONLY` for anything touching a club admin, so they can't promote
+themselves into the club-wide powers (venues, the club, every squad) the role
+carries. `LAST_CLUB_ADMIN` still stops a club losing its only admin, invites
+already sent as `CLUB_ADMIN` still join as one, and any manager of the team
+can still cancel a pending invite. Clients offer the club admin role, and the
+controls on a club admin's row, only where `canManageClub` isn't false.
+
 Still open:
 
 - **Browser auth across sites.** The web client's refresh token is an httpOnly

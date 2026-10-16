@@ -35,6 +35,18 @@ public interface MembershipService {
         }
     }
 
+    /**
+     * CLUB_ADMIN carries club-wide powers (venues, the club itself, every
+     * squad), so only a club admin may grant it, or change or remove a
+     * membership that has it - otherwise a team manager could promote
+     * themselves. A 403 rather than a not-found: the caller already manages
+     * the team, so there is nothing left to hide.
+     */
+    default void requireCanManageClubAdmins(String userId, String clubId) {
+        Role role = roleForClub(userId, clubId);
+        if (role == null || !role.canManageClub()) throw BusinessRuleException.clubAdminOnly();
+    }
+
     Role roleForClub(String userId, String clubId);
 
     /**

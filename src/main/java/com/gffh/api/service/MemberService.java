@@ -80,12 +80,15 @@ public class MemberService {
     /**
      * Adds an existing account straight away and emails them to say so. An
      * address with no account is invited instead (see {@link MemberInviteService}):
-     * it joins with this role once its owner registers and verifies it.
+     * it joins with this role once its owner registers and verifies it. Only a
+     * club admin can do either with CLUB_ADMIN, checked before the address is
+     * looked up so a refusal says nothing about whether it has an account.
      */
     public AddResult add(String userId, String teamId, MemberDtos.AddMemberRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
         Team team = findTeam(teamId);
         Role role = parseRole(request.role());
+        if (role == Role.CLUB_ADMIN) membershipService.requireCanManageClubAdmins(userId, team.clubId());
 
         User target = users.findByEmail(request.email().trim()).orElse(null);
         if (target == null) {
@@ -104,6 +107,7 @@ public class MemberService {
         return new AddResult(MemberDtos.MemberView.from(saved, target), null);
     }
 
+    /** A team manager can move people between USER and TEAM_MANAGER; anything touching CLUB_ADMIN needs a club admin. */
     public MemberDtos.MemberView updateRole(String userId, String teamId, String membershipId,
                                             MemberDtos.UpdateRoleRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
@@ -111,6 +115,9 @@ public class MemberService {
         Membership current = findMembershipForTeam(teamId, membershipId);
         Role newRole = parseRole(request.role());
 
+        if (current.role() == Role.CLUB_ADMIN || newRole == Role.CLUB_ADMIN) {
+            membershipService.requireCanManageClubAdmins(userId, team.clubId());
+        }
         if (current.role() == Role.CLUB_ADMIN && newRole != Role.CLUB_ADMIN) {
             requireNotLastClubAdmin(team.clubId(), membershipId);
         }
@@ -127,6 +134,7 @@ public class MemberService {
         Membership current = findMembershipForTeam(teamId, membershipId);
 
         if (current.role() == Role.CLUB_ADMIN) {
+            membershipService.requireCanManageClubAdmins(userId, team.clubId());
             requireNotLastClubAdmin(team.clubId(), membershipId);
         }
 
