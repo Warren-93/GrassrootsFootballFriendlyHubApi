@@ -42,7 +42,7 @@ class CookieAuthIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("refresh reads the cookie, rotates it, and the old cookie value stops working")
+    @DisplayName("refresh reads the cookie and rotates it")
     void refreshRotatesCookie() throws Exception {
         TestAccount account = registerAccount("Cookie Refresh");
         String first = cookieValue(mockMvc.perform(cookieMode(login(account))).andReturn().getResponse());
@@ -54,10 +54,45 @@ class CookieAuthIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andReturn().getResponse();
         assertThat(cookieValue(refreshed)).isNotBlank().isNotEqualTo(first);
+    }
 
+    @Test
+    @DisplayName("a just-rotated cookie still works, so a reload mid-refresh or a second tab doesn't sign the user out")
+    void justRotatedCookieStillWorks() throws Exception {
+        TestAccount account = registerAccount("Cookie Reload Race");
+        String first = cookieValue(mockMvc.perform(cookieMode(login(account))).andReturn().getResponse());
+
+        // The browser sends the same cookie twice: the first answer never reached it.
+        mockMvc.perform(cookieMode(post("/api/v1/auth/refresh")).cookie(new Cookie("gffh_refresh", first)))
+                .andExpect(status().isOk());
+        MockHttpServletResponse second = mockMvc.perform(cookieMode(post("/api/v1/auth/refresh"))
+                        .cookie(new Cookie("gffh_refresh", first)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andReturn().getResponse();
+
+        mockMvc.perform(cookieMode(post("/api/v1/auth/refresh")).cookie(new Cookie("gffh_refresh", cookieValue(second))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("signing out ends the grace for a just-rotated cookie too")
+    void logoutEndsRotationGrace() throws Exception {
+        TestAccount account = registerAccount("Cookie Logout Grace");
+        String first = cookieValue(mockMvc.perform(cookieMode(login(account))).andReturn().getResponse());
+        String second = cookieValue(mockMvc.perform(cookieMode(post("/api/v1/auth/refresh"))
+                .cookie(new Cookie("gffh_refresh", first))).andReturn().getResponse());
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"%s\"}".formatted(first)))
+                .andExpect(status().isNoContent());
         mockMvc.perform(cookieMode(post("/api/v1/auth/refresh")).cookie(new Cookie("gffh_refresh", first)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+        // Logging out one token leaves the token it was rotated into alone.
+        mockMvc.perform(cookieMode(post("/api/v1/auth/refresh")).cookie(new Cookie("gffh_refresh", second)))
+                .andExpect(status().isOk());
     }
 
     @Test

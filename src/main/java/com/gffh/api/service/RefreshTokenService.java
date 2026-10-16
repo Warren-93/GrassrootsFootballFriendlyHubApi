@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -23,6 +24,8 @@ import java.util.Optional;
 public class RefreshTokenService {
 
     private static final long TTL_DAYS = 30;
+    /** How long a just-replaced token still works - see {@link RefreshToken#isRecentlyRotated}. */
+    static final Duration ROTATION_GRACE = Duration.ofSeconds(60);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RefreshTokenRepository refreshTokens;
@@ -34,7 +37,7 @@ public class RefreshTokenService {
     public String issue(String userId) {
         String rawToken = randomToken();
         refreshTokens.save(new RefreshToken(null, userId, hash(rawToken),
-                Instant.now().plus(TTL_DAYS, ChronoUnit.DAYS), false, Instant.now()));
+                Instant.now().plus(TTL_DAYS, ChronoUnit.DAYS), false, Instant.now(), null));
         return rawToken;
     }
 
@@ -43,15 +46,23 @@ public class RefreshTokenService {
      * issued in the same call, so a stolen-and-replayed refresh token is
      * usable at most once before the legitimate client's next refresh fails
      * loudly rather than silently racing an attacker.
+     *
+     * <p>A token replaced within the last {@link #ROTATION_GRACE} is still
+     * accepted, so a reload mid-refresh or two tabs opening at once don't sign
+     * the user out. Signing out or a password change ends that grace at once.
      */
     public Optional<String> rotate(String userId, String presentedToken) {
-        Optional<RefreshToken> found = refreshTokens.findByTokenHash(hash(presentedToken))
-                .filter(t -> t.userId().equals(userId))
-                .filter(t -> t.isUsable(Instant.now()));
+        Instant now = Instant.now();
+        Optional<RefreshToken> found = accepted(presentedToken, now).filter(t -> t.userId().equals(userId));
         if (found.isEmpty()) return Optional.empty();
 
-        refreshTokens.revoke(found.get().id());
+        if (found.get().isUsable(now)) refreshTokens.markRotated(found.get().id(), now);
         return Optional.of(issue(userId));
+    }
+
+    private Optional<RefreshToken> accepted(String presentedToken, Instant now) {
+        return refreshTokens.findByTokenHash(hash(presentedToken))
+                .filter(t -> t.isUsable(now) || t.isRecentlyRotated(now, ROTATION_GRACE));
     }
 
     /** Sign-out: the presented token can't be used again. Unknown tokens are ignored. */
@@ -65,9 +76,7 @@ public class RefreshTokenService {
     }
 
     public Optional<String> userIdFor(String presentedToken) {
-        return refreshTokens.findByTokenHash(hash(presentedToken))
-                .filter(t -> t.isUsable(Instant.now()))
-                .map(RefreshToken::userId);
+        return accepted(presentedToken, Instant.now()).map(RefreshToken::userId);
     }
 
     private static String randomToken() {

@@ -225,11 +225,12 @@ controls on a club admin's row, only where `canManageClub` isn't false.
 Still open:
 
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
-  `gffh_refresh` cookie (`X-Auth-Mode: cookie`, see `RefreshCookies`). While the
-  web app calls the API cross-site (Vercel to Render) the cookie is
-  `SameSite=None; Partitioned`, which Safari may still block, signing Safari
-  users out on reload. Proxying `/api` through the web app's own domain and
-  setting `AUTH_COOKIE_SAME_SITE=Lax` removes that limit.
+  `gffh_refresh` cookie (`X-Auth-Mode: cookie`, see `RefreshCookies`). The web
+  app's production build calls the API through its own `/api` proxy on Vercel,
+  so the cookie is first-party and Safari keeps it. Refresh tokens rotate on
+  every use, but a token replaced in the last 60 seconds still works (unless
+  signed out or revoked), so a reload mid-refresh or two tabs opening at once
+  don't sign the user out.
 - **JWT signing key in deployed environments.** `JwtKeyConfig` signs with the
   PKCS#8 PEM key in `JWT_PRIVATE_KEY`, and only generates a throwaway key per
   startup when that is unset. Set it on Render (`openssl genpkey -algorithm RSA

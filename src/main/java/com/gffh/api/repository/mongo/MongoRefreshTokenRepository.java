@@ -41,17 +41,23 @@ public class MongoRefreshTokenRepository implements RefreshTokenRepository {
     @Override
     public void revoke(String id) {
         mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(id)),
-                Update.update("revoked", true), RefreshTokenDocument.class, COLLECTION);
+                Update.update("revoked", true).unset("rotatedAt"), RefreshTokenDocument.class, COLLECTION);
+    }
+
+    @Override
+    public void markRotated(String id, Instant at) {
+        mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(id)),
+                Update.update("revoked", true).set("rotatedAt", at), RefreshTokenDocument.class, COLLECTION);
     }
 
     @Override
     public void revokeAllForUser(String userId) {
         mongoTemplate.updateMulti(new Query(Criteria.where("userId").is(userId)),
-                Update.update("revoked", true), RefreshTokenDocument.class, COLLECTION);
+                Update.update("revoked", true).unset("rotatedAt"), RefreshTokenDocument.class, COLLECTION);
     }
 
     private RefreshToken withGeneratedId(RefreshToken t) {
         return new RefreshToken(UUID.randomUUID().toString(), t.userId(), t.tokenHash(),
-                t.expiresAt(), t.revoked(), t.createdAt() != null ? t.createdAt() : Instant.now());
+                t.expiresAt(), t.revoked(), t.createdAt() != null ? t.createdAt() : Instant.now(), t.rotatedAt());
     }
 }
