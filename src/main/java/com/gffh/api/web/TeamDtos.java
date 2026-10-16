@@ -66,6 +66,8 @@ public final class TeamDtos {
      * {@code readyForRequests} is the gate on sending and receiving friendly
      * requests (verified + has a venue); {@code profileChecklist} lists what
      * is still to do, so clients can tell a manager exactly what's missing.
+     * {@code canManage} and {@code canManageClub} are only filled in by
+     * {@link #mine} and are null (so omitted) everywhere else.
      */
     public record TeamView(
             String id, String clubId, String name, String clubName, String badgeUrl,
@@ -74,7 +76,8 @@ public final class TeamDtos {
             int travelRadiusMiles, String homeAwayPreference, String managerName,
             String contactPhone, String description, String verification,
             String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt,
-            Boolean canManage, boolean readyForRequests, List<Team.ChecklistItem> profileChecklist) {
+            Boolean canManage, Boolean canManageClub, boolean readyForRequests,
+            List<Team.ChecklistItem> profileChecklist) {
 
         /**
          * {@code includeContact} is false when the caller doesn't manage this
@@ -92,22 +95,26 @@ public final class TeamDtos {
                     includeContact ? t.managerName() : null,
                     includeContact ? t.contactPhone() : null,
                     t.description(), t.verification().name(), t.defaultVenueId(),
-                    t.completenessPercent(hasVenue), t.archived(), t.createdAt(), null,
+                    t.completenessPercent(hasVenue), t.archived(), t.createdAt(), null, null,
                     t.readyForRequests(hasVenue),
                     includeContact ? t.profileChecklist(hasVenue) : List.of());
         }
 
         /**
          * GET /teams/mine: says whether the caller can manage the team, so a
-         * member who joined with a code (role USER) gets a read-only app.
+         * member who joined with a code (role USER) gets a read-only app, and
+         * whether they can manage its club (CLUB_ADMIN), so a team manager
+         * sees the club's venues without the add, edit and delete they'd be
+         * refused.
          */
-        public static TeamView mine(Team t, boolean canManage, boolean hasVenue) {
+        public static TeamView mine(Team t, boolean canManage, boolean canManageClub, boolean hasVenue) {
             TeamView v = from(t, true, hasVenue);
             return new TeamView(v.id(), v.clubId(), v.name(), v.clubName(), v.badgeUrl(), v.ageGroup(), v.gender(),
                     v.format(), v.abilityLevel(), v.league(), v.postcode(), v.longitude(), v.latitude(),
                     v.travelRadiusMiles(), v.homeAwayPreference(), v.managerName(), v.contactPhone(),
                     v.description(), v.verification(), v.defaultVenueId(), v.completenessPercent(),
-                    v.archived(), v.createdAt(), canManage, v.readyForRequests(), v.profileChecklist());
+                    v.archived(), v.createdAt(), canManage, canManageClub, v.readyForRequests(),
+                    v.profileChecklist());
         }
     }
 

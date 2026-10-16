@@ -15,7 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Read-only reach below management: a member who joined with a code sees the
  * team's fixtures without the managers' contact details, and a team manager
- * sees the club's venues to pick one from - neither can change anything.
+ * sees the club's venues to pick one from - neither can change anything, and
+ * GET /teams/mine tells clients so they can hide what would be refused.
  */
 class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
 
@@ -174,6 +175,50 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Test Park"));
+    }
+
+    @Test
+    @DisplayName("GET /teams/mine says only the club's admin can manage the club, not its team managers or members")
+    void onlyClubAdminsCanManageTheClub() throws Exception {
+        TestAccount owner = registerAccount("Club Reach Owner");
+        String teamId = createTeam(owner.accessToken(), "Club Reach FC", 56.014582, -3.790261);
+
+        TestAccount manager = registerAccount("Club Reach Manager");
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/members")
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "role": "TEAM_MANAGER" }
+                                """.formatted(manager.email())))
+                .andExpect(status().isOk());
+        TestAccount member = registerAccount("Club Reach Member");
+        joinWithCode(member, joinCode(owner, teamId));
+
+        mockMvc.perform(get("/api/v1/teams/mine")
+                        .header("Authorization", "Bearer " + owner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(teamId))
+                .andExpect(jsonPath("$[0].canManage").value(true))
+                .andExpect(jsonPath("$[0].canManageClub").value(true));
+        mockMvc.perform(get("/api/v1/teams/mine")
+                        .header("Authorization", "Bearer " + manager.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(teamId))
+                .andExpect(jsonPath("$[0].canManage").value(true))
+                .andExpect(jsonPath("$[0].canManageClub").value(false));
+        mockMvc.perform(get("/api/v1/teams/mine")
+                        .header("Authorization", "Bearer " + member.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(teamId))
+                .andExpect(jsonPath("$[0].canManage").value(false))
+                .andExpect(jsonPath("$[0].canManageClub").value(false));
+
+        // Only /teams/mine says; other team views leave both out.
+        mockMvc.perform(get("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canManage").doesNotExist())
+                .andExpect(jsonPath("$.canManageClub").doesNotExist());
     }
 
     // ---- Helpers --------------------------------------------------------

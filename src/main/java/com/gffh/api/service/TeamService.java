@@ -81,6 +81,12 @@ public class TeamService {
         return role != null && role.canManageTeam();
     }
 
+    /** Whether this user runs the club itself (CLUB_ADMIN) - the reach venue changes need. */
+    public boolean canManageClub(String userId, String clubId) {
+        Role role = membershipService.roleForClub(userId, clubId);
+        return role != null && role.canManageClub();
+    }
+
     /** Every squad under a club (SCR-PR-03's teams list) - the club's own officials only. */
     public java.util.List<Team> listByClub(String userId, String clubId) {
         membershipService.requireCanManageClub(userId, clubId);

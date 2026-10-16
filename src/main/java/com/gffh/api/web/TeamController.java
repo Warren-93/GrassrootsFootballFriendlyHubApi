@@ -51,7 +51,8 @@ public class TeamController {
     public ResponseEntity<List<TeamDtos.TeamView>> listMine(@AuthenticationPrincipal Jwt principal) {
         String userId = principal.getSubject();
         var views = teamService.listMine(userId).stream()
-                .map(t -> TeamDtos.TeamView.mine(t, teamService.canManage(userId, t.id()), readiness.hasVenue(t))).toList();
+                .map(t -> TeamDtos.TeamView.mine(t, teamService.canManage(userId, t.id()),
+                        teamService.canManageClub(userId, t.clubId()), readiness.hasVenue(t))).toList();
         return ResponseEntity.ok(views);
     }
 

@@ -204,7 +204,10 @@ member who joined with a code, can list and open its fixtures, without the
 managers' contact details and without being able to cancel; any team manager
 in a club can list its venues, which only club admins can change; and every
 notification preference flag is optional on update, so a partial body
-switches nothing else off.
+switches nothing else off. `GET /api/v1/teams/mine` says which applies to
+each team: `canManage` (manage the team) and `canManageClub` (a club admin,
+so can add, edit and delete the club's venues), both left out of every other
+team view, so clients can hide what a team manager or member would be refused.
 
 Still open:
 
