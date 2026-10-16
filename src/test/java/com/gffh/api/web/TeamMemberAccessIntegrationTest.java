@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -58,6 +60,8 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.awayTeam.name").value("Reach FC Away"))
                 .andExpect(jsonPath("$.homeTeam.managerName").doesNotExist())
+                .andExpect(jsonPath("$.homeTeam.contactPhone").doesNotExist())
+                .andExpect(jsonPath("$.awayTeam.managerName").doesNotExist())
                 .andExpect(jsonPath("$.awayTeam.contactPhone").doesNotExist());
 
         // Joining one team gives no reach over the other side's fixture list.
@@ -93,7 +97,7 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("a team manager can list the club's venues but not add one, and a plain member can't list them")
+    @DisplayName("a team manager can list the club's venues but not change them, and members and other clubs can't list them")
     void teamManagersSeeTheClubsVenues() throws Exception {
         TestAccount owner = registerAccount("Venue Reach Owner");
         String teamId = createTeam(owner.accessToken(), "Venue Reach FC", 56.014582, -3.790261);
@@ -112,11 +116,25 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                                 """.formatted(manager.email())))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/venues")
+        String venueId = objectMapper.readTree(mockMvc.perform(get("/api/v1/venues")
                         .param("clubId", clubId)
                         .header("Authorization", "Bearer " + manager.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Test Park"));
+                .andExpect(jsonPath("$[0].name").value("Test Park"))
+                .andReturn().getResponse().getContentAsString()).get(0).get("id").asText();
+
+        mockMvc.perform(patch("/api/v1/venues/" + venueId)
+                        .header("Authorization", "Bearer " + manager.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "name": "Renamed Park" }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
+        mockMvc.perform(delete("/api/v1/venues/" + venueId)
+                        .header("Authorization", "Bearer " + manager.accessToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
 
         mockMvc.perform(post("/api/v1/venues")
                         .header("Authorization", "Bearer " + manager.accessToken())
@@ -141,11 +159,21 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
 
+        // Managing a team in another club gives no reach over this one's venues.
+        TestAccount rival = registerAccount("Venue Reach Rival");
+        createTeam(rival.accessToken(), "Venue Reach Rivals", 56.014582, -3.790261);
+        mockMvc.perform(get("/api/v1/venues")
+                        .param("clubId", clubId)
+                        .header("Authorization", "Bearer " + rival.accessToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
+
         mockMvc.perform(get("/api/v1/venues")
                         .param("clubId", clubId)
                         .header("Authorization", "Bearer " + owner.accessToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Test Park"));
     }
 
     // ---- Helpers --------------------------------------------------------
