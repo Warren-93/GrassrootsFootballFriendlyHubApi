@@ -132,6 +132,10 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
+        mockMvc.perform(post("/api/v1/venues/" + venueId + "/default")
+                        .header("Authorization", "Bearer " + manager.accessToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("CLUB_NOT_FOUND"));
         mockMvc.perform(delete("/api/v1/venues/" + venueId)
                         .header("Authorization", "Bearer " + manager.accessToken()))
                 .andExpect(status().isNotFound())
@@ -212,6 +216,33 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].id").value(teamId))
                 .andExpect(jsonPath("$[0].canManage").value(false))
                 .andExpect(jsonPath("$[0].canManageClub").value(false));
+
+        // A club admin added later, with no membership of the team itself, can manage the club too.
+        TestAccount admin = registerAccount("Club Reach Admin");
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/members")
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "role": "CLUB_ADMIN" }
+                                """.formatted(admin.email())))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/teams/mine")
+                        .header("Authorization", "Bearer " + admin.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(teamId))
+                .andExpect(jsonPath("$[0].canManage").value(true))
+                .andExpect(jsonPath("$[0].canManageClub").value(true));
+
+        // It's per team: running a club of your own says nothing about another club's team you manage.
+        String ownTeamId = createTeam(manager.accessToken(), "Club Reach Own FC", 56.014582, -3.790261);
+        mockMvc.perform(get("/api/v1/teams/mine")
+                        .header("Authorization", "Bearer " + manager.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManage", teamId).value(true))
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManageClub", teamId).value(false))
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManage", ownTeamId).value(true))
+                .andExpect(jsonPath("$[?(@.id == '%s')].canManageClub", ownTeamId).value(true));
 
         // Only /teams/mine says; other team views leave both out.
         mockMvc.perform(get("/api/v1/teams/" + teamId)

@@ -104,8 +104,8 @@ public final class TeamDtos {
          * GET /teams/mine: says whether the caller can manage the team, so a
          * member who joined with a code (role USER) gets a read-only app, and
          * whether they can manage its club (CLUB_ADMIN), so a team manager
-         * sees the club's venues without the add, edit and delete they'd be
-         * refused.
+         * sees the club's venues without the add, edit, make default and
+         * delete they'd be refused.
          */
         public static TeamView mine(Team t, boolean canManage, boolean canManageClub, boolean hasVenue) {
             TeamView v = from(t, true, hasVenue);
