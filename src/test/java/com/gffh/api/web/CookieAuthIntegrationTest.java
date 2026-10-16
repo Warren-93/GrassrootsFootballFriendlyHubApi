@@ -124,6 +124,39 @@ class CookieAuthIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("the web app's proxy vouches for its own site, so no CORS-listed Origin is needed")
+    void proxyVouchedRequestUsesCookie() throws Exception {
+        TestAccount account = registerAccount("Proxy Login");
+
+        // The proxy drops a same-site Origin, so the call reaches the API like a server-to-server one.
+        MockHttpServletResponse response = mockMvc.perform(login(account)
+                        .header("X-Auth-Mode", "cookie")
+                        .header("X-Web-Proxy", "same-origin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andReturn().getResponse();
+        String token = cookieValue(response);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .header("X-Auth-Mode", "cookie")
+                        .header("X-Web-Proxy", "same-origin")
+                        .cookie(new Cookie("gffh_refresh", token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("the proxy header alone doesn't switch on the cookie flow")
+    void proxyHeaderNeedsCookieMode() throws Exception {
+        TestAccount account = registerAccount("Proxy Body");
+
+        mockMvc.perform(login(account).header("X-Web-Proxy", "same-origin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(header().doesNotExist("Set-Cookie"));
+    }
+
+    @Test
     @DisplayName("logout revokes the cookie's token and clears the cookie")
     void logoutRevokesAndClears() throws Exception {
         TestAccount account = registerAccount("Cookie Logout");

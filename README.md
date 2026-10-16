@@ -227,7 +227,9 @@ Still open:
 - **Browser auth across sites.** The web client's refresh token is an httpOnly
   `gffh_refresh` cookie (`X-Auth-Mode: cookie`, see `RefreshCookies`). The web
   app's production build calls the API through its own `/api` proxy on Vercel,
-  so the cookie is first-party and Safari keeps it. Refresh tokens rotate on
+  so the cookie is first-party and Safari keeps it. The proxy marks calls from
+  its own site with `X-Web-Proxy: same-origin` (and drops their Origin), so
+  the cookie works without the site being in `CORS_ALLOWED_ORIGINS`. Refresh tokens rotate on
   every use, but a token replaced in the last 60 seconds still works (unless
   signed out or revoked), so a reload mid-refresh or two tabs opening at once
   don't sign the user out.

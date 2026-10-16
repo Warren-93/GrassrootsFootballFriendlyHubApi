@@ -23,12 +23,22 @@ import java.util.Optional;
  * configured origins - never the *.vercel.app preview pattern CORS also
  * accepts, since anyone can host a page there. Everything else (the mobile
  * apps, Vercel previews) keeps receiving the refresh token in the body.
+ *
+ * <p>The web app's own Vercel proxy also vouches for a request with
+ * {@value #PROXY_HEADER}: {@value #PROXY_SAME_ORIGIN}, set only when the
+ * browser's Origin matched the site it was served from. Through the proxy the
+ * cookie is first-party, so this keeps sign-in working on reload even when the
+ * site's address isn't in the CORS list or the Origin header doesn't survive
+ * the hop. A browser can't send that header straight to the API: it isn't an
+ * allowed CORS header, so the preflight fails.
  */
 @Component
 public class RefreshCookies {
 
     public static final String MODE_HEADER = "X-Auth-Mode";
     public static final String COOKIE_MODE = "cookie";
+    public static final String PROXY_HEADER = "X-Web-Proxy";
+    public static final String PROXY_SAME_ORIGIN = "same-origin";
     static final String COOKIE_NAME = "gffh_refresh";
     static final String COOKIE_PATH = "/api/v1/auth";
     private static final Duration MAX_AGE = Duration.ofDays(30);
@@ -46,11 +56,12 @@ public class RefreshCookies {
         this.sameSite = sameSite;
     }
 
-    /** True when this request asked for the cookie flow from a trusted origin. */
+    /** True when this request asked for the cookie flow from a trusted origin or via the web app's proxy. */
     public boolean applies(HttpServletRequest request) {
+        if (!COOKIE_MODE.equalsIgnoreCase(request.getHeader(MODE_HEADER))) return false;
+        if (PROXY_SAME_ORIGIN.equals(request.getHeader(PROXY_HEADER))) return true;
         String origin = request.getHeader(HttpHeaders.ORIGIN);
-        return COOKIE_MODE.equalsIgnoreCase(request.getHeader(MODE_HEADER))
-                && origin != null && trustedOrigins.contains(origin);
+        return origin != null && trustedOrigins.contains(origin);
     }
 
     public Optional<String> read(HttpServletRequest request) {
