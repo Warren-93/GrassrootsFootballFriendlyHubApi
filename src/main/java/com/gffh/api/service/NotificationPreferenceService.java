@@ -20,21 +20,29 @@ public class NotificationPreferenceService {
     }
 
     /**
-     * The four category flags are always replaced. The email and push
-     * switches are optional: a client that doesn't send them (one built
-     * before they existed) leaves them as they were rather than turning them off.
+     * A partial update: any flag left out keeps its current value rather than
+     * turning off, so a client built before the email and push switches
+     * existed, or one sending only the switch the user just flipped, changes
+     * nothing else.
      */
     public NotificationDtos.PreferenceView update(String userId, NotificationDtos.UpdatePreferenceRequest request) {
         NotificationPreference current = current(userId);
-        NotificationPreference saved = preferences.save(new NotificationPreference(userId, request.friendlyRequests(),
-                request.fixtures(), request.verification(), request.messages(),
-                request.emailEnabled() != null ? request.emailEnabled() : current.emailEnabled(),
-                request.pushEnabled() != null ? request.pushEnabled() : current.pushEnabled()));
+        NotificationPreference saved = preferences.save(new NotificationPreference(userId,
+                orCurrent(request.friendlyRequests(), current.friendlyRequests()),
+                orCurrent(request.fixtures(), current.fixtures()),
+                orCurrent(request.verification(), current.verification()),
+                orCurrent(request.messages(), current.messages()),
+                orCurrent(request.emailEnabled(), current.emailEnabled()),
+                orCurrent(request.pushEnabled(), current.pushEnabled())));
         return toView(saved);
     }
 
     private NotificationPreference current(String userId) {
         return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+    }
+
+    private static boolean orCurrent(Boolean requested, boolean current) {
+        return requested != null ? requested : current;
     }
 
     private NotificationDtos.PreferenceView toView(NotificationPreference p) {

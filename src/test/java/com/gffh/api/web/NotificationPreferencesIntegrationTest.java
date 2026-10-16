@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** SCR-PR-09: the four category toggles plus the email and push switches. */
+/** SCR-PR-09: the four category toggles plus the email and push switches, each optional on update. */
 class NotificationPreferencesIntegrationTest extends AbstractIntegrationTest {
 
     @Test
@@ -51,6 +51,35 @@ class NotificationPreferencesIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.fixtures").value(true))
                 .andExpect(jsonPath("$.emailEnabled").value(true))
                 .andExpect(jsonPath("$.pushEnabled").value(false));
+    }
+
+    @Test
+    @DisplayName("a body with only the email switch leaves the four categories as they were")
+    void partialUpdateKeepsCategories() throws Exception {
+        TestAccount account = registerAccount("Partial Preferences Tester");
+
+        update(account, """
+                { "friendlyRequests": true, "fixtures": false, "verification": false, "messages": true }
+                """);
+
+        update(account, """
+                { "emailEnabled": false }
+                """)
+                .andExpect(jsonPath("$.friendlyRequests").value(true))
+                .andExpect(jsonPath("$.fixtures").value(false))
+                .andExpect(jsonPath("$.verification").value(false))
+                .andExpect(jsonPath("$.messages").value(true))
+                .andExpect(jsonPath("$.emailEnabled").value(false))
+                .andExpect(jsonPath("$.pushEnabled").value(true));
+
+        mockMvc.perform(get("/api/v1/me/notification-preferences")
+                        .header("Authorization", "Bearer " + account.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friendlyRequests").value(true))
+                .andExpect(jsonPath("$.fixtures").value(false))
+                .andExpect(jsonPath("$.verification").value(false))
+                .andExpect(jsonPath("$.messages").value(true))
+                .andExpect(jsonPath("$.emailEnabled").value(false));
     }
 
     private ResultActions update(TestAccount account, String body) throws Exception {

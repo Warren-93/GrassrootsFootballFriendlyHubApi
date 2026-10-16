@@ -25,7 +25,7 @@ public final class NotificationDtos {
     public record PreferenceView(boolean friendlyRequests, boolean fixtures, boolean verification, boolean messages,
                                  boolean emailEnabled, boolean pushEnabled) {}
 
-    /** {@code emailEnabled} and {@code pushEnabled} are optional: null keeps the current setting. */
-    public record UpdatePreferenceRequest(boolean friendlyRequests, boolean fixtures, boolean verification, boolean messages,
+    /** Every field is optional: null keeps the current setting, so a partial body switches nothing else off. */
+    public record UpdatePreferenceRequest(Boolean friendlyRequests, Boolean fixtures, Boolean verification, Boolean messages,
                                           Boolean emailEnabled, Boolean pushEnabled) {}
 }
