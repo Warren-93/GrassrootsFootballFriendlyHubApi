@@ -37,6 +37,35 @@ public interface MembershipService {
 
     Role roleForClub(String userId, String clubId);
 
+    /**
+     * Read-only reach over a team: any membership of the team itself (a plain
+     * USER who joined with a code included), or any club-scoped membership of
+     * its club. Enough to see the team's fixtures, never to act on them. The
+     * public team profile needs none of this - see {@link TeamService#get}.
+     */
+    boolean canReadTeam(String userId, String teamId);
+
+    default void requireCanReadTeam(String userId, String teamId) {
+        if (!canReadTeam(userId, teamId)) {
+            throw new BusinessRuleException("TEAM_NOT_FOUND", HttpStatus.NOT_FOUND,
+                    "That team could not be found.");
+        }
+    }
+
+    /**
+     * Whether this user manages the club itself (CLUB_ADMIN) or at least one
+     * team it runs (TEAM_MANAGER) - the reach needed to see the club's venues
+     * when arranging a game, though not to change them.
+     */
+    boolean canManageAnyTeamInClub(String userId, String clubId);
+
+    default void requireCanManageAnyTeamInClub(String userId, String clubId) {
+        if (!canManageAnyTeamInClub(userId, clubId)) {
+            throw new BusinessRuleException("CLUB_NOT_FOUND", HttpStatus.NOT_FOUND,
+                    "That club could not be found.");
+        }
+    }
+
     /** Every user who can currently manage this team - direct team managers plus the club's admins. */
     List<String> managerUserIdsFor(String teamId);
 }

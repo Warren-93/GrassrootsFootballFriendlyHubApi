@@ -26,9 +26,12 @@ public final class FixtureDtos {
          * A team that's turned off "share contact details" still discloses
          * everything else about itself once a fixture is confirmed - only the
          * manager name/phone the OTHER side would see are withheld.
+         * {@code includeContact} is false when the caller manages neither team
+         * (a member who joined with a code): they see the fixture, not the
+         * managers' details.
          */
-        public static FixtureTeamView from(Team t) {
-            boolean share = t.shareContactDetails();
+        public static FixtureTeamView from(Team t, boolean includeContact) {
+            boolean share = includeContact && t.shareContactDetails();
             return new FixtureTeamView(t.id(), t.name(), t.clubName(), share ? t.managerName() : null,
                     share ? t.contactPhone() : null, t.defaultVenueId(), t.badgeUrl());
         }
@@ -44,9 +47,9 @@ public final class FixtureDtos {
             LocalDate date, LocalTime startTime, LocalTime endTime, String venueId,
             String status, String costShare, String refereeArrangement, VenueDtos.VenueSummary venue) {
 
-        public static FixtureView from(Fixture f, Team home, Team away, Venue venue) {
+        public static FixtureView from(Fixture f, Team home, Team away, Venue venue, boolean includeContact) {
             return new FixtureView(f.id(), f.friendlyRequestId(),
-                    FixtureTeamView.from(home), FixtureTeamView.from(away),
+                    FixtureTeamView.from(home, includeContact), FixtureTeamView.from(away, includeContact),
                     f.date(), f.startTime(), f.endTime(), f.venueId(),
                     f.status().name(), f.costShare().name(), f.refereeArrangement().name(),
                     VenueDtos.VenueSummary.from(venue));

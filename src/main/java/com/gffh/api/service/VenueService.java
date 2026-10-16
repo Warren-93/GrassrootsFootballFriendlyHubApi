@@ -41,8 +41,12 @@ public class VenueService {
         return venue;
     }
 
+    /**
+     * Any of the club's managers can see its venues - a team manager picks one
+     * when arranging a game - but only its club admins add, change or remove them.
+     */
     public List<Venue> list(String userId, String clubId) {
-        membershipService.requireCanManageClub(userId, clubId);
+        membershipService.requireCanManageAnyTeamInClub(userId, clubId);
         return venues.findByClubId(clubId);
     }
 

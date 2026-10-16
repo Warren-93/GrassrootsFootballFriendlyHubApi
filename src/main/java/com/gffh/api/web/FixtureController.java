@@ -25,8 +25,9 @@ public class FixtureController {
     public ResponseEntity<List<FixtureDtos.FixtureView>> list(
             @AuthenticationPrincipal Jwt principal,
             @RequestParam String teamId) {
-        var views = fixtureService.list(principal.getSubject(), teamId).stream()
-                .map(this::toView)
+        String userId = principal.getSubject();
+        var views = fixtureService.list(userId, teamId).stream()
+                .map(f -> toView(userId, f))
                 .toList();
         return ResponseEntity.ok(views);
     }
@@ -35,7 +36,8 @@ public class FixtureController {
     public ResponseEntity<FixtureDtos.FixtureView> get(
             @AuthenticationPrincipal Jwt principal,
             @PathVariable String id) {
-        return ResponseEntity.ok(toView(fixtureService.get(principal.getSubject(), id)));
+        String userId = principal.getSubject();
+        return ResponseEntity.ok(toView(userId, fixtureService.get(userId, id)));
     }
 
     @PostMapping("/{id}/cancel")
@@ -44,13 +46,16 @@ public class FixtureController {
             @PathVariable String id,
             @RequestBody(required = false) FixtureDtos.CancelFixtureRequest request) {
         String reason = request != null ? request.reason() : null;
-        return ResponseEntity.ok(toView(fixtureService.cancel(principal.getSubject(), id, reason)));
+        String userId = principal.getSubject();
+        return ResponseEntity.ok(toView(userId, fixtureService.cancel(userId, id, reason)));
     }
 
-    private FixtureDtos.FixtureView toView(Fixture fixture) {
+    /** Members who don't manage either team see the fixture without the managers' contact details. */
+    private FixtureDtos.FixtureView toView(String userId, Fixture fixture) {
         return FixtureDtos.FixtureView.from(fixture,
                 fixtureService.team(fixture.homeTeamId()),
                 fixtureService.team(fixture.awayTeamId()),
-                fixtureService.venueFor(fixture));
+                fixtureService.venueFor(fixture),
+                fixtureService.managesEitherTeam(userId, fixture));
     }
 }

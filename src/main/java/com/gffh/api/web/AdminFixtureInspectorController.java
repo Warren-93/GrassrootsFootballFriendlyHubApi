@@ -28,7 +28,7 @@ public class AdminFixtureInspectorController {
         Fixture fixture = fixtureService.getForAdmin(id);
         FixtureDtos.FixtureView view = FixtureDtos.FixtureView.from(fixture,
                 fixtureService.team(fixture.homeTeamId()), fixtureService.team(fixture.awayTeamId()),
-                fixtureService.venueFor(fixture));
+                fixtureService.venueFor(fixture), true);
         var auditTrail = auditLogService.list("FIXTURE", id, 200);
         return ResponseEntity.ok(new AdminFixtureInspectorDtos.FixtureInspectorView(view, auditTrail));
     }
