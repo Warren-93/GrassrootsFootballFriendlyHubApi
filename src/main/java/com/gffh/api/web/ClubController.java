@@ -44,7 +44,7 @@ public class ClubController {
     @PatchMapping("/{clubId}")
     public ResponseEntity<ClubDtos.ClubView> update(@AuthenticationPrincipal Jwt principal,
                                                      @PathVariable String clubId,
-                                                     @RequestBody ClubDtos.UpdateClubRequest request) {
+                                                     @Valid @RequestBody ClubDtos.UpdateClubRequest request) {
         Club club = clubService.update(principal.getSubject(), clubId, request);
         return ResponseEntity.ok(ClubDtos.ClubView.from(club));
     }

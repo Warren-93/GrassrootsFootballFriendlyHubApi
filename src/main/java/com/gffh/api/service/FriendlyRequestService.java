@@ -164,6 +164,9 @@ public class FriendlyRequestService {
         if (action.equals("suggestChanges") && request != null
                 && (request.proposedStartTime() != null || request.proposedEndTime() != null || request.proposedVenueId() != null)) {
             requireVenueOfEitherTeam(request.proposedVenueId(), fr.senderTeamId(), fr.recipientTeamId());
+            LocalTime proposedStart = request.proposedStartTime() != null ? request.proposedStartTime() : fr.startTime();
+            LocalTime proposedEnd = request.proposedEndTime() != null ? request.proposedEndTime() : fr.endTime();
+            if (!proposedEnd.isAfter(proposedStart)) throw BusinessRuleException.invalidTimeRange();
             updated = withStatus(fr, transition.to(), reason,
                     request.proposedStartTime(), request.proposedEndTime(), request.proposedVenueId());
         } else if (action.equals("acceptChanges")) {

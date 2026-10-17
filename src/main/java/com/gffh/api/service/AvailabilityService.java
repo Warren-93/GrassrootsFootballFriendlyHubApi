@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,7 +50,8 @@ public class AvailabilityService {
             throw new BusinessRuleException("SLOT_IN_PAST", HttpStatus.BAD_REQUEST,
                     "Availability cannot be published for a date that has already passed.");
         }
-        Format format = request.format() == null ? null : Format.valueOf(request.format());
+        requireValidWindow(request.startTime(), request.endTime());
+        Format format = parseFormat(request.format());
         AvailabilitySlot slot = new AvailabilitySlot(null, teamId, request.date(),
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
                 venueOrDefault(teamId, request.venueId()), format, request.notes(), AvailabilityStatus.AVAILABLE);
@@ -60,7 +62,8 @@ public class AvailabilityService {
     public AvailabilityDtos.BulkCreateResult createBulk(String userId, String teamId,
                                                          AvailabilityDtos.BulkCreateSlotRequest request) {
         memberships.requireCanManageTeam(userId, teamId);
-        Format format = request.format() == null ? null : Format.valueOf(request.format());
+        requireValidWindow(request.startTime(), request.endTime());
+        Format format = parseFormat(request.format());
         LocalDate today = LocalDate.now();
         String venueId = venueOrDefault(teamId, request.venueId());
 
@@ -109,11 +112,26 @@ public class AvailabilityService {
                     "Availability cannot be published for a date that has already passed.");
         }
 
-        Format format = request.format() == null ? null : Format.valueOf(request.format());
+        requireValidWindow(request.startTime(), request.endTime());
+        Format format = parseFormat(request.format());
         AvailabilitySlot updated = new AvailabilitySlot(current.id(), teamId, request.date(),
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
                 venueOrDefault(teamId, request.venueId()), format, request.notes(), AvailabilityStatus.AVAILABLE);
         return availability.save(updated);
+    }
+
+    private static void requireValidWindow(LocalTime start, LocalTime end) {
+        if (!end.isAfter(start)) throw BusinessRuleException.invalidTimeRange();
+    }
+
+    private static Format parseFormat(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Format.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleException("INVALID_FORMAT", HttpStatus.BAD_REQUEST,
+                    "Format must be one of FIVE_A_SIDE, SEVEN_A_SIDE, NINE_A_SIDE, ELEVEN_A_SIDE.");
+        }
     }
 
     private AvailabilitySlot findOwned(String teamId, String slotId) {

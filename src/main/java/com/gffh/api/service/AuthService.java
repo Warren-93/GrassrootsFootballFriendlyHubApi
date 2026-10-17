@@ -44,11 +44,8 @@ public class AuthService {
     }
 
     public AuthDtos.TokenResponse register(AuthDtos.RegisterRequest request) {
-        if (users.findByEmail(request.email()).isPresent()) {
-            throw new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
-                    "An account with this email already exists.");
-        }
-        User user = users.save(new User(null, request.email(),
+        if (users.findByEmail(request.email()).isPresent()) throw emailAlreadyRegistered();
+        User user = saveUniqueEmail(new User(null, request.email(),
                 passwordEncoder.encode(request.password()), request.displayName(), false, Instant.now(), false));
 
         // The session is established immediately; verification is asynchronous
@@ -222,14 +219,27 @@ public class AuthService {
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         requireCurrentPassword(user, request.currentPassword());
         if (!request.newEmail().equalsIgnoreCase(user.email()) && users.findByEmail(request.newEmail()).isPresent()) {
-            throw new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
-                    "An account with this email already exists.");
+            throw emailAlreadyRegistered();
         }
-        User updated = users.save(withEmail(user, request.newEmail()));
+        User updated = saveUniqueEmail(withEmail(user, request.newEmail()));
         String verificationToken = verificationTokenService.issue(
                 updated.id(), VerificationTokenPurpose.EMAIL_VERIFY, updated.email());
         return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated),
                 verificationTokenService.forResponse(verificationToken));
+    }
+
+    /** The unique email index settles a race the findByEmail check above it can lose. */
+    private User saveUniqueEmail(User user) {
+        try {
+            return users.save(user);
+        } catch (DuplicateKeyException e) {
+            throw emailAlreadyRegistered();
+        }
+    }
+
+    private static BusinessRuleException emailAlreadyRegistered() {
+        return new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
+                "An account with this email already exists.");
     }
 
     // Keyed on the email, not the caller, so brute-forcing one account is
