@@ -207,14 +207,27 @@ public class TeamService {
                     "This team has an open friendly request - resolve it before archiving.");
         }
 
-        Team archived = new Team(current.id(), current.clubId(), current.name(), current.clubName(),
+        teams.save(archived(current));
+    }
+
+    /**
+     * Archives a generated test team when its test account is removed. No
+     * manager or open-request checks: the team only ever existed for testing,
+     * and archiving (not deleting) keeps any fixtures or requests it touched
+     * readable for the real teams on the other side.
+     */
+    public void archiveTestTeam(String teamId) {
+        teams.findById(teamId).filter(t -> !t.archived()).ifPresent(t -> teams.save(archived(t)));
+    }
+
+    private static Team archived(Team current) {
+        return new Team(current.id(), current.clubId(), current.name(), current.clubName(),
                 current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(),
                 current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
                 current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
                 current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
                 current.createdAt(), current.updatedAt(), current.suspended(), true,
                 current.searchVisible(), current.shareContactDetails());
-        teams.save(archived);
     }
 
     private static String orDefault(String value, String fallback) {

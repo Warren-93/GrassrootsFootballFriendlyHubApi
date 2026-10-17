@@ -45,6 +45,10 @@ public class IndexConfig {
         var users = mongoTemplate.indexOps("users");
         users.ensureIndex(new Index("email", org.springframework.data.domain.Sort.Direction.ASC).unique());
 
+        var testAccounts = mongoTemplate.indexOps("test_accounts");
+        testAccounts.ensureIndex(new Index("userId", org.springframework.data.domain.Sort.Direction.ASC).unique());
+        testAccounts.ensureIndex(new Index("createdAt", org.springframework.data.domain.Sort.Direction.DESC));
+
         var memberships = mongoTemplate.indexOps("memberships");
         memberships.ensureIndex(new CompoundIndexDefinition(new Document("userId", 1).append("teamId", 1)));
         memberships.ensureIndex(new CompoundIndexDefinition(new Document("userId", 1).append("clubId", 1)));
