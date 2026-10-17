@@ -230,20 +230,44 @@ public class FriendlyRequestService {
 
     /**
      * Blocking is bidirectional and immediate: neither team appears in the
-     * other's search results, and any open negotiation between them is
-     * cancelled (SCR-PR-11) - bypasses {@link RequestStateMachine} the same
-     * way admin team suspension does, since this isn't a normal user-driven
-     * transition.
+     * other's search results, and any open negotiation or confirmed fixture
+     * between them is cancelled (SCR-PR-11). The blocked team is told it was
+     * cancelled by the blocking team, in the same words as an ordinary
+     * cancellation, so the block itself stays invisible.
      */
-    public void cancelOpenBetween(String teamAId, String teamBId) {
-        requests.findByTeamId(teamAId).stream()
+    public void cancelOpenBetween(String blockingTeamId, String otherTeamId) {
+        requests.findByTeamId(blockingTeamId).stream()
                 .filter(fr -> !fr.status().isTerminal())
-                .filter(fr -> fr.involves(teamBId))
-                .forEach(fr -> {
-                    FriendlyRequest cancelled = requests.save(withStatus(fr, RequestStatus.CANCELLED));
-                    releaseSlots(cancelled);
-                    cancelFixtureIfAny(cancelled);
-                });
+                .filter(fr -> fr.involves(otherTeamId))
+                .forEach(fr -> cancelOnBehalfOf(fr, blockingTeamId));
+    }
+
+    /**
+     * Admin team suspension ("immediately removes the team from search and
+     * cancels open requests", ADM-05): every open request and confirmed
+     * fixture of the team is cancelled, and each other team told as if the
+     * suspended team had cancelled it.
+     */
+    public void cancelOpenForTeam(String teamId) {
+        requests.findByTeamId(teamId).stream()
+                .filter(fr -> !fr.status().isTerminal())
+                .forEach(fr -> cancelOnBehalfOf(fr, teamId));
+    }
+
+    /**
+     * A cancellation neither team asked for through {@link #act}, so it
+     * bypasses {@link RequestStateMachine}'s actor rules - but otherwise does
+     * what a cancel does: frees the slots, cancels any fixture and notifies
+     * the other team. Skipped if the request moved on since it was read.
+     */
+    private void cancelOnBehalfOf(FriendlyRequest fr, String cancellingTeamId) {
+        Optional<FriendlyRequest> cancelled = requests.saveIfStatus(
+                withStatus(fr, RequestStatus.CANCELLED), fr.status());
+        if (cancelled.isEmpty()) return;
+        releaseSlots(cancelled.get());
+        cancelFixtureIfAny(cancelled.get());
+        Actor actor = fr.senderTeamId().equals(cancellingTeamId) ? Actor.SENDER : Actor.RECIPIENT;
+        notifyOtherParty(cancelled.get(), actor, RequestStatus.CANCELLED, fr.status(), null);
     }
 
     public FriendlyRequest get(String userId, String requestId) {

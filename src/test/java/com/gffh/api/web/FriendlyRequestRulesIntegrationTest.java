@@ -1,10 +1,14 @@
 package com.gffh.api.web;
 
+import com.gffh.api.domain.AvailabilityStatus;
 import com.gffh.api.domain.Fixture;
+import com.gffh.api.domain.FixtureStatus;
 import com.gffh.api.domain.FriendlyRequest;
 import com.gffh.api.domain.RequestStatus;
+import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
+import com.gffh.api.service.AdminTeamService;
 import com.gffh.api.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,8 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -30,6 +36,12 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private FixtureRepository fixtures;
+
+    @Autowired
+    private AvailabilityRepository availability;
+
+    @Autowired
+    private AdminTeamService adminTeams;
 
     /** Two ready teams, each with a 10:00-12:00 slot on the same day. */
     private record Pair(TestAccount sender, String senderTeam, String senderSlot,
@@ -140,6 +152,61 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
                 existing.awayTeamId(), existing.date(), existing.startTime(), existing.endTime(), existing.venueId(),
                 existing.status(), existing.costShare(), existing.refereeArrangement(), existing.createdAt())))
                 .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    @DisplayName("blocking a team cancels the fixture with it properly and tells them as a normal cancellation")
+    void blockCancelsFixtureAndNotifies() throws Exception {
+        Pair p = readyPair("Rules Block", 33);
+        String requestId = sendValid(p);
+        act(p.recipient(), requestId, "accept", null).andExpect(status().isOk());
+
+        block(p.recipient(), p.recipientTeam(), p.senderTeam()).andExpect(status().isOk());
+        block(p.recipient(), p.recipientTeam(), p.senderTeam()).andExpect(status().isOk());
+
+        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(fixtures.findByTeamId(p.senderTeam()).get(0).status()).isEqualTo(FixtureStatus.CANCELLED);
+        assertThat(availability.findById(p.senderSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + p.sender().accessToken()))
+                .andExpect(jsonPath("$[*].type", hasItem("FIXTURE_CANCELLED")));
+        mockMvc.perform(get("/api/v1/teams/" + p.recipientTeam() + "/blocks")
+                        .header("Authorization", "Bearer " + p.recipient().accessToken()))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("a team can't block itself or a team that doesn't exist")
+    void blockRejectsSelfAndUnknownTeams() throws Exception {
+        TestAccount owner = registerAccount("Rules Block Self");
+        String team = createTeam(owner.accessToken(), "Rules Block Self FC", 56.014582, -3.790261);
+
+        block(owner, team, team)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("CANNOT_BLOCK_OWN_TEAM"));
+        block(owner, team, "no-such-team").andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("suspending a team cancels its open requests, frees the other team's slot and tells them")
+    void teamSuspensionCancelsProperly() throws Exception {
+        Pair p = readyPair("Rules Suspend", 34);
+        String requestId = sendValid(p);
+
+        adminTeams.suspend("test-admin", p.senderTeam(), "Testing");
+
+        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(availability.findById(p.recipientSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + p.recipient().accessToken()))
+                .andExpect(jsonPath("$[*].type", hasItem("REQUEST_WITHDRAWN")));
+    }
+
+    private ResultActions block(TestAccount account, String teamId, String blockedTeamId) throws Exception {
+        return mockMvc.perform(post("/api/v1/teams/" + teamId + "/blocks")
+                .header("Authorization", "Bearer " + account.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "blockedTeamId": "%s" }
+                        """.formatted(blockedTeamId)));
     }
 
     private static FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status) {

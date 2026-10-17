@@ -32,8 +32,14 @@ public class BlockService {
         this.friendlyRequestService = friendlyRequestService;
     }
 
+    /** Blocking a team twice keeps the one block. */
     public void block(String userId, String teamId, BlockDtos.BlockRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
+        if (request.blockedTeamId().equals(teamId)) {
+            throw new BusinessRuleException("CANNOT_BLOCK_OWN_TEAM", HttpStatus.BAD_REQUEST,
+                    "A team can't block itself.");
+        }
+        teams.findById(request.blockedTeamId()).orElseThrow(BusinessRuleException::blocked);
         blocks.block(teamId, request.blockedTeamId(), request.reason());
         friendlyRequestService.cancelOpenBetween(teamId, request.blockedTeamId());
     }

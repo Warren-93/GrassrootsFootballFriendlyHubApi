@@ -38,12 +38,4 @@ public interface FriendlyRequestRepository {
      * succeed. Empty when someone else changed it first.
      */
     Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus);
-
-    /**
-     * Admin-only bulk override for team suspension ("Suspension immediately
-     * removes the team from search and cancels open requests", ADM-05) -
-     * bypasses {@code RequestStateMachine} deliberately, since this isn't a
-     * normal user-driven transition.
-     */
-    void cancelOpenForTeam(String teamId);
 }

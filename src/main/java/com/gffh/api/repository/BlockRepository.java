@@ -15,6 +15,7 @@ public interface BlockRepository {
      */
     Set<String> blockedTeamIdsEitherDirection(String teamId);
 
+    /** Idempotent: a pair that's already blocked keeps its original block. */
     void block(String blockingTeamId, String blockedTeamId, String reason);
 
     /** The blocks *this* team placed - one-directional, unlike the matching-time set above. */
