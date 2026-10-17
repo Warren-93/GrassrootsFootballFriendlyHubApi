@@ -122,6 +122,7 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 | `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins allowed to call the API (`*.vercel.app` previews are always allowed). |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | SMTP server. With no host, no email is sent. |
 | `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
+| `BREVO_API_KEY` | Optional. Sends every email through Brevo's HTTPS API instead of SMTP, for hosts that block SMTP ports (Render's free plan does). `MAIL_FROM` must then be a sender verified in Brevo. |
 | `APP_BASE_URL` | The web app that links in emails point at (including member invitations' `/register?email=` link). |
 | `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
 | `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on (`POST /api/v1/auth/oauth/google`); also Android's `serverClientId` and an accepted token audience. |
