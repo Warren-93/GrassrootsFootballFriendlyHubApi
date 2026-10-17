@@ -41,7 +41,7 @@ public class FriendlyRequestService {
     public static final ZoneId FIXTURE_ZONE = ZoneId.of("Europe/London");
 
     /** Actions that agree to or re-propose a date - pointless once it has gone by. */
-    private static final Set<String> DATE_BOUND_ACTIONS = Set.of("accept", "acceptChanges", "suggestChanges");
+    private static final Set<String> DATE_BOUND_ACTIONS = Set.of("accept", "acceptChanges", "suggestChanges", "counter");
 
     private final FriendlyRequestRepository requests;
     private final TeamRepository teams;
