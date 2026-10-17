@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.AvailabilitySlot;
-import com.gffh.api.domain.AvailabilityStatus;
+import com.gffh.api.model.AvailabilitySlot;
+import com.gffh.api.model.enums.AvailabilityStatus;
 import com.gffh.api.repository.AvailabilityRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;

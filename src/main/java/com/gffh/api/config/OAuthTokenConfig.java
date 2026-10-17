@@ -1,6 +1,6 @@
 package com.gffh.api.config;
 
-import com.gffh.api.domain.OAuthProvider;
+import com.gffh.api.model.enums.OAuthProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;

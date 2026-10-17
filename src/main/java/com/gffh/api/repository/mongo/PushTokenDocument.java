@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.PushPlatform;
-import com.gffh.api.domain.PushToken;
+import com.gffh.api.model.PushToken;
+import com.gffh.api.model.enums.PushPlatform;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

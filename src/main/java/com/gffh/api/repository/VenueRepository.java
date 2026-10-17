@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Venue;
+import com.gffh.api.model.Venue;
 
 import java.util.List;
 import java.util.Optional;

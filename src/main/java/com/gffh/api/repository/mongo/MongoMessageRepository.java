@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.Message;
+import com.gffh.api.model.Message;
 import com.gffh.api.repository.MessageRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

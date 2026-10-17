@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.User;
+import com.gffh.api.model.User;
 
 import java.util.List;
 import java.util.Optional;

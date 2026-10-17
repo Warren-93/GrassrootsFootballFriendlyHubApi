@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.PlatformAdmin;
+import com.gffh.api.model.PlatformAdmin;
 
 import java.util.Optional;
 

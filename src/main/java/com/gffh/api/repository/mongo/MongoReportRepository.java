@@ -1,8 +1,8 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.Report;
-import com.gffh.api.domain.ReportSeverity;
-import com.gffh.api.domain.ReportStatus;
+import com.gffh.api.model.Report;
+import com.gffh.api.model.enums.ReportSeverity;
+import com.gffh.api.model.enums.ReportStatus;
 import com.gffh.api.repository.ReportRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

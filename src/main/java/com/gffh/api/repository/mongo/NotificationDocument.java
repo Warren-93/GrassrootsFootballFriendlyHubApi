@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.Notification;
-import com.gffh.api.domain.NotificationType;
+import com.gffh.api.model.Notification;
+import com.gffh.api.model.enums.NotificationType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

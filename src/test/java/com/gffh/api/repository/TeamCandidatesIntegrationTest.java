@@ -1,6 +1,7 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.*;
+import com.gffh.api.model.*;
+import com.gffh.api.model.enums.*;
 import com.gffh.api.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

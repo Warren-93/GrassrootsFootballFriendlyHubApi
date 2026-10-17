@@ -1,16 +1,17 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Conversation;
-import com.gffh.api.domain.Message;
-import com.gffh.api.domain.NotificationType;
-import com.gffh.api.domain.Team;
+import com.gffh.api.dto.ConversationDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Conversation;
+import com.gffh.api.model.Message;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.NotificationType;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.ConversationRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.MessageRepository;
 import com.gffh.api.repository.TeamRepository;
-import com.gffh.api.web.ConversationDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.NotificationPreference;
+import com.gffh.api.model.NotificationPreference;
 import com.gffh.api.repository.NotificationPreferenceRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;

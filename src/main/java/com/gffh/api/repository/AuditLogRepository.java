@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.AuditLogEntry;
+import com.gffh.api.model.AuditLogEntry;
 
 import java.util.List;
 

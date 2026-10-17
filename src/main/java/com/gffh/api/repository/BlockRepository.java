@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Block;
+import com.gffh.api.model.Block;
 
 import java.util.List;
 import java.util.Optional;

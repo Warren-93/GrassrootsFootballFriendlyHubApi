@@ -1,7 +1,7 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.AuditLogEntry;
-import com.gffh.api.domain.PlatformAdmin;
+import com.gffh.api.model.AuditLogEntry;
+import com.gffh.api.model.PlatformAdmin;
 import com.gffh.api.repository.AuditLogRepository;
 import com.gffh.api.repository.PlatformAdminRepository;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,7 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Role;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.enums.Role;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;

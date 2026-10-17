@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.Conversation;
+import com.gffh.api.model.Conversation;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

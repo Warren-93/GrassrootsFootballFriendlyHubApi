@@ -1,11 +1,12 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Fixture;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.Venue;
+import com.gffh.api.dto.FriendlyRequestDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Fixture;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.Venue;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.TeamRepository;
-import com.gffh.api.web.FriendlyRequestDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +50,7 @@ public class FixtureService {
 
     /**
      * SCR-FX-06. A fixture has no state of its own to drive - cancelling one is
-     * really cancelling the {@link com.gffh.api.domain.FriendlyRequest} that
+     * really cancelling the {@link com.gffh.api.model.FriendlyRequest} that
      * confirmed it, so this delegates to the same state machine
      * {@link FriendlyRequestService#act} already uses for every other
      * transition, rather than duplicating the CONFIRMED-to-CANCELLED rules here.

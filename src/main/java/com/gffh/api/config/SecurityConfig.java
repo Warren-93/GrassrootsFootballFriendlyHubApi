@@ -24,7 +24,7 @@ import java.util.List;
  * <p>Stateless bearer-token authentication. The mobile clients hold both
  * tokens themselves; the web client holds only the access token, in memory,
  * and its refresh token lives in an httpOnly cookie that is only used by the
- * /api/v1/auth endpoints (see {@link com.gffh.api.web.RefreshCookies}).
+ * /api/v1/auth endpoints (see {@link com.gffh.api.security.RefreshCookies}).
  */
 @Configuration
 @EnableWebSecurity
@@ -103,7 +103,7 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key",
-                com.gffh.api.web.RefreshCookies.MODE_HEADER));
+                com.gffh.api.security.RefreshCookies.MODE_HEADER));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

@@ -1,10 +1,10 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.AgeGroup;
-import com.gffh.api.domain.GeoPoint;
-import com.gffh.api.domain.Gender;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.VerificationStatus;
+import com.gffh.api.model.GeoPoint;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.AgeGroup;
+import com.gffh.api.model.enums.Gender;
+import com.gffh.api.model.enums.VerificationStatus;
 import com.gffh.api.repository.TeamRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;

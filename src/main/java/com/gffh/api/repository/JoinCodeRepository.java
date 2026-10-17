@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.JoinCode;
+import com.gffh.api.model.JoinCode;
 
 import java.util.Optional;
 

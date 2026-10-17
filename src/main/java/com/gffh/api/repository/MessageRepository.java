@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Message;
+import com.gffh.api.model.Message;
 
 import java.util.List;
 

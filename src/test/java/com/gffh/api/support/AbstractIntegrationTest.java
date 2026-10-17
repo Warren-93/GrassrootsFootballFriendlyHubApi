@@ -2,8 +2,8 @@ package com.gffh.api.support;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.VerificationStatus;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.VerificationStatus;
 import com.gffh.api.repository.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

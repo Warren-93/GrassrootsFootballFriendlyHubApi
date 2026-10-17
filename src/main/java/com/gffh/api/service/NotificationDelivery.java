@@ -1,15 +1,18 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Notification;
-import com.gffh.api.domain.NotificationCategory;
-import com.gffh.api.domain.NotificationPreference;
-import com.gffh.api.domain.NotificationType;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.User;
-import com.gffh.api.push.PushMessage;
+import com.gffh.api.model.Notification;
+import com.gffh.api.model.NotificationPreference;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.User;
+import com.gffh.api.model.enums.NotificationCategory;
+import com.gffh.api.model.enums.NotificationType;
 import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.UserRepository;
+import com.gffh.api.service.email.EmailService;
+import com.gffh.api.service.email.FixtureConfirmationEmails;
+import com.gffh.api.service.push.PushMessage;
+import com.gffh.api.service.push.PushService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

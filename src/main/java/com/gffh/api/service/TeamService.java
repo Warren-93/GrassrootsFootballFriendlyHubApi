@@ -1,12 +1,14 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.*;
+import com.gffh.api.dto.TeamDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.*;
+import com.gffh.api.model.enums.*;
 import com.gffh.api.repository.ClubRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
-import com.gffh.api.web.TeamDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -70,7 +72,7 @@ public class TeamService {
      * Viewing is not gated on management - matching (SCR-FF-05) and direct
      * links both need to open a team you don't manage. Contact details are
      * redacted for non-managers at the DTO layer instead; see
-     * {@link com.gffh.api.web.TeamDtos.TeamView#from(Team, boolean)}.
+     * {@link com.gffh.api.dto.TeamDtos.TeamView#from(Team, boolean)}.
      */
     public Team get(String userId, String teamId) {
         return teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);

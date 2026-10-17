@@ -1,11 +1,11 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.AuditLogEntry;
+import com.gffh.api.model.AuditLogEntry;
 import com.gffh.api.repository.AuditLogRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;

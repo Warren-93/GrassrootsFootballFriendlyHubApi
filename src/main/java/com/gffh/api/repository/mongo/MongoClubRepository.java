@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.Club;
+import com.gffh.api.model.Club;
 import com.gffh.api.repository.ClubRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;

@@ -1,7 +1,7 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.ReportSeverity;
-import com.gffh.api.web.AdminOverviewDtos;
+import com.gffh.api.dto.admin.AdminOverviewDtos;
+import com.gffh.api.model.enums.ReportSeverity;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;

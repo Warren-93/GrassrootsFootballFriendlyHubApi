@@ -1,0 +1,293 @@
+package com.gffh.api.controller;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.gffh.api.support.AbstractIntegrationTest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * The core business flow the whole product exists for: propose a friendly,
+ * have it accepted, and get a real fixture out of it - then confirm a
+ * confirmed fixture can be cancelled again. Nothing on this path had
+ * integration coverage before.
+ */
+class FriendlyRequestLifecycleIntegrationTest extends AbstractIntegrationTest {
+
+    private String publishAndGetSlotId(String accessToken, String teamId, String isoDate) throws Exception {
+        String body = """
+                { "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00", "homeAwayPreference": "EITHER" }
+                """.formatted(isoDate);
+
+        String response = mockMvc.perform(post("/api/v1/teams/" + teamId + "/availability")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asText();
+    }
+
+    @Test
+    @DisplayName("accepting a request creates a confirmed fixture, which can then be cancelled")
+    void acceptCreatesAConfirmedFixtureThatCanBeCancelled() throws Exception {
+        TestAccount senderOwner = registerAccount("Lifecycle Sender Owner");
+        TestAccount recipientOwner = registerAccount("Lifecycle Recipient Owner");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Recipient", 56.014582, -3.790261);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(9));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(9));
+
+        String sendBody = """
+                {
+                  "senderTeamId": "%s",
+                  "recipientTeamId": "%s",
+                  "senderSlotId": "%s",
+                  "recipientSlotId": "%s",
+                  "date": "%s",
+                  "startTime": "10:00:00",
+                  "endTime": "12:00:00",
+                  "homeTeamId": "%s",
+                  "costShare": "SPLIT",
+                  "refereeArrangement": "NONE",
+                  "message": "Fancy a friendly?"
+                }
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(9), senderTeam);
+
+        String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SENT"))
+                .andReturn().getResponse().getContentAsString();
+        String requestId = objectMapper.readTree(sendResponse).get("id").asText();
+
+        // Only the recipient may accept - the sender attempting it is rejected.
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/accept")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().is4xxClientError());
+
+        String acceptResponse = mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/accept")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertEquals("CONFIRMED", objectMapper.readTree(acceptResponse).get("status").asText(),
+                "accepting should resolve all the way to CONFIRMED, not stop at ACCEPTED");
+
+        String fixturesResponse = mockMvc.perform(get("/api/v1/fixtures")
+                        .param("teamId", senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode fixtures = objectMapper.readTree(fixturesResponse);
+        assertEquals(1, fixtures.size(), "a confirmed request should produce exactly one fixture");
+        JsonNode fixture = fixtures.get(0);
+        assertEquals("CONFIRMED", fixture.get("status").asText());
+        assertEquals(requestId, fixture.get("friendlyRequestId").asText());
+        String fixtureId = fixture.get("id").asText();
+
+        mockMvc.perform(post("/api/v1/fixtures/" + fixtureId + "/cancel")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reason": "Pitch unavailable" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("declining a request releases both slots without creating a fixture")
+    void decliningReleasesSlotsWithoutCreatingAFixture() throws Exception {
+        TestAccount senderOwner = registerAccount("Lifecycle Decline Sender");
+        TestAccount recipientOwner = registerAccount("Lifecycle Decline Recipient");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Decline Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Decline Recipient", 56.014582, -3.790261);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(16));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(16));
+
+        String sendBody = """
+                {
+                  "senderTeamId": "%s",
+                  "recipientTeamId": "%s",
+                  "senderSlotId": "%s",
+                  "recipientSlotId": "%s",
+                  "date": "%s",
+                  "startTime": "10:00:00",
+                  "endTime": "12:00:00",
+                  "homeTeamId": "%s",
+                  "costShare": "SPLIT",
+                  "refereeArrangement": "NONE"
+                }
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(16), senderTeam);
+
+        String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String requestId = objectMapper.readTree(sendResponse).get("id").asText();
+
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/decline")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reason": "Clashes with another fixture" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DECLINED"));
+
+        mockMvc.perform(get("/api/v1/fixtures")
+                        .param("teamId", senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("a real counter-proposal (time/venue) gets baked into the fixture once accepted")
+    void suggestChangesProposalIsAppliedOnAcceptChanges() throws Exception {
+        TestAccount senderOwner = registerAccount("Lifecycle Counter Sender");
+        TestAccount recipientOwner = registerAccount("Lifecycle Counter Recipient");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Lifecycle FC Counter Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Lifecycle FC Counter Recipient", 56.014582, -3.790261);
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(23));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(23));
+
+        String sendResponse = mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "senderTeamId": "%s", "recipientTeamId": "%s",
+                                  "senderSlotId": "%s", "recipientSlotId": "%s",
+                                  "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00",
+                                  "homeTeamId": "%s", "costShare": "SPLIT", "refereeArrangement": "NONE"
+                                }
+                                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(23), senderTeam)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String requestId = objectMapper.readTree(sendResponse).get("id").asText();
+
+        // The recipient proposes a later kick-off, not a different day.
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/suggestChanges")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "reason": "Can we kick off later?", "proposedStartTime": "14:00:00", "proposedEndTime": "16:00:00" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CHANGES_REQUESTED"))
+                .andExpect(jsonPath("$.proposedStartTime").value("14:00:00"))
+                .andExpect(jsonPath("$.proposedEndTime").value("16:00:00"))
+                // the real terms don't change until the proposal is accepted
+                .andExpect(jsonPath("$.startTime").value("10:00:00"));
+
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/acceptChanges")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UPDATED"))
+                .andExpect(jsonPath("$.startTime").value("14:00:00"))
+                .andExpect(jsonPath("$.endTime").value("16:00:00"))
+                .andExpect(jsonPath("$.proposedStartTime").doesNotExist());
+
+        mockMvc.perform(post("/api/v1/friendly-requests/" + requestId + "/actions/accept")
+                        .header("Authorization", "Bearer " + recipientOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        String fixturesResponse = mockMvc.perform(get("/api/v1/fixtures")
+                        .param("teamId", senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode fixture = objectMapper.readTree(fixturesResponse).get(0);
+        assertEquals("14:00:00", fixture.get("startTime").asText(), "the fixture should carry the accepted proposal, not the original time");
+        assertEquals("16:00:00", fixture.get("endTime").asText());
+    }
+
+    @Test
+    @DisplayName("requests need both teams verified with a venue, and the checklist says what's missing")
+    void requestsNeedVerifiedTeamsWithAVenue() throws Exception {
+        TestAccount senderOwner = registerAccount("Gate Sender Owner");
+        TestAccount recipientOwner = registerAccount("Gate Recipient Owner");
+        verifyEmail(senderOwner);
+        String senderTeam = createTeam(senderOwner.accessToken(), "Gate FC Sender", 56.014582, -3.790261);
+        String recipientTeam = createTeam(recipientOwner.accessToken(), "Gate FC Recipient", 56.014582, -3.790261);
+
+        mockMvc.perform(get("/api/v1/teams/" + senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.readyForRequests").value(false))
+                .andExpect(jsonPath("$.profileChecklist[0].key").value("VERIFICATION"))
+                .andExpect(jsonPath("$.profileChecklist[0].done").value(false))
+                .andExpect(jsonPath("$.profileChecklist[0].requiredForRequests").value(true))
+                .andExpect(jsonPath("$.profileChecklist[1].key").value("VENUE"))
+                .andExpect(jsonPath("$.profileChecklist[1].done").value(false));
+
+        String senderSlotId = publishAndGetSlotId(senderOwner.accessToken(), senderTeam, daysFromNow(30));
+        String recipientSlotId = publishAndGetSlotId(recipientOwner.accessToken(), recipientTeam, daysFromNow(30));
+        String sendBody = """
+                {
+                  "senderTeamId": "%s",
+                  "recipientTeamId": "%s",
+                  "senderSlotId": "%s",
+                  "recipientSlotId": "%s",
+                  "date": "%s",
+                  "startTime": "10:00:00",
+                  "endTime": "12:00:00",
+                  "homeTeamId": "%s",
+                  "costShare": "SPLIT",
+                  "refereeArrangement": "NONE"
+                }
+                """.formatted(senderTeam, recipientTeam, senderSlotId, recipientSlotId, daysFromNow(30), senderTeam);
+
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("PROFILE_INCOMPLETE"));
+
+        makeTeamReadyForRequests(senderOwner.accessToken(), senderTeam);
+        mockMvc.perform(get("/api/v1/teams/" + senderTeam)
+                        .header("Authorization", "Bearer " + senderOwner.accessToken()))
+                .andExpect(jsonPath("$.readyForRequests").value(true));
+
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("RECIPIENT_NOT_READY"));
+
+        makeTeamReadyForRequests(recipientOwner.accessToken(), recipientTeam);
+        mockMvc.perform(post("/api/v1/friendly-requests")
+                        .header("Authorization", "Bearer " + senderOwner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sendBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SENT"));
+    }
+}

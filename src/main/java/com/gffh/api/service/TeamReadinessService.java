@@ -1,6 +1,7 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Team;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Team;
 import com.gffh.api.repository.VenueRepository;
 import org.springframework.stereotype.Service;
 

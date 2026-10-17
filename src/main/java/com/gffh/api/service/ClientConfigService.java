@@ -1,7 +1,7 @@
 package com.gffh.api.service;
 
 import com.gffh.api.config.OAuthProperties;
-import com.gffh.api.web.ClientConfigDtos;
+import com.gffh.api.dto.ClientConfigDtos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.MatchingWeightsVersion;
+import com.gffh.api.model.MatchingWeightsVersion;
 import com.gffh.api.repository.MatchingWeightsVersionRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

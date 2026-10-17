@@ -1,6 +1,6 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.RefreshToken;
+import com.gffh.api.model.RefreshToken;
 import com.gffh.api.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +18,7 @@ import java.util.Optional;
  * Issues and rotates opaque refresh tokens. Opaque rather than JWT: a refresh
  * token is long-lived and revocable, which needs a database row to revoke -
  * a self-contained JWT cannot be un-issued short of a deny-list. Only the
- * SHA-256 digest is persisted (see {@link com.gffh.api.domain.RefreshToken}).
+ * SHA-256 digest is persisted (see {@link com.gffh.api.model.RefreshToken}).
  */
 @Service
 public class RefreshTokenService {

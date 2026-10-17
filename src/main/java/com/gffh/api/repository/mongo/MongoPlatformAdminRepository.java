@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.PlatformAdmin;
+import com.gffh.api.model.PlatformAdmin;
 import com.gffh.api.repository.PlatformAdminRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;

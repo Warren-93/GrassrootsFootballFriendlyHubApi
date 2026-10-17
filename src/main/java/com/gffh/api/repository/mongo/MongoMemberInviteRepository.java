@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.MemberInvite;
+import com.gffh.api.model.MemberInvite;
 import com.gffh.api.repository.MemberInviteRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

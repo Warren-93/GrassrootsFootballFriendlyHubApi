@@ -1,9 +1,9 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.AvailabilitySlot;
-import com.gffh.api.domain.AvailabilityStatus;
-import com.gffh.api.domain.Format;
-import com.gffh.api.domain.HomeAwayPreference;
+import com.gffh.api.model.AvailabilitySlot;
+import com.gffh.api.model.enums.AvailabilityStatus;
+import com.gffh.api.model.enums.Format;
+import com.gffh.api.model.enums.HomeAwayPreference;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

@@ -1,7 +1,10 @@
 package com.gffh.api.service;
 
 import com.gffh.api.config.RateLimitProperties;
-import com.gffh.api.domain.*;
+import com.gffh.api.dto.FriendlyRequestDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.*;
+import com.gffh.api.model.enums.*;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.FixtureRepository;
@@ -9,9 +12,11 @@ import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.IdempotencyKeyRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.UserRepository;
-import com.gffh.api.request.RequestStateMachine;
-import com.gffh.api.request.RequestStateMachine.Actor;
-import com.gffh.api.web.FriendlyRequestDtos;
+import com.gffh.api.scheduler.FixtureCompletionJob;
+import com.gffh.api.scheduler.RequestExpiryJob;
+import com.gffh.api.security.RateLimiter;
+import com.gffh.api.service.RequestStateMachine.Actor;
+import com.gffh.api.service.email.FixtureConfirmationEmails;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

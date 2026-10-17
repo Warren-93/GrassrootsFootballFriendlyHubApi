@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Club;
+import com.gffh.api.model.Club;
 
 import java.util.List;
 import java.util.Optional;

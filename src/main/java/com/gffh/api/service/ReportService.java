@@ -1,9 +1,11 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.*;
+import com.gffh.api.dto.ReportDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.*;
+import com.gffh.api.model.enums.*;
 import com.gffh.api.repository.ReportRepository;
 import com.gffh.api.repository.TeamRepository;
-import com.gffh.api.web.ReportDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

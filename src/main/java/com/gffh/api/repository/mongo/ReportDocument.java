@@ -1,6 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.*;
+import com.gffh.api.model.*;
+import com.gffh.api.model.enums.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

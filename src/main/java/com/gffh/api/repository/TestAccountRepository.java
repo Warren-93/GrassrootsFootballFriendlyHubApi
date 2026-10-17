@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.TestAccount;
+import com.gffh.api.model.TestAccount;
 
 import java.util.List;
 import java.util.Optional;
