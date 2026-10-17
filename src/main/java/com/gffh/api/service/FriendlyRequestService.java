@@ -85,10 +85,6 @@ public class FriendlyRequestService {
             }
         }
 
-        if (!rateLimiter.tryConsume("invite:" + req.senderTeamId(), rateLimits.getInvitationsPerHour())) {
-            throw BusinessRuleException.rateLimited();
-        }
-
         Team sender = teams.findById(req.senderTeamId()).orElseThrow(BusinessRuleException::blocked);
         Team recipient = teams.findById(req.recipientTeamId()).orElseThrow(BusinessRuleException::blocked);
 
@@ -120,6 +116,11 @@ public class FriendlyRequestService {
         }
 
         RequestStateMachine.requirePermitted(RequestStatus.DRAFT, RequestStatus.SENT, Actor.SENDER);
+
+        // Counted only once the request is valid, so rejected attempts don't use up the hour's allowance.
+        if (!rateLimiter.tryConsume("invite:" + req.senderTeamId(), rateLimits.getInvitationsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
 
         Team home = req.homeTeamId().equals(sender.id()) ? sender : recipient;
         String venueId = req.venueId() != null && !req.venueId().isBlank() ? req.venueId() : homeVenueId(home);

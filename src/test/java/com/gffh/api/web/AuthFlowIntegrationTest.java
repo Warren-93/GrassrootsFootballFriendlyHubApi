@@ -4,6 +4,7 @@ import com.gffh.api.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -122,5 +123,29 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
     void rejectsMalformedToken() throws Exception {
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer not-a-real-jwt"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("only failed sign-ins count towards the per-email limit")
+    void onlyFailedLoginsAreRateLimited() throws Exception {
+        TestAccount account = registerAccount("Frequent Signer In");
+        for (int i = 0; i < 12; i++) {
+            login(account.email(), "TestPass123!").andExpect(status().isOk());
+        }
+        for (int i = 0; i < 10; i++) {
+            login(account.email(), "WrongPass123!").andExpect(status().isUnauthorized());
+        }
+
+        login(account.email(), "TestPass123!")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error.code").value("RATE_LIMITED"));
+    }
+
+    private ResultActions login(String email, String password) throws Exception {
+        return mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { "email": "%s", "password": "%s" }
+                        """.formatted(email, password)));
     }
 }

@@ -1,5 +1,6 @@
 package com.gffh.api.service;
 
+import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.domain.PlatformAdmin;
 import com.gffh.api.repository.PlatformAdminRepository;
 import com.gffh.api.web.AdminAuthDtos;
@@ -17,15 +18,20 @@ public class AdminAuthService {
     private final PasswordEncoder passwordEncoder;
     private final TotpService totpService;
     private final AdminJwtService adminJwtService;
+    private final RateLimiter rateLimiter;
+    private final RateLimitProperties rateLimits;
     private final boolean totpRequired;
 
     public AdminAuthService(PlatformAdminRepository admins, PasswordEncoder passwordEncoder,
                             TotpService totpService, AdminJwtService adminJwtService,
+                            RateLimiter rateLimiter, RateLimitProperties rateLimits,
                             @Value("${gffh.admin.totp-required:false}") boolean totpRequired) {
         this.admins = admins;
         this.passwordEncoder = passwordEncoder;
         this.totpService = totpService;
         this.adminJwtService = adminJwtService;
+        this.rateLimiter = rateLimiter;
+        this.rateLimits = rateLimits;
         this.totpRequired = totpRequired;
     }
 
@@ -47,11 +53,19 @@ public class AdminAuthService {
         return new AdminAuthDtos.BootstrapResponse(admin.id(), secret, uri);
     }
 
+    /** Failed attempts are capped per email each hour, at the same limit as user sign-in. */
     public AdminAuthDtos.LoginStep1Response login(AdminAuthDtos.LoginRequest request) {
+        String limitKey = "admin-auth:" + request.email().toLowerCase();
+        if (rateLimiter.isExhausted(limitKey, rateLimits.getAuthAttemptsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
         PlatformAdmin admin = admins.findByEmail(request.email())
                 .filter(a -> passwordEncoder.matches(request.password(), a.passwordHash()))
-                .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
-                        "Email or password is incorrect."));
+                .orElseThrow(() -> {
+                    rateLimiter.record(limitKey);
+                    return new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
+                            "Email or password is incorrect.");
+                });
         String pendingToken = adminJwtService.issuePending2faToken(admin.id());
         if (totpRequired) return new AdminAuthDtos.LoginStep1Response(pendingToken, null, null, null, null);
         AdminAuthDtos.SessionResponse session = startSession(admin);

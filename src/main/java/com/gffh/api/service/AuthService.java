@@ -66,8 +66,11 @@ public class AuthService {
         requireWithinAuthLimit(request.email());
         User user = users.findByEmail(request.email())
                 .filter(u -> passwordEncoder.matches(request.password(), u.passwordHash()))
-                .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
-                        "Email or password is incorrect."));
+                .orElseThrow(() -> {
+                    rateLimiter.record(authLimitKey(request.email()));
+                    return new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
+                            "Email or password is incorrect.");
+                });
         requireNotSuspended(user);
         return issueToken(user);
     }
@@ -230,11 +233,16 @@ public class AuthService {
     }
 
     // Keyed on the email, not the caller, so brute-forcing one account is
-    // capped regardless of how many IPs it's spread across.
+    // capped regardless of how many IPs it's spread across. Only failed
+    // attempts count, so signing in often never locks anyone out.
     private void requireWithinAuthLimit(String email) {
-        if (!rateLimiter.tryConsume("auth:" + email.toLowerCase(), rateLimits.getAuthAttemptsPerHour())) {
+        if (rateLimiter.isExhausted(authLimitKey(email), rateLimits.getAuthAttemptsPerHour())) {
             throw BusinessRuleException.rateLimited();
         }
+    }
+
+    private static String authLimitKey(String email) {
+        return "auth:" + email.toLowerCase();
     }
 
     private static void requireNotSuspended(User user) {
