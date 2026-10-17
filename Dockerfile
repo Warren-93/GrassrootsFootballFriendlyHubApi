@@ -21,4 +21,6 @@ USER gffh
 # Render (and most PaaS hosts) inject PORT at runtime; the app already reads
 # it via ${PORT:8090} in application.yml, so no extra wiring is needed here.
 EXPOSE 8090
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Without this the JVM caps its heap at a quarter of the container's memory,
+# leaving most of a small Render instance unused.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]

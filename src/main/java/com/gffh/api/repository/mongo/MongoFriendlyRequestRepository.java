@@ -3,6 +3,7 @@ package com.gffh.api.repository.mongo;
 import com.gffh.api.domain.FriendlyRequest;
 import com.gffh.api.domain.RequestStatus;
 import com.gffh.api.repository.FriendlyRequestRepository;
+import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -59,6 +60,15 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     }
 
     @Override
+    public List<FriendlyRequest> findNegotiatingBefore(LocalDate date) {
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("status").in(NEGOTIATING),
+                Criteria.where("date").lt(date)));
+        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
+                .map(FriendlyRequestDocument::toDomain).toList();
+    }
+
+    @Override
     public boolean existsOpenBetween(String teamAId, String teamBId) {
         Criteria pair = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
@@ -94,15 +104,13 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     }
 
     @Override
-    public void cancelOpenForTeam(String teamId) {
-        Criteria pair = new Criteria().orOperator(
-                Criteria.where("senderTeamId").is(teamId),
-                Criteria.where("recipientTeamId").is(teamId));
-        Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").nin(TERMINAL)));
-        mongoTemplate.updateMulti(query,
-                org.springframework.data.mongodb.core.query.Update.update("status", RequestStatus.CANCELLED.name())
-                        .set("updatedAt", Instant.now()),
-                FriendlyRequestDocument.class, COLLECTION);
+    public Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus) {
+        FriendlyRequestDocument doc = FriendlyRequestDocument.from(request);
+        doc.updatedAt = Instant.now();
+        Query query = new Query(Criteria.where("_id").is(request.id()).and("status").is(expectedStatus.name()));
+        FriendlyRequestDocument saved = mongoTemplate.findAndReplace(query, doc,
+                FindAndReplaceOptions.options().returnNew(), COLLECTION);
+        return Optional.ofNullable(saved).map(FriendlyRequestDocument::toDomain);
     }
 
     private FriendlyRequest withGeneratedId(FriendlyRequest r) {

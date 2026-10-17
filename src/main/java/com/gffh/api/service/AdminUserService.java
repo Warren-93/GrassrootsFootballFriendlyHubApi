@@ -19,16 +19,19 @@ public class AdminUserService {
     private final AuditLogService auditLogService;
     private final PrivacyService privacyService;
     private final MemberInviteService memberInvites;
+    private final RefreshTokenService refreshTokenService;
 
     public AdminUserService(UserRepository users, MembershipRepository memberships,
                             VerificationTokenService verificationTokenService, AuditLogService auditLogService,
-                            PrivacyService privacyService, MemberInviteService memberInvites) {
+                            PrivacyService privacyService, MemberInviteService memberInvites,
+                            RefreshTokenService refreshTokenService) {
         this.users = users;
         this.memberships = memberships;
         this.verificationTokenService = verificationTokenService;
         this.auditLogService = auditLogService;
         this.privacyService = privacyService;
         this.memberInvites = memberInvites;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
@@ -42,9 +45,11 @@ public class AdminUserService {
         return AdminUserDtos.AdminUserView.from(user, memberships.findByUserId(userId));
     }
 
+    /** Signs the user out everywhere too, so no session outlives the suspension by more than an access token. */
     public AdminUserDtos.AdminUserView suspend(String adminId, String userId, String reason) {
         User user = find(userId);
         users.save(withSuspended(user, true));
+        refreshTokenService.revokeAll(userId);
         auditLogService.record(adminId, "USER_SUSPENDED", "USER", userId, reason);
         return get(userId);
     }

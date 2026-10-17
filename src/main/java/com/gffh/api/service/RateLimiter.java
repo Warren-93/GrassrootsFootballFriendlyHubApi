@@ -21,13 +21,30 @@ public class RateLimiter {
 
     /** Returns true if this call is within the limit for {@code key} this hour, and counts it either way. */
     public boolean tryConsume(String key, int limitPerHour) {
+        return currentWindow(key).count().incrementAndGet() <= limitPerHour;
+    }
+
+    /**
+     * Whether {@code key} has already been counted {@code limitPerHour} times
+     * this hour, without counting this call - for limits that only count
+     * failures (see {@link #record}).
+     */
+    public boolean isExhausted(String key, int limitPerHour) {
+        return currentWindow(key).count().get() >= limitPerHour;
+    }
+
+    /** Counts one event (a failed sign-in, say) against {@code key} this hour. */
+    public void record(String key) {
+        currentWindow(key).count().incrementAndGet();
+    }
+
+    private Window currentWindow(String key) {
         long currentHour = Instant.now().getEpochSecond() / 3600;
-        Window window = windows.compute(key, (k, existing) -> {
+        return windows.compute(key, (k, existing) -> {
             if (existing == null || existing.hourEpoch() != currentHour) {
                 return new Window(currentHour, new AtomicInteger(0));
             }
             return existing;
         });
-        return window.count().incrementAndGet() <= limitPerHour;
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -42,13 +43,12 @@ public class MongoBlockRepository implements BlockRepository {
 
     @Override
     public void block(String blockingTeamId, String blockedTeamId, String reason) {
-        BlockDocument doc = new BlockDocument();
-        doc.id = UUID.randomUUID().toString();
-        doc.blockingTeamId = blockingTeamId;
-        doc.blockedTeamId = blockedTeamId;
-        doc.reason = reason;
-        doc.createdAt = Instant.now();
-        mongoTemplate.save(doc, COLLECTION);
+        Query pair = new Query(Criteria.where("blockingTeamId").is(blockingTeamId).and("blockedTeamId").is(blockedTeamId));
+        Update insertOnly = new Update()
+                .setOnInsert("_id", UUID.randomUUID().toString())
+                .setOnInsert("reason", reason)
+                .setOnInsert("createdAt", Instant.now());
+        mongoTemplate.upsert(pair, insertOnly, BlockDocument.class, COLLECTION);
     }
 
     @Override

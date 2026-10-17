@@ -122,6 +122,7 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 | `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins allowed to call the API (`*.vercel.app` previews are always allowed). |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | SMTP server. With no host, no email is sent. |
 | `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
+| `BREVO_API_KEY` | Optional. Sends every email through Brevo's HTTPS API instead of SMTP, for hosts that block SMTP ports (Render's free plan does). `MAIL_FROM` must then be a sender verified in Brevo. |
 | `APP_BASE_URL` | The web app that links in emails point at (including member invitations' `/register?email=` link). |
 | `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
 | `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on (`POST /api/v1/auth/oauth/google`); also Android's `serverClientId` and an accepted token audience. |
@@ -181,7 +182,8 @@ password-reset links, and fixture confirmations to both teams via
 ADM-03's two-admin review queue, and an admin "verify now" override in
 `VerificationService`); automatic fixture completion (`FixtureCompletionJob`
 checks hourly and moves CONFIRMED fixtures whose date has passed to
-COMPLETED); venues filled in from the home team's default when a request or
+COMPLETED, and `RequestExpiryJob` cancels requests still being negotiated
+when their date passes, freeing their slots); venues filled in from the home team's default when a request or
 fixture has none; and `TeamRepository.findCandidates` taking the set of age
 groups within `ageBandTolerance` (still 0 by default, so exact age group only).
 

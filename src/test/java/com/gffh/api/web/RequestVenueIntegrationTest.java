@@ -138,7 +138,13 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
         assertEquals(recipientVenue, created.get("venueId").asText(), "the fixture is created at the home venue");
 
         // A fixture stored with no venue at all is shown at the home venue at read time.
-        Fixture bare = fixtureRepository.save(new Fixture(null, legacy.id(), p.recipientTeam(), p.senderTeam(),
+        // (Its own request: a request only ever has one fixture.)
+        FriendlyRequest bareRequest = friendlyRequestRepository.save(new FriendlyRequest(null,
+                p.senderTeam(), p.recipientTeam(), "no-slot-c", "no-slot-d", RequestStatus.CONFIRMED,
+                date, LocalTime.of(14, 0), null, null, p.recipientTeam(),
+                CostShare.SPLIT, RefereeArrangement.NONE, null, p.sender().userId(), now, now,
+                null, null, null, null));
+        Fixture bare = fixtureRepository.save(new Fixture(null, bareRequest.id(), p.recipientTeam(), p.senderTeam(),
                 date, LocalTime.of(14, 0), null, null, FixtureStatus.CONFIRMED, CostShare.SPLIT,
                 RefereeArrangement.NONE, now));
         mockMvc.perform(get("/api/v1/fixtures/" + bare.id())

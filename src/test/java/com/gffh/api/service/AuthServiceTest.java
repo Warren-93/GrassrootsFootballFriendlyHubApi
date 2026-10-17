@@ -9,6 +9,7 @@ import com.gffh.api.web.AuthDtos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -85,6 +86,19 @@ class AuthServiceTest {
                 null, Instant.now().plusSeconds(60), false, Instant.now());
 
         assertThat(legacy.wasSentTo("player@example.com")).isFalse();
+    }
+
+    @Test
+    @DisplayName("losing a race to register an address is a conflict, not a server error")
+    void registerRaceIsAConflict() {
+        when(users.findByEmail("racer@example.com")).thenReturn(Optional.empty());
+        when(users.save(any())).thenThrow(new DuplicateKeyException("users.email"));
+
+        assertThatThrownBy(() -> service.register(
+                new AuthDtos.RegisterRequest("racer@example.com", "TestPass123!", "Racer")))
+                .isInstanceOf(BusinessRuleException.class)
+                .extracting(e -> ((BusinessRuleException) e).code())
+                .isEqualTo("EMAIL_ALREADY_REGISTERED");
     }
 
     private void linkSentTo(String address) {

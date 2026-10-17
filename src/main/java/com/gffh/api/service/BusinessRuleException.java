@@ -73,6 +73,11 @@ public class BusinessRuleException extends RuntimeException {
                 "Age group and format cannot change once a fixture has been played.");
     }
 
+    public static BusinessRuleException invalidTimeRange() {
+        return new BusinessRuleException("INVALID_TIME_RANGE", HttpStatus.BAD_REQUEST,
+                "The end time must be after the start time.");
+    }
+
     public static BusinessRuleException rateLimited() {
         return new BusinessRuleException("RATE_LIMITED", HttpStatus.TOO_MANY_REQUESTS,
                 "Too many attempts. Please try again later.");

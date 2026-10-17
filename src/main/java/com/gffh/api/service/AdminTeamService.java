@@ -2,7 +2,6 @@ package com.gffh.api.service;
 
 import com.gffh.api.domain.Membership;
 import com.gffh.api.domain.Team;
-import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.web.AdminTeamDtos;
@@ -16,11 +15,11 @@ public class AdminTeamService {
 
     private final TeamRepository teams;
     private final MembershipRepository memberships;
-    private final FriendlyRequestRepository friendlyRequests;
+    private final FriendlyRequestService friendlyRequests;
     private final AuditLogService auditLogService;
 
     public AdminTeamService(TeamRepository teams, MembershipRepository memberships,
-                            FriendlyRequestRepository friendlyRequests, AuditLogService auditLogService) {
+                            FriendlyRequestService friendlyRequests, AuditLogService auditLogService) {
         this.teams = teams;
         this.memberships = memberships;
         this.friendlyRequests = friendlyRequests;

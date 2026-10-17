@@ -1,6 +1,7 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.domain.FriendlyRequest;
+import com.gffh.api.domain.RequestStatus;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,6 +15,9 @@ public interface FriendlyRequestRepository {
 
     /** CONFIRMED requests whose date has already passed - the fixture auto-completion job's input. */
     List<FriendlyRequest> findConfirmedBefore(LocalDate date);
+
+    /** Requests still being negotiated (see {@link #existsOpenBetween}) whose date has already passed - the expiry job's input. */
+    List<FriendlyRequest> findNegotiatingBefore(LocalDate date);
 
     /**
      * Whether these two teams are still negotiating a request (SENT,
@@ -32,10 +36,9 @@ public interface FriendlyRequestRepository {
     FriendlyRequest save(FriendlyRequest request);
 
     /**
-     * Admin-only bulk override for team suspension ("Suspension immediately
-     * removes the team from search and cancels open requests", ADM-05) -
-     * bypasses {@code RequestStateMachine} deliberately, since this isn't a
-     * normal user-driven transition.
+     * Saves a status change only if the stored request is still in
+     * {@code expectedStatus}, so two parties acting at once can't both
+     * succeed. Empty when someone else changed it first.
      */
-    void cancelOpenForTeam(String teamId);
+    Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus);
 }

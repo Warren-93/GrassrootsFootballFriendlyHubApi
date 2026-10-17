@@ -9,6 +9,7 @@ import com.gffh.api.service.BusinessRuleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiError> onBusinessRule(BusinessRuleException ex) {
         return respond(ex.status(), ex.code(), ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ApiError> onDuplicateKey(DuplicateKeyException ex) {
+        // A unique index caught two requests racing to create the same thing;
+        // the one that lost should refresh, not see a server error.
+        return respond(HttpStatus.CONFLICT, "CONFLICT",
+                "Someone else changed this at the same time. Refresh and try again.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

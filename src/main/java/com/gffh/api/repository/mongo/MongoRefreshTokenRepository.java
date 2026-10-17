@@ -56,6 +56,12 @@ public class MongoRefreshTokenRepository implements RefreshTokenRepository {
                 Update.update("revoked", true).unset("rotatedAt"), RefreshTokenDocument.class, COLLECTION);
     }
 
+    @Override
+    public void revokeAllForUserExcept(String userId, String keepTokenId) {
+        mongoTemplate.updateMulti(new Query(Criteria.where("userId").is(userId).and("_id").ne(keepTokenId)),
+                Update.update("revoked", true).unset("rotatedAt"), RefreshTokenDocument.class, COLLECTION);
+    }
+
     private RefreshToken withGeneratedId(RefreshToken t) {
         return new RefreshToken(UUID.randomUUID().toString(), t.userId(), t.tokenHash(),
                 t.expiresAt(), t.revoked(), t.createdAt() != null ? t.createdAt() : Instant.now(), t.rotatedAt());

@@ -47,6 +47,11 @@ public record AvailabilitySlot(
         return startTime.isAfter(other.startTime) ? startTime : other.startTime;
     }
 
+    /** Whether the window {@code start}-{@code end} lies wholly inside this slot. */
+    public boolean accommodates(LocalTime start, LocalTime end) {
+        return !start.isBefore(startTime) && !end.isAfter(endTime);
+    }
+
     public boolean accommodates(LocalTime kickOff, int matchMinutes) {
         int end = kickOff.toSecondOfDay() + matchMinutes * 60;
         return kickOff.toSecondOfDay() >= startTime.toSecondOfDay()

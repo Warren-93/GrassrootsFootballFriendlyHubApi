@@ -78,6 +78,40 @@ class ErrorHandlingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("an availability window that ends before it starts, or an unknown format, is a 400")
+    void invalidAvailabilityIsRejected(CapturedOutput output) throws Exception {
+        String token = registerAccount("Availability Input User").accessToken();
+        String teamId = createTeam(token, "Availability Input FC", 56.014582, -3.790261);
+
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/availability").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "date": "%s", "startTime": "12:00:00", "endTime": "10:00:00", "homeAwayPreference": "EITHER" }
+                                """.formatted(daysFromNow(5))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_TIME_RANGE"));
+
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/availability/bulk").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "dates": ["%s"], "startTime": "10:00:00", "endTime": "10:00:00", "homeAwayPreference": "EITHER" }
+                                """.formatted(daysFromNow(5))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_TIME_RANGE"));
+
+        mockMvc.perform(post("/api/v1/teams/" + teamId + "/availability").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00",
+                                  "homeAwayPreference": "EITHER", "format": "TWENTY_A_SIDE" }
+                                """.formatted(daysFromNow(5))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_FORMAT"));
+
+        assertFalse(output.getOut().contains("Unhandled exception"), "input mistakes must not be logged as crashes");
+    }
+
+    @Test
     @DisplayName("the client config is public, cacheable, and reports providers off until configured")
     void clientConfigIsPublic() throws Exception {
         mockMvc.perform(get("/api/v1/config"))

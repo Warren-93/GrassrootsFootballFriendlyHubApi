@@ -34,11 +34,18 @@ public class RefreshTokenService {
         this.refreshTokens = refreshTokens;
     }
 
-    public String issue(String userId) {
+    /**
+     * A newly issued refresh token and the id of its stored row. Access tokens
+     * issued alongside it carry that id, so a request can say which session
+     * it came from (see {@link #revokeAllExcept}).
+     */
+    public record Issued(String id, String token) {}
+
+    public Issued issue(String userId) {
         String rawToken = randomToken();
-        refreshTokens.save(new RefreshToken(null, userId, hash(rawToken),
+        RefreshToken saved = refreshTokens.save(new RefreshToken(null, userId, hash(rawToken),
                 Instant.now().plus(TTL_DAYS, ChronoUnit.DAYS), false, Instant.now(), null));
-        return rawToken;
+        return new Issued(saved.id(), rawToken);
     }
 
     /**
@@ -51,7 +58,7 @@ public class RefreshTokenService {
      * accepted, so a reload mid-refresh or two tabs opening at once don't sign
      * the user out. Signing out or a password change ends that grace at once.
      */
-    public Optional<String> rotate(String userId, String presentedToken) {
+    public Optional<Issued> rotate(String userId, String presentedToken) {
         Instant now = Instant.now();
         Optional<RefreshToken> found = accepted(presentedToken, now).filter(t -> t.userId().equals(userId));
         if (found.isEmpty()) return Optional.empty();
@@ -73,6 +80,19 @@ public class RefreshTokenService {
     /** Signs the user out everywhere: none of their refresh tokens can be used again. */
     public void revokeAll(String userId) {
         refreshTokens.revokeAllForUser(userId);
+    }
+
+    /**
+     * Signs the user out everywhere except the session {@code keepTokenId}
+     * (an access token's session claim). With no session to keep, signs them
+     * out everywhere.
+     */
+    public void revokeAllExcept(String userId, String keepTokenId) {
+        if (keepTokenId == null) {
+            revokeAll(userId);
+        } else {
+            refreshTokens.revokeAllForUserExcept(userId, keepTokenId);
+        }
     }
 
     public Optional<String> userIdFor(String presentedToken) {

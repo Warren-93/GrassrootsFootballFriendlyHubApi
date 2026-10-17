@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -34,6 +36,12 @@ import java.util.stream.Stream;
  */
 @Service
 public class FriendlyRequestService {
+
+    /** Fixtures are played in the UK, so "today" for a request's date is London's. */
+    public static final ZoneId FIXTURE_ZONE = ZoneId.of("Europe/London");
+
+    /** Actions that agree to or re-propose a date - pointless once it has gone by. */
+    private static final Set<String> DATE_BOUND_ACTIONS = Set.of("accept", "acceptChanges", "suggestChanges", "counter");
 
     private final FriendlyRequestRepository requests;
     private final TeamRepository teams;
@@ -85,10 +93,6 @@ public class FriendlyRequestService {
             }
         }
 
-        if (!rateLimiter.tryConsume("invite:" + req.senderTeamId(), rateLimits.getInvitationsPerHour())) {
-            throw BusinessRuleException.rateLimited();
-        }
-
         Team sender = teams.findById(req.senderTeamId()).orElseThrow(BusinessRuleException::blocked);
         Team recipient = teams.findById(req.recipientTeamId()).orElseThrow(BusinessRuleException::blocked);
 
@@ -96,6 +100,13 @@ public class FriendlyRequestService {
         // real gate is the acting user's own email verification.
         User senderUser = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         if (!senderUser.emailVerified()) throw BusinessRuleException.emailNotVerified();
+
+        if (sender.suspended() || sender.archived()) {
+            throw new BusinessRuleException("TEAM_NOT_ACTIVE", HttpStatus.FORBIDDEN,
+                    "This team is suspended or archived, so it can't send friendly requests.");
+        }
+        // Indistinguishable from not found, as for a block.
+        if (recipient.suspended() || recipient.archived()) throw BusinessRuleException.blocked();
 
         readiness.requireCanSend(sender);
 
@@ -118,8 +129,20 @@ public class FriendlyRequestService {
                 || senderSlot.overlapMinutesWith(recipientSlot) <= 0) {
             throw BusinessRuleException.notAvailable();
         }
+        // The match itself must be on the slots' day and inside both windows.
+        if (!req.endTime().isAfter(req.startTime())) throw BusinessRuleException.invalidTimeRange();
+        if (!req.date().equals(senderSlot.date())
+                || !senderSlot.accommodates(req.startTime(), req.endTime())
+                || !recipientSlot.accommodates(req.startTime(), req.endTime())) {
+            throw BusinessRuleException.notAvailable();
+        }
 
         RequestStateMachine.requirePermitted(RequestStatus.DRAFT, RequestStatus.SENT, Actor.SENDER);
+
+        // Counted only once the request is valid, so rejected attempts don't use up the hour's allowance.
+        if (!rateLimiter.tryConsume("invite:" + req.senderTeamId(), rateLimits.getInvitationsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
 
         Team home = req.homeTeamId().equals(sender.id()) ? sender : recipient;
         String venueId = req.venueId() != null && !req.venueId().isBlank() ? req.venueId() : homeVenueId(home);
@@ -158,11 +181,18 @@ public class FriendlyRequestService {
                         "'" + action + "' is not a valid action from " + fr.status().name().toLowerCase() + "."));
 
         RequestStateMachine.requirePermitted(fr.status(), transition.to(), actor);
+        if (DATE_BOUND_ACTIONS.contains(action) && fr.date().isBefore(LocalDate.now(FIXTURE_ZONE))) {
+            throw new BusinessRuleException("REQUEST_DATE_PASSED", HttpStatus.CONFLICT,
+                    "The date of this friendly has passed, so it can no longer be accepted or changed.");
+        }
 
         FriendlyRequest updated;
         if (action.equals("suggestChanges") && request != null
                 && (request.proposedStartTime() != null || request.proposedEndTime() != null || request.proposedVenueId() != null)) {
             requireVenueOfEitherTeam(request.proposedVenueId(), fr.senderTeamId(), fr.recipientTeamId());
+            LocalTime proposedStart = request.proposedStartTime() != null ? request.proposedStartTime() : fr.startTime();
+            LocalTime proposedEnd = request.proposedEndTime() != null ? request.proposedEndTime() : fr.endTime();
+            if (!proposedEnd.isAfter(proposedStart)) throw BusinessRuleException.invalidTimeRange();
             updated = withStatus(fr, transition.to(), reason,
                     request.proposedStartTime(), request.proposedEndTime(), request.proposedVenueId());
         } else if (action.equals("acceptChanges")) {
@@ -173,7 +203,7 @@ public class FriendlyRequestService {
         } else {
             updated = withStatus(fr, transition.to(), reason);
         }
-        updated = requests.save(updated);
+        updated = transition(updated, fromStatus);
         String fixtureId = null;
 
         if (transition.to() == RequestStatus.ACCEPTED) {
@@ -226,20 +256,44 @@ public class FriendlyRequestService {
 
     /**
      * Blocking is bidirectional and immediate: neither team appears in the
-     * other's search results, and any open negotiation between them is
-     * cancelled (SCR-PR-11) - bypasses {@link RequestStateMachine} the same
-     * way admin team suspension does, since this isn't a normal user-driven
-     * transition.
+     * other's search results, and any open negotiation or confirmed fixture
+     * between them is cancelled (SCR-PR-11). The blocked team is told it was
+     * cancelled by the blocking team, in the same words as an ordinary
+     * cancellation, so the block itself stays invisible.
      */
-    public void cancelOpenBetween(String teamAId, String teamBId) {
-        requests.findByTeamId(teamAId).stream()
+    public void cancelOpenBetween(String blockingTeamId, String otherTeamId) {
+        requests.findByTeamId(blockingTeamId).stream()
                 .filter(fr -> !fr.status().isTerminal())
-                .filter(fr -> fr.involves(teamBId))
-                .forEach(fr -> {
-                    FriendlyRequest cancelled = requests.save(withStatus(fr, RequestStatus.CANCELLED));
-                    releaseSlots(cancelled);
-                    cancelFixtureIfAny(cancelled);
-                });
+                .filter(fr -> fr.involves(otherTeamId))
+                .forEach(fr -> cancelOnBehalfOf(fr, blockingTeamId));
+    }
+
+    /**
+     * Admin team suspension ("immediately removes the team from search and
+     * cancels open requests", ADM-05): every open request and confirmed
+     * fixture of the team is cancelled, and each other team told as if the
+     * suspended team had cancelled it.
+     */
+    public void cancelOpenForTeam(String teamId) {
+        requests.findByTeamId(teamId).stream()
+                .filter(fr -> !fr.status().isTerminal())
+                .forEach(fr -> cancelOnBehalfOf(fr, teamId));
+    }
+
+    /**
+     * A cancellation neither team asked for through {@link #act}, so it
+     * bypasses {@link RequestStateMachine}'s actor rules - but otherwise does
+     * what a cancel does: frees the slots, cancels any fixture and notifies
+     * the other team. Skipped if the request moved on since it was read.
+     */
+    private void cancelOnBehalfOf(FriendlyRequest fr, String cancellingTeamId) {
+        Optional<FriendlyRequest> cancelled = requests.saveIfStatus(
+                withStatus(fr, RequestStatus.CANCELLED), fr.status());
+        if (cancelled.isEmpty()) return;
+        releaseSlots(cancelled.get());
+        cancelFixtureIfAny(cancelled.get());
+        Actor actor = fr.senderTeamId().equals(cancellingTeamId) ? Actor.SENDER : Actor.RECIPIENT;
+        notifyOtherParty(cancelled.get(), actor, RequestStatus.CANCELLED, fr.status(), null);
     }
 
     public FriendlyRequest get(String userId, String requestId) {
@@ -256,12 +310,34 @@ public class FriendlyRequestService {
      */
     public int completePastDue(LocalDate today) {
         List<FriendlyRequest> due = requests.findConfirmedBefore(today);
+        int completed = 0;
         for (FriendlyRequest fr : due) {
             RequestStateMachine.requirePermitted(RequestStatus.CONFIRMED, RequestStatus.COMPLETED, Actor.SYSTEM);
-            requests.save(withStatus(fr, RequestStatus.COMPLETED));
+            // Skipped if it was cancelled since it was read.
+            if (requests.saveIfStatus(withStatus(fr, RequestStatus.COMPLETED), RequestStatus.CONFIRMED).isEmpty()) continue;
             completeFixtureIfAny(fr);
+            completed++;
         }
-        return due.size();
+        return completed;
+    }
+
+    /**
+     * A request still under negotiation when its date goes by can never be
+     * played, so it is cancelled and its slots freed - otherwise it would keep
+     * blocking a new request between the same two teams (see
+     * {@link FriendlyRequestRepository#existsOpenBetween}). Called by
+     * RequestExpiryJob; nobody is notified, since neither team acted.
+     */
+    public int expirePastDue(LocalDate today) {
+        int expired = 0;
+        for (FriendlyRequest fr : requests.findNegotiatingBefore(today)) {
+            Optional<FriendlyRequest> cancelled = requests.saveIfStatus(withStatus(fr, RequestStatus.CANCELLED,
+                    "The date passed before the friendly was agreed."), fr.status());
+            if (cancelled.isEmpty()) continue;
+            releaseSlots(cancelled.get());
+            expired++;
+        }
+        return expired;
     }
 
     private void completeFixtureIfAny(FriendlyRequest fr) {
@@ -357,6 +433,8 @@ public class FriendlyRequestService {
      */
     private FriendlyRequest confirmAndCreateFixture(FriendlyRequest fr) {
         RequestStateMachine.requirePermitted(RequestStatus.ACCEPTED, RequestStatus.CONFIRMED, Actor.SYSTEM);
+        // Confirmed before anything is booked, so a cancel that got in first leaves no fixture behind.
+        FriendlyRequest confirmed = transition(withStatus(fr, RequestStatus.CONFIRMED), RequestStatus.ACCEPTED);
 
         availability.findById(fr.senderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
         availability.findById(fr.recipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
@@ -369,9 +447,19 @@ public class FriendlyRequestService {
                 fr.startTime(), fr.endTime(), venueId, FixtureStatus.CONFIRMED,
                 fr.costShare(), fr.refereeArrangement(), Instant.now()));
 
-        FriendlyRequest confirmed = requests.save(withStatus(fr, RequestStatus.CONFIRMED));
         confirmationEmails.sendFor(fixture);
         return confirmed;
+    }
+
+    /**
+     * Saves a status change only if nobody moved the request on since it was
+     * read; the loser of two simultaneous actions gets the usual wrong-state
+     * 409 and refreshes.
+     */
+    private FriendlyRequest transition(FriendlyRequest updated, RequestStatus expectedStatus) {
+        return requests.saveIfStatus(updated, expectedStatus).orElseThrow(() ->
+                new RequestStateMachine.IllegalRequestTransition("REQUEST_TRANSITION_NOT_ALLOWED",
+                        "The other team changed this request at the same time. Refresh to see where it stands."));
     }
 
     private void cancelFixtureIfAny(FriendlyRequest fr) {

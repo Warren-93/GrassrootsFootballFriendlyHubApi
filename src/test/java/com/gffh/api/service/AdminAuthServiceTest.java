@@ -1,5 +1,6 @@
 package com.gffh.api.service;
 
+import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.domain.PlatformAdmin;
 import com.gffh.api.repository.PlatformAdminRepository;
 import com.gffh.api.web.AdminAuthDtos;
@@ -41,7 +42,7 @@ class AdminAuthServiceTest {
     @Test
     @DisplayName("with authenticator codes off, the password alone signs an admin in")
     void passwordOnlyWhenTotpOff() {
-        var service = new AdminAuthService(admins, passwordEncoder, totpService, jwt, false);
+        var service = service(false);
 
         var result = service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "right-password"));
 
@@ -54,7 +55,7 @@ class AdminAuthServiceTest {
     @Test
     @DisplayName("with authenticator codes on, login needs the code before a session is issued")
     void codeRequiredWhenTotpOn() {
-        var service = new AdminAuthService(admins, passwordEncoder, totpService, jwt, true);
+        var service = service(true);
 
         var result = service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "right-password"));
 
@@ -68,9 +69,30 @@ class AdminAuthServiceTest {
     @Test
     @DisplayName("a wrong password is still rejected with codes off")
     void wrongPasswordRejected() {
-        var service = new AdminAuthService(admins, passwordEncoder, totpService, jwt, false);
+        var service = service(false);
 
         assertThatThrownBy(() -> service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "wrong")))
                 .isInstanceOf(BusinessRuleException.class);
+    }
+
+    @Test
+    @DisplayName("failed attempts are rate limited per email, successful ones never are")
+    void failedAttemptsAreRateLimited() {
+        var service = service(false);
+        for (int i = 0; i < 15; i++) {
+            service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "right-password"));
+        }
+        for (int i = 0; i < 10; i++) {
+            assertThatThrownBy(() -> service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "wrong")))
+                    .extracting(e -> ((BusinessRuleException) e).code()).isEqualTo("INVALID_CREDENTIALS");
+        }
+
+        assertThatThrownBy(() -> service.login(new AdminAuthDtos.LoginRequest("Admin@test.dev", "right-password")))
+                .extracting(e -> ((BusinessRuleException) e).code()).isEqualTo("RATE_LIMITED");
+    }
+
+    private AdminAuthService service(boolean totpRequired) {
+        return new AdminAuthService(admins, passwordEncoder, totpService, jwt,
+                new RateLimiter(), new RateLimitProperties(), totpRequired);
     }
 }

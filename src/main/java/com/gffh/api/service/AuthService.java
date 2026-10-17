@@ -44,21 +44,18 @@ public class AuthService {
     }
 
     public AuthDtos.TokenResponse register(AuthDtos.RegisterRequest request) {
-        if (users.findByEmail(request.email()).isPresent()) {
-            throw new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
-                    "An account with this email already exists.");
-        }
-        User user = users.save(new User(null, request.email(),
+        if (users.findByEmail(request.email()).isPresent()) throw emailAlreadyRegistered();
+        User user = saveUniqueEmail(new User(null, request.email(),
                 passwordEncoder.encode(request.password()), request.displayName(), false, Instant.now(), false));
 
         // The session is established immediately; verification is asynchronous
         // and does not block use of the app (SCR-AU-03, SCR-AU-06).
         String verificationToken = verificationTokenService.issue(user.id(), VerificationTokenPurpose.EMAIL_VERIFY, user.email());
 
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        String refreshToken = refreshTokenService.issue(user.id());
+        RefreshTokenService.Issued refreshToken = refreshTokenService.issue(user.id());
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), refreshToken.id());
         return AuthDtos.TokenResponse.withVerificationToken(
-                accessToken, refreshToken, jwtService.expiresInSeconds(), user,
+                accessToken, refreshToken.token(), jwtService.expiresInSeconds(), user,
                 verificationTokenService.forResponse(verificationToken));
     }
 
@@ -66,8 +63,11 @@ public class AuthService {
         requireWithinAuthLimit(request.email());
         User user = users.findByEmail(request.email())
                 .filter(u -> passwordEncoder.matches(request.password(), u.passwordHash()))
-                .orElseThrow(() -> new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
-                        "Email or password is incorrect."));
+                .orElseThrow(() -> {
+                    rateLimiter.record(authLimitKey(request.email()));
+                    return new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
+                            "Email or password is incorrect.");
+                });
         requireNotSuspended(user);
         return issueToken(user);
     }
@@ -121,12 +121,13 @@ public class AuthService {
                         "Your session has expired. Please sign in again."));
         User user = users.findById(userId).orElseThrow(() -> new BusinessRuleException(
                 "INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED, "Your session has expired. Please sign in again."));
+        requireNotSuspended(user);
 
-        String rotated = refreshTokenService.rotate(userId, presented)
+        RefreshTokenService.Issued rotated = refreshTokenService.rotate(userId, presented)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED,
                         "Your session has expired. Please sign in again."));
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        return AuthDtos.TokenResponse.of(accessToken, rotated, jwtService.expiresInSeconds(), user);
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), rotated.id());
+        return AuthDtos.TokenResponse.of(accessToken, rotated.token(), jwtService.expiresInSeconds(), user);
     }
 
     public void logout(String presentedRefreshToken) {
@@ -151,12 +152,14 @@ public class AuthService {
                 verificationTokenService.issue(user.id(), VerificationTokenPurpose.PASSWORD_RESET, user.email()));
     }
 
+    /** Signs the account out everywhere: whoever knew the old password may hold a session. */
     public void confirmPasswordReset(AuthDtos.PasswordResetConfirmRequest request) {
         String userId = verificationTokenService.consume(request.token(), VerificationTokenPurpose.PASSWORD_RESET)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_RESET_TOKEN", HttpStatus.BAD_REQUEST,
                         "This reset link is invalid or has expired."));
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
+        refreshTokenService.revokeAll(user.id());
     }
 
     /** Neither a token nor emailSent when the account is already verified - there's nothing to resend. */
@@ -196,10 +199,16 @@ public class AuthService {
                 "This verification link is invalid or has expired.");
     }
 
-    public void changePassword(String userId, AuthDtos.ChangePasswordRequest request) {
+    /**
+     * Signs every other session out, keeping {@code sessionId} (the caller's
+     * own, from its access token) so the device that changed the password
+     * stays signed in. The clients don't expect new tokens back.
+     */
+    public void changePassword(String userId, String sessionId, AuthDtos.ChangePasswordRequest request) {
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         requireCurrentPassword(user, request.currentPassword());
         users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
+        refreshTokenService.revokeAllExcept(user.id(), sessionId);
     }
 
     /**
@@ -210,22 +219,40 @@ public class AuthService {
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         requireCurrentPassword(user, request.currentPassword());
         if (!request.newEmail().equalsIgnoreCase(user.email()) && users.findByEmail(request.newEmail()).isPresent()) {
-            throw new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
-                    "An account with this email already exists.");
+            throw emailAlreadyRegistered();
         }
-        User updated = users.save(withEmail(user, request.newEmail()));
+        User updated = saveUniqueEmail(withEmail(user, request.newEmail()));
         String verificationToken = verificationTokenService.issue(
                 updated.id(), VerificationTokenPurpose.EMAIL_VERIFY, updated.email());
         return new AuthDtos.ChangeEmailResponse(AuthDtos.UserView.from(updated),
                 verificationTokenService.forResponse(verificationToken));
     }
 
+    /** The unique email index settles a race the findByEmail check above it can lose. */
+    private User saveUniqueEmail(User user) {
+        try {
+            return users.save(user);
+        } catch (DuplicateKeyException e) {
+            throw emailAlreadyRegistered();
+        }
+    }
+
+    private static BusinessRuleException emailAlreadyRegistered() {
+        return new BusinessRuleException("EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT,
+                "An account with this email already exists.");
+    }
+
     // Keyed on the email, not the caller, so brute-forcing one account is
-    // capped regardless of how many IPs it's spread across.
+    // capped regardless of how many IPs it's spread across. Only failed
+    // attempts count, so signing in often never locks anyone out.
     private void requireWithinAuthLimit(String email) {
-        if (!rateLimiter.tryConsume("auth:" + email.toLowerCase(), rateLimits.getAuthAttemptsPerHour())) {
+        if (rateLimiter.isExhausted(authLimitKey(email), rateLimits.getAuthAttemptsPerHour())) {
             throw BusinessRuleException.rateLimited();
         }
+    }
+
+    private static String authLimitKey(String email) {
+        return "auth:" + email.toLowerCase();
     }
 
     private static void requireNotSuspended(User user) {
@@ -243,9 +270,9 @@ public class AuthService {
     }
 
     private AuthDtos.TokenResponse issueToken(User user) {
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        String refreshToken = refreshTokenService.issue(user.id());
-        return AuthDtos.TokenResponse.of(accessToken, refreshToken, jwtService.expiresInSeconds(), user);
+        RefreshTokenService.Issued refreshToken = refreshTokenService.issue(user.id());
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), refreshToken.id());
+        return AuthDtos.TokenResponse.of(accessToken, refreshToken.token(), jwtService.expiresInSeconds(), user);
     }
 
     private static User withPasswordHash(User user, String passwordHash) {
