@@ -85,7 +85,7 @@ class TestAccountServiceTest {
         verify(teamService).create(anyString(), team.capture());
         assertThat(team.getValue().ageGroup()).isEqualTo(AgeGroup.U9);
         assertThat(team.getValue().gender()).isEqualTo(Gender.BOYS);
-        assertThat(team.getValue().abilityLevel()).isEqualTo(AbilityLevel.INTERMEDIATE);
+        assertThat(team.getValue().abilityLevel()).isEqualTo(AbilityLevel.DIVISION_2);
         assertThat(team.getValue().postcode()).isEqualTo("FK6 5AA");
 
         ArgumentCaptor<TestAccount> saved = ArgumentCaptor.forClass(TestAccount.class);

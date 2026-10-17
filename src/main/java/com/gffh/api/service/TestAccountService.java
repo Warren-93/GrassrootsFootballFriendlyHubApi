@@ -126,7 +126,8 @@ public class TestAccountService {
                 ageGroup,
                 o.gender() != null ? o.gender() : Gender.MIXED,
                 o.format(),
-                o.abilityLevel() != null ? o.abilityLevel() : AbilityLevel.INTERMEDIATE,
+                o.abilityLevel() != null ? o.abilityLevel() : AbilityLevel.DIVISION_2,
+                Organisation.OTHER,
                 null,
                 // Denny, Falkirk: a real place, so distance-based matching has something to work with.
                 o.postcode() != null ? o.postcode() : "FK6 5AA",

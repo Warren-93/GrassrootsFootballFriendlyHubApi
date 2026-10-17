@@ -168,7 +168,7 @@ public abstract class AbstractIntegrationTest {
 
         Team team = teamRepository.findById(teamId).orElseThrow();
         teamRepository.save(new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
-                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.league(), team.postcode(),
+                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(), team.league(), team.postcode(),
                 team.location(), team.travelRadiusMiles(), team.homeAwayPreference(), team.managerName(),
                 team.contactPhone(), team.description(), VerificationStatus.VERIFIED, team.defaultVenueId(),
                 team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(),

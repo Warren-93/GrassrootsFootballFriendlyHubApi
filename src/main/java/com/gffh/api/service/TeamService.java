@@ -57,7 +57,7 @@ public class TeamService {
 
         Team team = teams.save(new Team(
                 null, clubId, request.name(), clubName, request.badgeUrl(),
-                request.ageGroup(), request.gender(), format, request.abilityLevel(),
+                request.ageGroup(), request.gender(), format, request.abilityLevel(), request.organisation(),
                 request.league(), request.postcode(),
                 new GeoPoint(request.longitude(), request.latitude()),
                 request.travelRadiusMiles(), request.homeAwayPreference(),
@@ -142,6 +142,7 @@ public class TeamService {
                 request.gender() != null ? request.gender() : current.gender(),
                 request.format() != null ? request.format() : current.format(),
                 request.abilityLevel() != null ? request.abilityLevel() : current.abilityLevel(),
+                request.organisation() != null ? request.organisation() : current.organisation(),
                 orDefault(request.league(), current.league()),
                 orDefault(request.postcode(), current.postcode()),
                 location,
@@ -179,7 +180,7 @@ public class TeamService {
         Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
 
         Team updated = new Team(current.id(), current.clubId(), current.name(), current.clubName(),
-                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(),
+                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(), current.organisation(),
                 current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
                 current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
                 current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
@@ -224,7 +225,7 @@ public class TeamService {
 
     private static Team archived(Team current) {
         return new Team(current.id(), current.clubId(), current.name(), current.clubName(),
-                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(),
+                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(), current.organisation(),
                 current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
                 current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
                 current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),

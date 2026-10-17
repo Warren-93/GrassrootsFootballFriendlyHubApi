@@ -180,7 +180,7 @@ public class VerificationService {
 
     private static Team withVerification(Team team, VerificationStatus status) {
         return new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
-                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.league(),
+                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(), team.league(),
                 team.postcode(), team.location(), team.travelRadiusMiles(), team.homeAwayPreference(),
                 team.managerName(), team.contactPhone(), team.description(), status, team.defaultVenueId(),
                 team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(), team.archived(),

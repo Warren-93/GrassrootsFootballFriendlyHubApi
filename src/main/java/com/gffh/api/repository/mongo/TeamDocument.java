@@ -26,6 +26,7 @@ public class TeamDocument {
     public String gender;
     public String format;
     public String abilityLevel;
+    public String organisation;
     public String league;
     public String postcode;
     /** GeoJSON, longitude first - see {@link GeoPoint}. */
@@ -57,6 +58,7 @@ public class TeamDocument {
         d.gender = t.gender().name();
         d.format = t.format().name();
         d.abilityLevel = t.abilityLevel().name();
+        d.organisation = t.organisation() == null ? null : t.organisation().name();
         d.league = t.league();
         d.postcode = t.postcode();
         d.location = new GeoJsonPoint(t.location().longitude(), t.location().latitude());
@@ -83,7 +85,8 @@ public class TeamDocument {
                 AgeGroup.valueOf(ageGroup),
                 Gender.valueOf(gender),
                 Format.valueOf(format),
-                AbilityLevel.valueOf(abilityLevel),
+                AbilityLevel.fromValue(abilityLevel),
+                organisation == null ? null : Organisation.valueOf(organisation),
                 league, postcode,
                 new GeoPoint(location.getX(), location.getY()),
                 travelRadiusMiles,

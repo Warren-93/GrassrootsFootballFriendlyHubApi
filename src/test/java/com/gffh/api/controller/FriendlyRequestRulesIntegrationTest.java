@@ -273,7 +273,7 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
     private void setSuspendedAndArchived(String teamId, boolean suspended, boolean archived) {
         Team t = teamRepository.findById(teamId).orElseThrow();
         teamRepository.save(new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(), t.ageGroup(),
-                t.gender(), t.format(), t.abilityLevel(), t.league(), t.postcode(), t.location(),
+                t.gender(), t.format(), t.abilityLevel(), t.organisation(), t.league(), t.postcode(), t.location(),
                 t.travelRadiusMiles(), t.homeAwayPreference(), t.managerName(), t.contactPhone(), t.description(),
                 t.verification(), t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
                 suspended, archived, t.searchVisible(), t.shareContactDetails()));
