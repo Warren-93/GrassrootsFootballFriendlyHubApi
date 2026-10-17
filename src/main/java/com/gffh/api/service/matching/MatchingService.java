@@ -4,6 +4,7 @@ import com.gffh.api.dto.MatchDtos;
 import com.gffh.api.exception.BusinessRuleException;
 import com.gffh.api.model.AvailabilitySlot;
 import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.AbilityLevel;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.TeamRepository;
@@ -110,7 +111,7 @@ public class MatchingService {
                 ourTeam.ageGroup().withinBands(weights.ageBandTolerance()),
                 ourTeam.gender(),
                 request.formats(),
-                request.abilityLevels(),
+                currentDivisionNames(request.abilityLevels()),
                 Boolean.TRUE.equals(request.verifiedOnly()),
                 ourTeam.clubId(),
                 CANDIDATE_LIMIT);
@@ -165,5 +166,14 @@ public class MatchingService {
     private MatchDtos.WeightsView view(MatchingWeights w) {
         return new MatchDtos.WeightsView(w.age(), w.availability(), w.format(),
                 w.distance(), w.homeAway(), w.ability());
+    }
+
+    /** Older clients filter by the pre-division level names; translate them so the filter still narrows. */
+    private static List<String> currentDivisionNames(List<String> abilityLevels) {
+        if (abilityLevels == null) return null;
+        return abilityLevels.stream()
+                .map(v -> AbilityLevel.LEGACY.containsKey(v) ? AbilityLevel.LEGACY.get(v).name() : v)
+                .distinct()
+                .toList();
     }
 }

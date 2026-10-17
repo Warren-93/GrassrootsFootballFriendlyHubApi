@@ -62,7 +62,7 @@ public class MongoTeamRepository implements TeamRepository {
 
     private Team withGeneratedId(Team team, Instant now) {
         return new Team(UUID.randomUUID().toString(), team.clubId(), team.name(), team.clubName(),
-                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(),
+                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(),
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
@@ -71,7 +71,7 @@ public class MongoTeamRepository implements TeamRepository {
 
     private Team withCreatedAt(Team team, Instant now) {
         return new Team(team.id(), team.clubId(), team.name(), team.clubName(),
-                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(),
+                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(),
                 team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
                 team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
                 team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),

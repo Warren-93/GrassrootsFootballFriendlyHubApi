@@ -51,7 +51,7 @@ class TeamCandidatesIntegrationTest extends AbstractIntegrationTest {
 
     private Team save(String run, AgeGroup ageGroup, Gender gender) {
         return teamRepository.save(new Team(null, "club-" + UUID.randomUUID(), run + " " + ageGroup + " " + gender,
-                "Club", null, ageGroup, gender, Format.NINE_A_SIDE, AbilityLevel.DEVELOPMENT, null, "D01 F5P2",
+                "Club", null, ageGroup, gender, Format.NINE_A_SIDE, AbilityLevel.DIVISION_3_PLUS, null, null, "D01 F5P2",
                 HERE, 10, HomeAwayPreference.EITHER, null, null, null, VerificationStatus.VERIFIED, null, null,
                 Instant.now(), Instant.now(), false, false, true, true));
     }

@@ -34,6 +34,7 @@ public final class TeamDtos {
             @NotNull Gender gender,
             Format format,
             @NotNull AbilityLevel abilityLevel,
+            Organisation organisation,
             String league,
             @NotBlank String postcode,
             @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitude,
@@ -52,6 +53,7 @@ public final class TeamDtos {
             Gender gender,
             Format format,
             AbilityLevel abilityLevel,
+            Organisation organisation,
             String league,
             String postcode,
             Double longitude,
@@ -73,7 +75,7 @@ public final class TeamDtos {
     public record TeamView(
             String id, String clubId, String name, String clubName, String badgeUrl,
             String ageGroup, String gender, String format, String abilityLevel,
-            String league, String postcode, double longitude, double latitude,
+            String organisation, String league, String postcode, double longitude, double latitude,
             int travelRadiusMiles, String homeAwayPreference, String managerName,
             String contactPhone, String description, String verification,
             String defaultVenueId, int completenessPercent, boolean archived, Instant createdAt,
@@ -91,7 +93,7 @@ public final class TeamDtos {
         public static TeamView from(Team t, boolean includeContact, boolean hasVenue) {
             return new TeamView(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
                     t.ageGroup().name(), t.gender().name(), t.format().name(), t.abilityLevel().name(),
-                    t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
+                    t.organisation() == null ? null : t.organisation().name(), t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
                     t.travelRadiusMiles(), t.homeAwayPreference().name(),
                     includeContact ? t.managerName() : null,
                     includeContact ? t.contactPhone() : null,
@@ -111,7 +113,7 @@ public final class TeamDtos {
         public static TeamView mine(Team t, boolean canManage, boolean canManageClub, boolean hasVenue) {
             TeamView v = from(t, true, hasVenue);
             return new TeamView(v.id(), v.clubId(), v.name(), v.clubName(), v.badgeUrl(), v.ageGroup(), v.gender(),
-                    v.format(), v.abilityLevel(), v.league(), v.postcode(), v.longitude(), v.latitude(),
+                    v.format(), v.abilityLevel(), v.organisation(), v.league(), v.postcode(), v.longitude(), v.latitude(),
                     v.travelRadiusMiles(), v.homeAwayPreference(), v.managerName(), v.contactPhone(),
                     v.description(), v.verification(), v.defaultVenueId(), v.completenessPercent(),
                     v.archived(), v.createdAt(), canManage, canManageClub, v.readyForRequests(),

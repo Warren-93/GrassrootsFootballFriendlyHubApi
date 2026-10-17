@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 class MemberEmailsTest {
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
-    private final Team team = new Team("team-1", "club-1", "Rovers U12", null, null, null, null, null, null, null,
+    private final Team team = new Team("team-1", "club-1", "Rovers U12", null, null, null, null, null, null, null, null,
             null, null, 10, null, null, null, null, null, null, null, Instant.now(), Instant.now(), false, false,
             true, false);
 

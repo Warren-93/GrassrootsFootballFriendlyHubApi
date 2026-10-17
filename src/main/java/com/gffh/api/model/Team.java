@@ -5,6 +5,7 @@ import com.gffh.api.model.enums.AgeGroup;
 import com.gffh.api.model.enums.Format;
 import com.gffh.api.model.enums.Gender;
 import com.gffh.api.model.enums.HomeAwayPreference;
+import com.gffh.api.model.enums.Organisation;
 import com.gffh.api.model.enums.VerificationStatus;
 
 import java.time.Instant;
@@ -28,6 +29,8 @@ public record Team(
         Gender gender,
         Format format,
         AbilityLevel abilityLevel,
+        /** Null for teams created before organisations were asked for. */
+        Organisation organisation,
         String league,
         String postcode,
         GeoPoint location,

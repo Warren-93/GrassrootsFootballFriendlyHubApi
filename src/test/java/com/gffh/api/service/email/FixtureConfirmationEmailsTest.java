@@ -158,7 +158,7 @@ class FixtureConfirmationEmailsTest {
     }
 
     private static Team team(String id, String clubId, String name, String manager) {
-        return new Team(id, clubId, name, null, null, null, null, null, null, null, null, null, 10, null,
+        return new Team(id, clubId, name, null, null, null, null, null, null, null, null, null, null, 10, null,
                 manager, null, null, null, null, null, Instant.now(), Instant.now(), false, false, true, false);
     }
 

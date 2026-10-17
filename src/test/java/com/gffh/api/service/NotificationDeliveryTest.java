@@ -186,7 +186,7 @@ class NotificationDeliveryTest {
     }
 
     private static Team team() {
-        return new Team("team-1", "club-1", "United U12", null, null, null, null, null, null, null, null, null, 10,
+        return new Team("team-1", "club-1", "United U12", null, null, null, null, null, null, null, null, null, null, 10,
                 null, null, null, null, null, null, null, Instant.now(), Instant.now(), false, false, true, false);
     }
 }
