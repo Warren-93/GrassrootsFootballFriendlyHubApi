@@ -183,6 +183,9 @@ public class MemberService {
      * the membership) since the client needs it to switch straight into
      * that team - {@link MemberDtos.MemberView} alone carries no team
      * identity, only meaningful in the context of an already-known team.
+     *
+     * <p>Idempotent: someone who already has a role on the team (a double
+     * tap, say) gets that membership back rather than a second one.
      */
     public MemberDtos.JoinResultView redeem(String userId, String rawCode) {
         String code = rawCode.trim().toUpperCase();
@@ -191,13 +194,9 @@ public class MemberService {
         Team team = findTeam(joinCode.teamId());
         User target = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
 
-        if (memberships.findTeamMembership(userId, team.id()).isPresent()
-                || memberships.findClubMembership(userId, team.clubId()).isPresent()) {
-            throw new BusinessRuleException("ALREADY_A_MEMBER", HttpStatus.CONFLICT,
-                    "You're already a member of this team.");
-        }
-
-        Membership saved = memberships.save(scoped(null, userId, team, Role.USER, Instant.now()));
+        Membership saved = memberships.findTeamMembership(userId, team.id())
+                .or(() -> memberships.findClubMembership(userId, team.clubId()))
+                .orElseGet(() -> memberships.save(scoped(null, userId, team, Role.USER, Instant.now())));
         return new MemberDtos.JoinResultView(team.id(), team.name(), team.clubId(),
                 MemberDtos.MemberView.from(saved, target));
     }

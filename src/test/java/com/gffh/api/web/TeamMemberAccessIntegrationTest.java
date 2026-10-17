@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -292,6 +293,23 @@ class TeamMemberAccessIntegrationTest extends AbstractIntegrationTest {
                                 { "date": "%s", "startTime": "10:00:00", "endTime": "12:00:00", "homeAwayPreference": "EITHER" }
                                 """.formatted(isoDate)))
                 .andExpect(status().isOk()));
+    }
+
+    @Test
+    @DisplayName("redeeming a join code twice leaves one membership")
+    void joinCodeRedeemIsIdempotent() throws Exception {
+        TestAccount owner = registerAccount("Join Twice Owner");
+        String teamId = createTeam(owner.accessToken(), "Join Twice FC", 56.014582, -3.790261);
+        TestAccount member = registerAccount("Join Twice Member");
+        String code = joinCode(owner, teamId);
+
+        joinWithCode(member, code);
+        joinWithCode(member, code);
+
+        mockMvc.perform(get("/api/v1/teams/" + teamId + "/members")
+                        .header("Authorization", "Bearer " + owner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.userId == '%s')]".formatted(member.userId()), hasSize(1)));
     }
 
     private String joinCode(TestAccount owner, String teamId) throws Exception {
