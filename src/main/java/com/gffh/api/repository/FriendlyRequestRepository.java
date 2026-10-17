@@ -1,6 +1,7 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.domain.FriendlyRequest;
+import com.gffh.api.domain.RequestStatus;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,6 +31,13 @@ public interface FriendlyRequestRepository {
     boolean existsOpenForTeam(String teamId);
 
     FriendlyRequest save(FriendlyRequest request);
+
+    /**
+     * Saves a status change only if the stored request is still in
+     * {@code expectedStatus}, so two parties acting at once can't both
+     * succeed. Empty when someone else changed it first.
+     */
+    Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus);
 
     /**
      * Admin-only bulk override for team suspension ("Suspension immediately

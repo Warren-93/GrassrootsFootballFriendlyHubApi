@@ -59,6 +59,8 @@ public class IndexConfig {
         fixtures.ensureIndex(new Index("homeTeamId", org.springframework.data.domain.Sort.Direction.ASC));
         fixtures.ensureIndex(new Index("awayTeamId", org.springframework.data.domain.Sort.Direction.ASC));
         fixtures.ensureIndex(new Index("date", org.springframework.data.domain.Sort.Direction.ASC));
+        // One fixture per request, however many times it's accepted at once.
+        fixtures.ensureIndex(new Index("friendlyRequestId", org.springframework.data.domain.Sort.Direction.ASC).unique());
 
         var refreshTokens = mongoTemplate.indexOps("refreshTokens");
         refreshTokens.ensureIndex(new Index("tokenHash", org.springframework.data.domain.Sort.Direction.ASC).unique());

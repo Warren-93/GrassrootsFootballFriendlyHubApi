@@ -1,11 +1,20 @@
 package com.gffh.api.web;
 
+import com.gffh.api.domain.Fixture;
+import com.gffh.api.domain.FriendlyRequest;
+import com.gffh.api.domain.RequestStatus;
+import com.gffh.api.repository.FixtureRepository;
+import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -15,6 +24,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * request whose date goes by.
  */
 class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private FriendlyRequestRepository requests;
+
+    @Autowired
+    private FixtureRepository fixtures;
 
     /** Two ready teams, each with a 10:00-12:00 slot on the same day. */
     private record Pair(TestAccount sender, String senderTeam, String senderSlot,
@@ -92,5 +107,46 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
                 """)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_TIME_RANGE"));
+    }
+
+    @Test
+    @DisplayName("a status change only lands if nobody moved the request on first")
+    void statusChangesAreConditional() throws Exception {
+        Pair p = readyPair("Rules Race", 31);
+        String requestId = sendValid(p);
+        FriendlyRequest read = requests.findById(requestId).orElseThrow();
+
+        act(p.recipient(), requestId, "decline", null).andExpect(status().isOk());
+
+        // A stale read of SENT can't be turned into an acceptance any more.
+        FriendlyRequest staleAccept = withStatus(read, RequestStatus.ACCEPTED);
+        assertThat(requests.saveIfStatus(staleAccept, RequestStatus.SENT)).isEmpty();
+        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.DECLINED);
+
+        act(p.recipient(), requestId, "accept", null)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("REQUEST_TRANSITION_NOT_ALLOWED"));
+    }
+
+    @Test
+    @DisplayName("a request can never have two fixtures")
+    void oneFixturePerRequest() throws Exception {
+        Pair p = readyPair("Rules One Fixture", 32);
+        String requestId = sendValid(p);
+        act(p.recipient(), requestId, "accept", null).andExpect(status().isOk());
+        Fixture existing = fixtures.findByTeamId(p.senderTeam()).get(0);
+
+        assertThatThrownBy(() -> fixtures.save(new Fixture(null, requestId, existing.homeTeamId(),
+                existing.awayTeamId(), existing.date(), existing.startTime(), existing.endTime(), existing.venueId(),
+                existing.status(), existing.costShare(), existing.refereeArrangement(), existing.createdAt())))
+                .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    private static FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status) {
+        return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(), fr.senderSlotId(),
+                fr.recipientSlotId(), status, fr.date(), fr.startTime(), fr.endTime(), fr.venueId(),
+                fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(), fr.createdByUserId(),
+                fr.createdAt(), fr.updatedAt(), fr.actionReason(), fr.proposedStartTime(), fr.proposedEndTime(),
+                fr.proposedVenueId());
     }
 }

@@ -177,7 +177,7 @@ public class FriendlyRequestService {
         } else {
             updated = withStatus(fr, transition.to(), reason);
         }
-        updated = requests.save(updated);
+        updated = transition(updated, fromStatus);
         String fixtureId = null;
 
         if (transition.to() == RequestStatus.ACCEPTED) {
@@ -260,12 +260,15 @@ public class FriendlyRequestService {
      */
     public int completePastDue(LocalDate today) {
         List<FriendlyRequest> due = requests.findConfirmedBefore(today);
+        int completed = 0;
         for (FriendlyRequest fr : due) {
             RequestStateMachine.requirePermitted(RequestStatus.CONFIRMED, RequestStatus.COMPLETED, Actor.SYSTEM);
-            requests.save(withStatus(fr, RequestStatus.COMPLETED));
+            // Skipped if it was cancelled since it was read.
+            if (requests.saveIfStatus(withStatus(fr, RequestStatus.COMPLETED), RequestStatus.CONFIRMED).isEmpty()) continue;
             completeFixtureIfAny(fr);
+            completed++;
         }
-        return due.size();
+        return completed;
     }
 
     private void completeFixtureIfAny(FriendlyRequest fr) {
@@ -361,6 +364,8 @@ public class FriendlyRequestService {
      */
     private FriendlyRequest confirmAndCreateFixture(FriendlyRequest fr) {
         RequestStateMachine.requirePermitted(RequestStatus.ACCEPTED, RequestStatus.CONFIRMED, Actor.SYSTEM);
+        // Confirmed before anything is booked, so a cancel that got in first leaves no fixture behind.
+        FriendlyRequest confirmed = transition(withStatus(fr, RequestStatus.CONFIRMED), RequestStatus.ACCEPTED);
 
         availability.findById(fr.senderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
         availability.findById(fr.recipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
@@ -373,9 +378,19 @@ public class FriendlyRequestService {
                 fr.startTime(), fr.endTime(), venueId, FixtureStatus.CONFIRMED,
                 fr.costShare(), fr.refereeArrangement(), Instant.now()));
 
-        FriendlyRequest confirmed = requests.save(withStatus(fr, RequestStatus.CONFIRMED));
         confirmationEmails.sendFor(fixture);
         return confirmed;
+    }
+
+    /**
+     * Saves a status change only if nobody moved the request on since it was
+     * read; the loser of two simultaneous actions gets the usual wrong-state
+     * 409 and refreshes.
+     */
+    private FriendlyRequest transition(FriendlyRequest updated, RequestStatus expectedStatus) {
+        return requests.saveIfStatus(updated, expectedStatus).orElseThrow(() ->
+                new RequestStateMachine.IllegalRequestTransition("REQUEST_TRANSITION_NOT_ALLOWED",
+                        "The other team changed this request at the same time. Refresh to see where it stands."));
     }
 
     private void cancelFixtureIfAny(FriendlyRequest fr) {

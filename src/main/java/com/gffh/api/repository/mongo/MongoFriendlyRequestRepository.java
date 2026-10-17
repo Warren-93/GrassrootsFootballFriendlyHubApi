@@ -3,6 +3,7 @@ package com.gffh.api.repository.mongo;
 import com.gffh.api.domain.FriendlyRequest;
 import com.gffh.api.domain.RequestStatus;
 import com.gffh.api.repository.FriendlyRequestRepository;
+import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -91,6 +92,16 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         doc.updatedAt = Instant.now();
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
+    }
+
+    @Override
+    public Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus) {
+        FriendlyRequestDocument doc = FriendlyRequestDocument.from(request);
+        doc.updatedAt = Instant.now();
+        Query query = new Query(Criteria.where("_id").is(request.id()).and("status").is(expectedStatus.name()));
+        FriendlyRequestDocument saved = mongoTemplate.findAndReplace(query, doc,
+                FindAndReplaceOptions.options().returnNew(), COLLECTION);
+        return Optional.ofNullable(saved).map(FriendlyRequestDocument::toDomain);
     }
 
     @Override
