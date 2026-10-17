@@ -10,6 +10,7 @@ import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.service.AdminTeamService;
+import com.gffh.api.service.FriendlyRequestService;
 import com.gffh.api.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,6 +46,9 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private AdminTeamService adminTeams;
+
+    @Autowired
+    private FriendlyRequestService friendlyRequestService;
 
     /** Two ready teams, each with a 10:00-12:00 slot on the same day. */
     private record Pair(TestAccount sender, String senderTeam, String senderSlot,
@@ -232,6 +238,36 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         send(p, p.date(), "10:00:00", "12:00:00")
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("TEAM_NOT_ACTIVE"));
+    }
+
+    @Test
+    @DisplayName("a request whose date has passed can't be accepted, and expires so a new one can be sent")
+    void pastDatedRequestsExpire() throws Exception {
+        Pair p = readyPair("Rules Expiry", 38);
+        String requestId = sendValid(p);
+        FriendlyRequest sent = requests.findById(requestId).orElseThrow();
+        LocalDate yesterday = LocalDate.now(FriendlyRequestService.FIXTURE_ZONE).minusDays(1);
+        requests.save(new FriendlyRequest(sent.id(), sent.senderTeamId(), sent.recipientTeamId(),
+                sent.senderSlotId(), sent.recipientSlotId(), sent.status(), yesterday, sent.startTime(),
+                sent.endTime(), sent.venueId(), sent.homeTeamId(), sent.costShare(), sent.refereeArrangement(),
+                sent.message(), sent.createdByUserId(), sent.createdAt(), sent.updatedAt(), null, null, null, null));
+
+        act(p.recipient(), requestId, "accept", null)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("REQUEST_DATE_PASSED"));
+        act(p.recipient(), requestId, "suggestChanges", """
+                { "proposedStartTime": "10:30:00" }
+                """)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("REQUEST_DATE_PASSED"));
+
+        friendlyRequestService.expirePastDue(LocalDate.now(FriendlyRequestService.FIXTURE_ZONE));
+
+        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(availability.findById(p.senderSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        assertThat(availability.findById(p.recipientSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        // No longer open, so the two teams can arrange another.
+        sendValid(p);
     }
 
     private void setSuspendedAndArchived(String teamId, boolean suspended, boolean archived) {

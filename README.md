@@ -181,7 +181,8 @@ password-reset links, and fixture confirmations to both teams via
 ADM-03's two-admin review queue, and an admin "verify now" override in
 `VerificationService`); automatic fixture completion (`FixtureCompletionJob`
 checks hourly and moves CONFIRMED fixtures whose date has passed to
-COMPLETED); venues filled in from the home team's default when a request or
+COMPLETED, and `RequestExpiryJob` cancels requests still being negotiated
+when their date passes, freeing their slots); venues filled in from the home team's default when a request or
 fixture has none; and `TeamRepository.findCandidates` taking the set of age
 groups within `ageBandTolerance` (still 0 by default, so exact age group only).
 

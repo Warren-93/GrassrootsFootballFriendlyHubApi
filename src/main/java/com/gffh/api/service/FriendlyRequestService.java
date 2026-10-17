@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -34,6 +36,12 @@ import java.util.stream.Stream;
  */
 @Service
 public class FriendlyRequestService {
+
+    /** Fixtures are played in the UK, so "today" for a request's date is London's. */
+    public static final ZoneId FIXTURE_ZONE = ZoneId.of("Europe/London");
+
+    /** Actions that agree to or re-propose a date - pointless once it has gone by. */
+    private static final Set<String> DATE_BOUND_ACTIONS = Set.of("accept", "acceptChanges", "suggestChanges");
 
     private final FriendlyRequestRepository requests;
     private final TeamRepository teams;
@@ -173,6 +181,10 @@ public class FriendlyRequestService {
                         "'" + action + "' is not a valid action from " + fr.status().name().toLowerCase() + "."));
 
         RequestStateMachine.requirePermitted(fr.status(), transition.to(), actor);
+        if (DATE_BOUND_ACTIONS.contains(action) && fr.date().isBefore(LocalDate.now(FIXTURE_ZONE))) {
+            throw new BusinessRuleException("REQUEST_DATE_PASSED", HttpStatus.CONFLICT,
+                    "The date of this friendly has passed, so it can no longer be accepted or changed.");
+        }
 
         FriendlyRequest updated;
         if (action.equals("suggestChanges") && request != null
@@ -307,6 +319,25 @@ public class FriendlyRequestService {
             completed++;
         }
         return completed;
+    }
+
+    /**
+     * A request still under negotiation when its date goes by can never be
+     * played, so it is cancelled and its slots freed - otherwise it would keep
+     * blocking a new request between the same two teams (see
+     * {@link FriendlyRequestRepository#existsOpenBetween}). Called by
+     * RequestExpiryJob; nobody is notified, since neither team acted.
+     */
+    public int expirePastDue(LocalDate today) {
+        int expired = 0;
+        for (FriendlyRequest fr : requests.findNegotiatingBefore(today)) {
+            Optional<FriendlyRequest> cancelled = requests.saveIfStatus(withStatus(fr, RequestStatus.CANCELLED,
+                    "The date passed before the friendly was agreed."), fr.status());
+            if (cancelled.isEmpty()) continue;
+            releaseSlots(cancelled.get());
+            expired++;
+        }
+        return expired;
     }
 
     private void completeFixtureIfAny(FriendlyRequest fr) {

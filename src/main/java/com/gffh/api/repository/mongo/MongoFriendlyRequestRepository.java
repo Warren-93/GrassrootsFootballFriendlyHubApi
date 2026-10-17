@@ -60,6 +60,15 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     }
 
     @Override
+    public List<FriendlyRequest> findNegotiatingBefore(LocalDate date) {
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("status").in(NEGOTIATING),
+                Criteria.where("date").lt(date)));
+        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
+                .map(FriendlyRequestDocument::toDomain).toList();
+    }
+
+    @Override
     public boolean existsOpenBetween(String teamAId, String teamBId) {
         Criteria pair = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),

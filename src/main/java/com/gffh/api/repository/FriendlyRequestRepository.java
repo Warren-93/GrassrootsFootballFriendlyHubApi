@@ -16,6 +16,9 @@ public interface FriendlyRequestRepository {
     /** CONFIRMED requests whose date has already passed - the fixture auto-completion job's input. */
     List<FriendlyRequest> findConfirmedBefore(LocalDate date);
 
+    /** Requests still being negotiated (see {@link #existsOpenBetween}) whose date has already passed - the expiry job's input. */
+    List<FriendlyRequest> findNegotiatingBefore(LocalDate date);
+
     /**
      * Whether these two teams are still negotiating a request (SENT,
      * CHANGES_REQUESTED, UPDATED or ACCEPTED). A CONFIRMED friendly doesn't
