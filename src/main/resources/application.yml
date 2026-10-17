@@ -38,6 +38,11 @@ gffh:
     # The help address the clients show (GET /api/v1/config). When unset, the
     # bare address inside MAIL_FROM is used; with neither, there is none.
     support-email: ${SUPPORT_EMAIL:}
+    brevo:
+      # Brevo's HTTPS email API, used instead of SMTP when set - for hosts
+      # that block SMTP ports (Render's free plan). MAIL_FROM must be a
+      # sender verified in Brevo.
+      api-key: ${BREVO_API_KEY:}
   oauth:
     # Google and Apple sign-in (POST /api/v1/auth/oauth/google and /apple),
     # each off until its IDs are set. Published to the clients by
