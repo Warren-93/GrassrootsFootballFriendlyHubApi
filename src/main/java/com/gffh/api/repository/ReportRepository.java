@@ -1,7 +1,7 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Report;
-import com.gffh.api.domain.ReportStatus;
+import com.gffh.api.model.Report;
+import com.gffh.api.model.enums.ReportStatus;
 
 import java.util.List;
 import java.util.Optional;

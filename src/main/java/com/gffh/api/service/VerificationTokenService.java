@@ -1,8 +1,9 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.VerificationToken;
-import com.gffh.api.domain.VerificationTokenPurpose;
+import com.gffh.api.model.VerificationToken;
+import com.gffh.api.model.enums.VerificationTokenPurpose;
 import com.gffh.api.repository.VerificationTokenRepository;
+import com.gffh.api.service.email.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

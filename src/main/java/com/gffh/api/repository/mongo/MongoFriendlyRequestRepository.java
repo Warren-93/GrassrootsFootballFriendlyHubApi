@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.FriendlyRequest;
-import com.gffh.api.domain.RequestStatus;
+import com.gffh.api.model.FriendlyRequest;
+import com.gffh.api.model.enums.RequestStatus;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;

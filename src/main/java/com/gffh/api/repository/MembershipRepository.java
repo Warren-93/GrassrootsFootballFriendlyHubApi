@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Membership;
+import com.gffh.api.model.Membership;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.AvailabilitySlot;
+import com.gffh.api.model.AvailabilitySlot;
 
 import java.time.LocalDate;
 import java.util.List;

@@ -1,11 +1,12 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Notification;
-import com.gffh.api.domain.NotificationPreference;
-import com.gffh.api.domain.NotificationType;
+import com.gffh.api.dto.NotificationDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Notification;
+import com.gffh.api.model.NotificationPreference;
+import com.gffh.api.model.enums.NotificationType;
 import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.NotificationRepository;
-import com.gffh.api.web.NotificationDtos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

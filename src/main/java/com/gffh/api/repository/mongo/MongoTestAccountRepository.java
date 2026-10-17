@@ -1,6 +1,6 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.TestAccount;
+import com.gffh.api.model.TestAccount;
 import com.gffh.api.repository.TestAccountRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;

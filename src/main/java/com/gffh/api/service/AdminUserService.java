@@ -1,10 +1,11 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.User;
-import com.gffh.api.domain.VerificationTokenPurpose;
+import com.gffh.api.dto.admin.AdminUserDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.User;
+import com.gffh.api.model.enums.VerificationTokenPurpose;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.UserRepository;
-import com.gffh.api.web.AdminUserDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

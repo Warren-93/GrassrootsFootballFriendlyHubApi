@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Notification;
+import com.gffh.api.model.Notification;
 
 import java.util.List;
 import java.util.Optional;

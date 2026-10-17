@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.MemberInvite;
+import com.gffh.api.model.MemberInvite;
 
 import java.time.Instant;
 import java.util.List;

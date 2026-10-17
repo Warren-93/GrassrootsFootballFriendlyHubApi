@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Fixture;
+import com.gffh.api.model.Fixture;
 
 import java.util.List;
 import java.util.Optional;

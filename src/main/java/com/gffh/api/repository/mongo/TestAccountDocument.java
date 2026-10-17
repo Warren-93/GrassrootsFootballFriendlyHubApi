@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.TestAccount;
-import com.gffh.api.domain.TestAccountKind;
+import com.gffh.api.model.TestAccount;
+import com.gffh.api.model.enums.TestAccountKind;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

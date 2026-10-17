@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.MatchingWeightsVersion;
-import com.gffh.api.matching.MatchingWeights;
+import com.gffh.api.model.MatchingWeightsVersion;
+import com.gffh.api.service.matching.MatchingWeights;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

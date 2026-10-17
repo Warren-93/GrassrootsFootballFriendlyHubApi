@@ -1,7 +1,7 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.FriendlyRequest;
-import com.gffh.api.domain.RequestStatus;
+import com.gffh.api.model.FriendlyRequest;
+import com.gffh.api.model.enums.RequestStatus;
 
 import java.time.LocalDate;
 import java.util.List;

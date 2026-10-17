@@ -32,21 +32,34 @@ backend classes can be written in Kotlin later without a migration event.
 
 ## Layout
 
+Classic Spring layering: controllers call services, services call repositories,
+and everything passes models and DTOs between them.
+
 ```
 src/main/java/com/gffh/api/
-├── domain/       Records and enums. No framework dependencies.
-├── matching/     The compatibility engine. Pure logic, no Spring, no Mongo.
-├── request/      Friendly request state machine.
-├── service/      Orchestration, authorisation, persistence coordination.
-├── push/         FCM (Android) and APNs (iOS) senders.
-├── repository/   Persistence interfaces.
-├── web/          Controllers, DTOs, error handling.
-└── config/       Security, CORS, request tracing.
+├── GffhApiApplication.java
+├── controller/           REST controllers (the "C" in MVC; the web and mobile apps are the views).
+│   └── admin/            Admin-site endpoints (/api/v1/admin/**).
+├── dto/                  Request and response shapes, one *Dtos file per area.
+│   └── admin/            Admin-site request and response shapes.
+├── service/              Business logic, authorisation and the request state machine.
+│   ├── email/            Email sending (Gmail SMTP, or Brevo when BREVO_API_KEY is set) and templates.
+│   ├── matching/         Opponent matching: the scoring engine and its tunable weights.
+│   └── push/             Push notifications: FCM (Android) and APNs (iOS) senders.
+├── repository/           Persistence interfaces used by the services.
+│   └── mongo/            MongoDB implementations and their stored document classes.
+├── model/                Domain models (records). No framework dependencies.
+│   └── enums/            Enumerations (status, format, age group and so on).
+├── security/             JWT signing and checking, TOTP, OAuth token checks, rate limiting, refresh cookies.
+├── scheduler/            Scheduled jobs (request expiry, fixture completion).
+├── exception/            Business rule exception, global error handler and the API error shape.
+└── config/               Spring configuration: security, CORS, indexes, properties, request tracing.
 ```
 
-`domain`, `matching` and `request` are deliberately free of Spring. They hold
-the rules the specifications actually define, and they are unit-testable without
-a container, a database or a web layer.
+`model`, `service/matching`'s engine and `service/RequestStateMachine` are
+deliberately free of Spring. They hold the rules the specifications actually
+define, and they are unit-testable without a container, a database or a web
+layer. Tests mirror the same packages under `src/test/java`.
 
 ## Build state
 

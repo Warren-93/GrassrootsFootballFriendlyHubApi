@@ -1,7 +1,7 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.VerificationRequest;
-import com.gffh.api.domain.VerificationRequestStatus;
+import com.gffh.api.model.VerificationRequest;
+import com.gffh.api.model.enums.VerificationRequestStatus;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,24 +1,26 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Club;
-import com.gffh.api.domain.Membership;
-import com.gffh.api.domain.Role;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.User;
-import com.gffh.api.domain.Venue;
+import com.gffh.api.dto.PrivacyDtos;
+import com.gffh.api.dto.TeamDtos;
+import com.gffh.api.dto.VenueDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Club;
+import com.gffh.api.model.Membership;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.User;
+import com.gffh.api.model.Venue;
+import com.gffh.api.model.enums.Role;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.ClubRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
-import com.gffh.api.repository.NotificationPreferenceRepository;
-import com.gffh.api.repository.VenueRepository;
 import com.gffh.api.repository.MembershipRepository;
+import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.UserRepository;
-import com.gffh.api.web.PrivacyDtos;
-import com.gffh.api.web.TeamDtos;
-import com.gffh.api.web.VenueDtos;
+import com.gffh.api.repository.VenueRepository;
+import com.gffh.api.service.push.PushService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

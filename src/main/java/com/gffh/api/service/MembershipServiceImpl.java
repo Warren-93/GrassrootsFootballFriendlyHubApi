@@ -1,8 +1,8 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Membership;
-import com.gffh.api.domain.Role;
-import com.gffh.api.domain.Team;
+import com.gffh.api.model.Membership;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.Role;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.TeamRepository;
 import org.springframework.stereotype.Service;

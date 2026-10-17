@@ -1,12 +1,16 @@
 package com.gffh.api.service;
 
 import com.gffh.api.config.RateLimitProperties;
-import com.gffh.api.domain.OAuthProvider;
-import com.gffh.api.domain.User;
-import com.gffh.api.domain.VerificationToken;
-import com.gffh.api.domain.VerificationTokenPurpose;
+import com.gffh.api.dto.AuthDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.User;
+import com.gffh.api.model.VerificationToken;
+import com.gffh.api.model.enums.OAuthProvider;
+import com.gffh.api.model.enums.VerificationTokenPurpose;
 import com.gffh.api.repository.UserRepository;
-import com.gffh.api.web.AuthDtos;
+import com.gffh.api.security.JwtService;
+import com.gffh.api.security.OAuthTokenVerifier;
+import com.gffh.api.security.RateLimiter;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;

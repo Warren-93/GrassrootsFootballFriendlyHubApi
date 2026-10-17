@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.RefreshToken;
+import com.gffh.api.model.RefreshToken;
 
 import java.time.Instant;
 import java.util.Optional;

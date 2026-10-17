@@ -1,7 +1,7 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.VerificationToken;
-import com.gffh.api.domain.VerificationTokenPurpose;
+import com.gffh.api.model.VerificationToken;
+import com.gffh.api.model.enums.VerificationTokenPurpose;
 
 import java.util.Optional;
 

@@ -1,12 +1,13 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.AvailabilitySlot;
-import com.gffh.api.domain.AvailabilityStatus;
-import com.gffh.api.domain.Format;
+import com.gffh.api.dto.AvailabilityDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.AvailabilitySlot;
+import com.gffh.api.model.enums.AvailabilityStatus;
+import com.gffh.api.model.enums.Format;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.VenueRepository;
-import com.gffh.api.web.AvailabilityDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

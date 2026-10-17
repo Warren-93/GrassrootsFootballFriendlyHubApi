@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.MatchingWeightsVersion;
+import com.gffh.api.model.MatchingWeightsVersion;
 
 import java.util.List;
 import java.util.Optional;

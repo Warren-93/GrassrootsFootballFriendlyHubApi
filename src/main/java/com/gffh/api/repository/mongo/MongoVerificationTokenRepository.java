@@ -1,7 +1,7 @@
 package com.gffh.api.repository.mongo;
 
-import com.gffh.api.domain.VerificationToken;
-import com.gffh.api.domain.VerificationTokenPurpose;
+import com.gffh.api.model.VerificationToken;
+import com.gffh.api.model.enums.VerificationTokenPurpose;
 import com.gffh.api.repository.VerificationTokenRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;

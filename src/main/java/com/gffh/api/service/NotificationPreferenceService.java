@@ -1,8 +1,8 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.NotificationPreference;
+import com.gffh.api.dto.NotificationDtos;
+import com.gffh.api.model.NotificationPreference;
 import com.gffh.api.repository.NotificationPreferenceRepository;
-import com.gffh.api.web.NotificationDtos;
 import org.springframework.stereotype.Service;
 
 /** SCR-PR-09. One row per user, created lazily with every category on the first read or write. */

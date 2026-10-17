@@ -1,13 +1,14 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.NotificationType;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.VerificationRequest;
-import com.gffh.api.domain.VerificationRequestStatus;
-import com.gffh.api.domain.VerificationStatus;
+import com.gffh.api.dto.VerificationDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.VerificationRequest;
+import com.gffh.api.model.enums.NotificationType;
+import com.gffh.api.model.enums.VerificationRequestStatus;
+import com.gffh.api.model.enums.VerificationStatus;
 import com.gffh.api.repository.TeamRepository;
 import com.gffh.api.repository.VerificationRequestRepository;
-import com.gffh.api.web.VerificationDtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

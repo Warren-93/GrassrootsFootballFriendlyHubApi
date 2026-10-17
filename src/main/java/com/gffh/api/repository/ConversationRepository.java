@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.Conversation;
+import com.gffh.api.model.Conversation;
 
 import java.util.List;
 import java.util.Optional;

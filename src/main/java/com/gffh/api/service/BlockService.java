@@ -1,9 +1,11 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Block;
+import com.gffh.api.dto.BlockDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Block;
 import com.gffh.api.repository.BlockRepository;
 import com.gffh.api.repository.TeamRepository;
-import com.gffh.api.web.BlockDtos;
+import com.gffh.api.service.matching.MatchingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

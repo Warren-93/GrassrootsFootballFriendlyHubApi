@@ -1,7 +1,7 @@
 package com.gffh.api.service;
 
 import com.gffh.api.config.OAuthProperties;
-import com.gffh.api.web.ClientConfigDtos;
+import com.gffh.api.dto.ClientConfigDtos;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

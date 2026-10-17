@@ -1,12 +1,13 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.Club;
-import com.gffh.api.domain.GeoPoint;
-import com.gffh.api.domain.Membership;
-import com.gffh.api.domain.Role;
+import com.gffh.api.dto.ClubDtos;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.Club;
+import com.gffh.api.model.GeoPoint;
+import com.gffh.api.model.Membership;
+import com.gffh.api.model.enums.Role;
 import com.gffh.api.repository.ClubRepository;
 import com.gffh.api.repository.MembershipRepository;
-import com.gffh.api.web.ClubDtos;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

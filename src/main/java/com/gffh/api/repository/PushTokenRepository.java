@@ -1,6 +1,6 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.domain.PushToken;
+import com.gffh.api.model.PushToken;
 
 import java.util.List;
 

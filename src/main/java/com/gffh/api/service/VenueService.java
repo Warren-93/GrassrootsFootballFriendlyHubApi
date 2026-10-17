@@ -1,8 +1,9 @@
 package com.gffh.api.service;
 
-import com.gffh.api.domain.GeoPoint;
-import com.gffh.api.domain.Team;
-import com.gffh.api.domain.Venue;
+import com.gffh.api.exception.BusinessRuleException;
+import com.gffh.api.model.GeoPoint;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.Venue;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.VenueRepository;
 import org.springframework.http.HttpStatus;
@@ -25,7 +26,7 @@ public class VenueService {
         this.fixtures = fixtures;
     }
 
-    public Venue create(String userId, com.gffh.api.web.VenueDtos.CreateVenueRequest request) {
+    public Venue create(String userId, com.gffh.api.dto.VenueDtos.CreateVenueRequest request) {
         membershipService.requireCanManageClub(userId, request.clubId());
 
         // The club's first venue becomes the default automatically - SCR-ON-04
@@ -50,7 +51,7 @@ public class VenueService {
         return venues.findByClubId(clubId);
     }
 
-    public Venue update(String userId, String venueId, com.gffh.api.web.VenueDtos.UpdateVenueRequest request) {
+    public Venue update(String userId, String venueId, com.gffh.api.dto.VenueDtos.UpdateVenueRequest request) {
         Venue current = find(venueId);
         membershipService.requireCanManageClub(userId, current.clubId());
 
