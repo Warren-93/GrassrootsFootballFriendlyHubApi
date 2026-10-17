@@ -121,7 +121,8 @@ public class AuthController {
     @PostMapping("/api/v1/me/password")
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal Jwt principal,
                                                 @Valid @RequestBody AuthDtos.ChangePasswordRequest request) {
-        authService.changePassword(principal.getSubject(), request);
+        authService.changePassword(principal.getSubject(),
+                principal.getClaimAsString(com.gffh.api.service.JwtService.SESSION_CLAIM), request);
         return ResponseEntity.ok().build();
     }
 

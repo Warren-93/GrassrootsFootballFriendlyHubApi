@@ -24,12 +24,16 @@ public class JwtService {
         this.ttlMinutes = ttlMinutes;
     }
 
-    public String issueAccessToken(String userId, String email) {
+    /** The claim naming the refresh token (session) an access token was issued with. */
+    public static final String SESSION_CLAIM = "sid";
+
+    public String issueAccessToken(String userId, String email, String sessionId) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(ISSUER)
                 .subject(userId)
                 .claim("email", email)
+                .claim(SESSION_CLAIM, sessionId)
                 .issuedAt(now)
                 .expiresAt(now.plus(ttlMinutes, ChronoUnit.MINUTES))
                 .build();

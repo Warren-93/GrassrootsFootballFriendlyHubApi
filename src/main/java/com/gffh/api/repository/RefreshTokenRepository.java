@@ -17,4 +17,6 @@ public interface RefreshTokenRepository {
     void markRotated(String id, Instant at);
 
     void revokeAllForUser(String userId);
+
+    void revokeAllForUserExcept(String userId, String keepTokenId);
 }

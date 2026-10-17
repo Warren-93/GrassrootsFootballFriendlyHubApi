@@ -55,10 +55,10 @@ public class AuthService {
         // and does not block use of the app (SCR-AU-03, SCR-AU-06).
         String verificationToken = verificationTokenService.issue(user.id(), VerificationTokenPurpose.EMAIL_VERIFY, user.email());
 
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        String refreshToken = refreshTokenService.issue(user.id());
+        RefreshTokenService.Issued refreshToken = refreshTokenService.issue(user.id());
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), refreshToken.id());
         return AuthDtos.TokenResponse.withVerificationToken(
-                accessToken, refreshToken, jwtService.expiresInSeconds(), user,
+                accessToken, refreshToken.token(), jwtService.expiresInSeconds(), user,
                 verificationTokenService.forResponse(verificationToken));
     }
 
@@ -121,12 +121,13 @@ public class AuthService {
                         "Your session has expired. Please sign in again."));
         User user = users.findById(userId).orElseThrow(() -> new BusinessRuleException(
                 "INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED, "Your session has expired. Please sign in again."));
+        requireNotSuspended(user);
 
-        String rotated = refreshTokenService.rotate(userId, presented)
+        RefreshTokenService.Issued rotated = refreshTokenService.rotate(userId, presented)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_REFRESH_TOKEN", HttpStatus.UNAUTHORIZED,
                         "Your session has expired. Please sign in again."));
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        return AuthDtos.TokenResponse.of(accessToken, rotated, jwtService.expiresInSeconds(), user);
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), rotated.id());
+        return AuthDtos.TokenResponse.of(accessToken, rotated.token(), jwtService.expiresInSeconds(), user);
     }
 
     public void logout(String presentedRefreshToken) {
@@ -151,12 +152,14 @@ public class AuthService {
                 verificationTokenService.issue(user.id(), VerificationTokenPurpose.PASSWORD_RESET, user.email()));
     }
 
+    /** Signs the account out everywhere: whoever knew the old password may hold a session. */
     public void confirmPasswordReset(AuthDtos.PasswordResetConfirmRequest request) {
         String userId = verificationTokenService.consume(request.token(), VerificationTokenPurpose.PASSWORD_RESET)
                 .orElseThrow(() -> new BusinessRuleException("INVALID_RESET_TOKEN", HttpStatus.BAD_REQUEST,
                         "This reset link is invalid or has expired."));
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
+        refreshTokenService.revokeAll(user.id());
     }
 
     /** Neither a token nor emailSent when the account is already verified - there's nothing to resend. */
@@ -196,10 +199,16 @@ public class AuthService {
                 "This verification link is invalid or has expired.");
     }
 
-    public void changePassword(String userId, AuthDtos.ChangePasswordRequest request) {
+    /**
+     * Signs every other session out, keeping {@code sessionId} (the caller's
+     * own, from its access token) so the device that changed the password
+     * stays signed in. The clients don't expect new tokens back.
+     */
+    public void changePassword(String userId, String sessionId, AuthDtos.ChangePasswordRequest request) {
         User user = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         requireCurrentPassword(user, request.currentPassword());
         users.save(withPasswordHash(user, passwordEncoder.encode(request.newPassword())));
+        refreshTokenService.revokeAllExcept(user.id(), sessionId);
     }
 
     /**
@@ -243,9 +252,9 @@ public class AuthService {
     }
 
     private AuthDtos.TokenResponse issueToken(User user) {
-        String accessToken = jwtService.issueAccessToken(user.id(), user.email());
-        String refreshToken = refreshTokenService.issue(user.id());
-        return AuthDtos.TokenResponse.of(accessToken, refreshToken, jwtService.expiresInSeconds(), user);
+        RefreshTokenService.Issued refreshToken = refreshTokenService.issue(user.id());
+        String accessToken = jwtService.issueAccessToken(user.id(), user.email(), refreshToken.id());
+        return AuthDtos.TokenResponse.of(accessToken, refreshToken.token(), jwtService.expiresInSeconds(), user);
     }
 
     private static User withPasswordHash(User user, String passwordHash) {
