@@ -93,6 +93,13 @@ public class FriendlyRequestService {
         User senderUser = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
         if (!senderUser.emailVerified()) throw BusinessRuleException.emailNotVerified();
 
+        if (sender.suspended() || sender.archived()) {
+            throw new BusinessRuleException("TEAM_NOT_ACTIVE", HttpStatus.FORBIDDEN,
+                    "This team is suspended or archived, so it can't send friendly requests.");
+        }
+        // Indistinguishable from not found, as for a block.
+        if (recipient.suspended() || recipient.archived()) throw BusinessRuleException.blocked();
+
         readiness.requireCanSend(sender);
 
         if (blocks.blockedTeamIdsEitherDirection(req.senderTeamId()).contains(req.recipientTeamId())) {
@@ -112,6 +119,13 @@ public class FriendlyRequestService {
         AvailabilitySlot recipientSlot = bookableSlot(req.recipientSlotId(), req.recipientTeamId());
         if (!senderSlot.date().equals(recipientSlot.date())
                 || senderSlot.overlapMinutesWith(recipientSlot) <= 0) {
+            throw BusinessRuleException.notAvailable();
+        }
+        // The match itself must be on the slots' day and inside both windows.
+        if (!req.endTime().isAfter(req.startTime())) throw BusinessRuleException.invalidTimeRange();
+        if (!req.date().equals(senderSlot.date())
+                || !senderSlot.accommodates(req.startTime(), req.endTime())
+                || !recipientSlot.accommodates(req.startTime(), req.endTime())) {
             throw BusinessRuleException.notAvailable();
         }
 

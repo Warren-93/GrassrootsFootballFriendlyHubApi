@@ -5,6 +5,7 @@ import com.gffh.api.domain.Fixture;
 import com.gffh.api.domain.FixtureStatus;
 import com.gffh.api.domain.FriendlyRequest;
 import com.gffh.api.domain.RequestStatus;
+import com.gffh.api.domain.Team;
 import com.gffh.api.repository.AvailabilityRepository;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
@@ -198,6 +199,48 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         assertThat(availability.findById(p.recipientSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
         mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + p.recipient().accessToken()))
                 .andExpect(jsonPath("$[*].type", hasItem("REQUEST_WITHDRAWN")));
+    }
+
+    @Test
+    @DisplayName("a request's date and times must fall within both teams' slots")
+    void sendMustMatchTheSlots() throws Exception {
+        Pair p = readyPair("Rules Slot Match", 35);
+
+        send(p, daysFromNow(36), "10:00:00", "12:00:00")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("FRIENDLY_REQUEST_NOT_ALLOWED"));
+        send(p, p.date(), "11:00:00", "13:00:00")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("FRIENDLY_REQUEST_NOT_ALLOWED"));
+        send(p, p.date(), "11:00:00", "10:30:00")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_TIME_RANGE"));
+
+        send(p, p.date(), "10:30:00", "12:00:00").andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("a suspended or archived team can't send or receive requests")
+    void suspendedOrArchivedTeamsCannotTakePart() throws Exception {
+        Pair p = readyPair("Rules Inactive", 37);
+
+        setSuspendedAndArchived(p.recipientTeam(), true, false);
+        send(p, p.date(), "10:00:00", "12:00:00").andExpect(status().isNotFound());
+
+        setSuspendedAndArchived(p.recipientTeam(), false, false);
+        setSuspendedAndArchived(p.senderTeam(), false, true);
+        send(p, p.date(), "10:00:00", "12:00:00")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("TEAM_NOT_ACTIVE"));
+    }
+
+    private void setSuspendedAndArchived(String teamId, boolean suspended, boolean archived) {
+        Team t = teamRepository.findById(teamId).orElseThrow();
+        teamRepository.save(new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(), t.ageGroup(),
+                t.gender(), t.format(), t.abilityLevel(), t.league(), t.postcode(), t.location(),
+                t.travelRadiusMiles(), t.homeAwayPreference(), t.managerName(), t.contactPhone(), t.description(),
+                t.verification(), t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
+                suspended, archived, t.searchVisible(), t.shareContactDetails()));
     }
 
     private ResultActions block(TestAccount account, String teamId, String blockedTeamId) throws Exception {
