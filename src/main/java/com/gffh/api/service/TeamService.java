@@ -54,6 +54,7 @@ public class TeamService {
         }
 
         Format format = request.format() != null ? request.format() : Format.suggestedFor(request.ageGroup());
+        requireOrganisationFits(request.organisation(), request.ageGroup());
 
         Team team = teams.save(new Team(
                 null, clubId, request.name(), clubName, request.badgeUrl(),
@@ -127,6 +128,12 @@ public class TeamService {
                         || (request.format() != null && request.format() != current.format());
         if (changesMatchingFields && current.matchingFieldsLocked()) {
             throw BusinessRuleException.matchingFieldsLocked();
+        }
+        // Checked whenever either side changes, so a new age group can't strand an organisation that no longer fits.
+        if (request.organisation() != null || request.ageGroup() != null) {
+            requireOrganisationFits(
+                    request.organisation() != null ? request.organisation() : current.organisation(),
+                    request.ageGroup() != null ? request.ageGroup() : current.ageGroup());
         }
 
         GeoPoint location = (request.longitude() != null && request.latitude() != null)
@@ -235,5 +242,11 @@ public class TeamService {
 
     private static String orDefault(String value, String fallback) {
         return value != null ? value : fallback;
+    }
+
+    private static void requireOrganisationFits(Organisation organisation, AgeGroup ageGroup) {
+        if (organisation != null && ageGroup != null && !organisation.isAvailableFor(ageGroup)) {
+            throw BusinessRuleException.organisationNotAvailable(organisation, ageGroup);
+        }
     }
 }

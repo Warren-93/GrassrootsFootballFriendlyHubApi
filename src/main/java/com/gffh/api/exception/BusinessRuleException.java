@@ -1,5 +1,7 @@
 package com.gffh.api.exception;
 
+import com.gffh.api.model.enums.AgeGroup;
+import com.gffh.api.model.enums.Organisation;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -66,6 +68,11 @@ public class BusinessRuleException extends RuntimeException {
     public static BusinessRuleException duplicateRequest() {
         return new BusinessRuleException("DUPLICATE_REQUEST", HttpStatus.CONFLICT,
                 "You already have an open request with this team.");
+    }
+
+    public static BusinessRuleException organisationNotAvailable(Organisation organisation, AgeGroup ageGroup) {
+        return new BusinessRuleException("ORGANISATION_NOT_AVAILABLE", HttpStatus.BAD_REQUEST,
+                organisation.label() + " doesn't cover " + ageGroup.label() + " teams. Choose another organisation.");
     }
 
     public static BusinessRuleException matchingFieldsLocked() {

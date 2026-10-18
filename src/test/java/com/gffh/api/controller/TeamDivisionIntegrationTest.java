@@ -64,4 +64,39 @@ class TeamDivisionIntegrationTest extends AbstractIntegrationTest {
         Document stored = mongoTemplate.findOne(byId, Document.class, "teams");
         assertThat(stored.getString("abilityLevel")).isEqualTo("DIVISION_2");
     }
+
+    @Test
+    @DisplayName("an organisation that doesn't cover the team's age group is refused")
+    void organisationMustFitAgeGroup() throws Exception {
+        TestAccount owner = registerAccount("Organisation Fit Owner");
+        String teamId = createTeam(owner.accessToken(), "Organisation Fit FC", 56.014582, -3.790261); // ADULT
+
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "organisation": "SSFA" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("ORGANISATION_NOT_AVAILABLE"));
+
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "organisation": "SAFA" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organisation").value("SAFA"));
+
+        // Moving the team to a youth age group would strand SAFA, so that is refused too.
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "ageGroup": "U14" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("ORGANISATION_NOT_AVAILABLE"));
+    }
 }
