@@ -54,7 +54,7 @@ public class TeamService {
         }
 
         Format format = request.format() != null ? request.format() : Format.suggestedFor(request.ageGroup());
-        requireOrganisationFits(request.organisation(), request.ageGroup());
+        requireOrganisationFits(request.organisation(), request.ageGroup(), request.gender());
 
         Team team = teams.save(new Team(
                 null, clubId, request.name(), clubName, request.badgeUrl(),
@@ -129,11 +129,12 @@ public class TeamService {
         if (changesMatchingFields && current.matchingFieldsLocked()) {
             throw BusinessRuleException.matchingFieldsLocked();
         }
-        // Checked whenever either side changes, so a new age group can't strand an organisation that no longer fits.
-        if (request.organisation() != null || request.ageGroup() != null) {
+        // Checked whenever any side changes, so a new age group or gender can't strand an organisation that no longer fits.
+        if (request.organisation() != null || request.ageGroup() != null || request.gender() != null) {
             requireOrganisationFits(
                     request.organisation() != null ? request.organisation() : current.organisation(),
-                    request.ageGroup() != null ? request.ageGroup() : current.ageGroup());
+                    request.ageGroup() != null ? request.ageGroup() : current.ageGroup(),
+                    request.gender() != null ? request.gender() : current.gender());
         }
 
         GeoPoint location = (request.longitude() != null && request.latitude() != null)
@@ -244,9 +245,9 @@ public class TeamService {
         return value != null ? value : fallback;
     }
 
-    private static void requireOrganisationFits(Organisation organisation, AgeGroup ageGroup) {
-        if (organisation != null && ageGroup != null && !organisation.isAvailableFor(ageGroup)) {
-            throw BusinessRuleException.organisationNotAvailable(organisation, ageGroup);
+    private static void requireOrganisationFits(Organisation organisation, AgeGroup ageGroup, Gender gender) {
+        if (organisation != null && ageGroup != null && !organisation.isAvailableFor(ageGroup, gender)) {
+            throw BusinessRuleException.organisationNotAvailable(organisation, ageGroup, gender);
         }
     }
 }

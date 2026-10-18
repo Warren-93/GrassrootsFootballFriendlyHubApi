@@ -21,16 +21,19 @@ public enum Organisation {
     /**
      * The associations that govern teams of this age: youth, schools and
      * girls' football for youth age groups; amateur, welfare, junior and
-     * women's football for adults and veterans. Filters the Organisation
-     * options on create team, as {@link Gender#availableFor} does for gender.
+     * women's football for adults and veterans. Scottish Women's Football is
+     * left out for boys' and men's teams. Filters the Organisation options on
+     * create team, as {@link Gender#availableFor} does for gender.
      */
-    public static List<Organisation> availableFor(AgeGroup ageGroup) {
-        return ageGroup.isYouth()
+    public static List<Organisation> availableFor(AgeGroup ageGroup, Gender gender) {
+        List<Organisation> byAge = ageGroup.isYouth()
                 ? List.of(SYFA, SWF, SSFA, OTHER)
                 : List.of(SAFA, SWF, SWFA, SJFA, OTHER);
+        boolean maleOnly = gender == Gender.BOYS || gender == Gender.MEN;
+        return maleOnly ? byAge.stream().filter(o -> o != SWF).toList() : byAge;
     }
 
-    public boolean isAvailableFor(AgeGroup ageGroup) {
-        return availableFor(ageGroup).contains(this);
+    public boolean isAvailableFor(AgeGroup ageGroup, Gender gender) {
+        return availableFor(ageGroup, gender).contains(this);
     }
 }

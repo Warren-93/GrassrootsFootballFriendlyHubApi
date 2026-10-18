@@ -98,5 +98,23 @@ class TeamDivisionIntegrationTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("ORGANISATION_NOT_AVAILABLE"));
+
+        // Scottish Women's Football fits the mixed adult team, but not once it becomes a men's team.
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "organisation": "SWF" }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/teams/" + teamId)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "gender": "MEN" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("ORGANISATION_NOT_AVAILABLE"));
     }
 }

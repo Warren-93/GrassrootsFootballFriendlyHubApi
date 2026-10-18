@@ -1,6 +1,7 @@
 package com.gffh.api.exception;
 
 import com.gffh.api.model.enums.AgeGroup;
+import com.gffh.api.model.enums.Gender;
 import com.gffh.api.model.enums.Organisation;
 import org.springframework.http.HttpStatus;
 
@@ -70,9 +71,10 @@ public class BusinessRuleException extends RuntimeException {
                 "You already have an open request with this team.");
     }
 
-    public static BusinessRuleException organisationNotAvailable(Organisation organisation, AgeGroup ageGroup) {
+    public static BusinessRuleException organisationNotAvailable(Organisation organisation, AgeGroup ageGroup, Gender gender) {
+        String team = gender == null ? ageGroup.label() : ageGroup.label() + " " + gender.label().toLowerCase();
         return new BusinessRuleException("ORGANISATION_NOT_AVAILABLE", HttpStatus.BAD_REQUEST,
-                organisation.label() + " doesn't cover " + ageGroup.label() + " teams. Choose another organisation.");
+                organisation.label() + " doesn't cover " + team + " teams. Choose another organisation.");
     }
 
     public static BusinessRuleException matchingFieldsLocked() {
