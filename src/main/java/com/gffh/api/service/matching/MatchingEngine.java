@@ -288,4 +288,3 @@ public final class MatchingEngine {
     /** A candidate team together with its published availability. */
     public record Candidate(Team team, List<AvailabilitySlot> slots) {}
 }
-
