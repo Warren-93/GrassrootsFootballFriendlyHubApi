@@ -296,7 +296,7 @@ class MatchingEngineTest {
     @DisplayName("ranked search results require a bookable overlapping availability date")
     void rankExcludesCandidatesWithoutAUsableOverlappingDate() {
         Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.76, -4.17);
         Team shared = team("shared", "c1", AgeGroup.U13, Format.NINE_A_SIDE,
                 AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
         Team differentDate = team("different", "c2", AgeGroup.U13, Format.NINE_A_SIDE,
@@ -305,7 +305,8 @@ class MatchingEngineTest {
                 AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
 
         List<MatchResult> ranked = new MatchingEngine().rank(ours,
-                List.of(saturdaySlot("ours", "venue")),
+                List.of(slot("ours", "ours", "2026-08-22", "10:00", "14:00",
+                        HomeAwayPreference.AWAY, null)),
                 List.of(
                         new MatchingEngine.Candidate(shared, List.of(saturdaySlot("shared", "venue"))),
                         new MatchingEngine.Candidate(differentDate, List.of(
