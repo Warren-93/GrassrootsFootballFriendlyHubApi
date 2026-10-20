@@ -58,6 +58,7 @@ public final class MatchDtos {
             double milesApart,
             List<String> reasons,
             List<FactorView> factors,
+            List<String> overlappingDates,
             OverlapView earliestOverlap,
             boolean canReceiveRequests) {
 
@@ -70,6 +71,10 @@ public final class MatchDtos {
                     result.milesApart(),
                     result.summaryReasons(),
                     result.factors().stream().map(FactorView::from).toList(),
+                    result.overlappingSlots().stream()
+                            .map(overlap -> overlap.ours().date().toString())
+                            .distinct()
+                            .toList(),
                     first == null ? null : new OverlapView(
                             first.ours().date().toString(),
                             first.ours().overlapStartWith(first.theirs()).toString(),

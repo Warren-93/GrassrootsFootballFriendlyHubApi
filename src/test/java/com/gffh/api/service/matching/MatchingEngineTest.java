@@ -292,6 +292,33 @@ class MatchingEngineTest {
 
     // ---- Fixtures -----------------------------------------------------------
 
+    @Test
+    @DisplayName("ranked search results require a bookable overlapping availability date")
+    void rankExcludesCandidatesWithoutAUsableOverlappingDate() {
+        Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.76, -4.17);
+        Team shared = team("shared", "c1", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+        Team differentDate = team("different", "c2", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+        Team cannotHost = team("cannot-host", "c3", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
+
+        List<MatchResult> ranked = new MatchingEngine().rank(ours,
+                List.of(slot("ours", "ours", "2026-08-22", "10:00", "14:00",
+                        HomeAwayPreference.AWAY, null)),
+                List.of(
+                        new MatchingEngine.Candidate(shared, List.of(saturdaySlot("shared", "venue"))),
+                        new MatchingEngine.Candidate(differentDate, List.of(
+                                slot("other-day", "different", "2026-08-23", "10:00", "14:00",
+                                        HomeAwayPreference.EITHER, "venue"))),
+                        new MatchingEngine.Candidate(cannotHost, List.of(
+                                slot("away", "cannot-host", "2026-08-22", "10:00", "14:00",
+                                        HomeAwayPreference.AWAY, null)))));
+
+        assertEquals(List.of("shared"), ranked.stream().map(MatchResult::teamId).toList());
+    }
+
     private static Team team(String id, String clubId, AgeGroup age, Format format,
                              AbilityLevel ability, HomeAwayPreference pref,
                              int radius, double lat, double lon) {

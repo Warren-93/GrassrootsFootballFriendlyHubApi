@@ -57,6 +57,7 @@ public final class MatchingEngine {
         List<MatchResult> results = new ArrayList<>();
         for (Candidate candidate : candidates) {
             score(ourTeam, ourSlots, candidate.team(), candidate.slots())
+                    .filter(match -> !match.overlappingSlots().isEmpty())
                     .ifPresent(results::add);
         }
         results.sort(MatchResult.RANKING);
