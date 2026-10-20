@@ -30,9 +30,9 @@ class MatchingEngineTest {
     @DisplayName("worked example: scores a high-band match with all six factors reported")
     void scoresTheWorkedExample() {
         Team a = team("team_a", "club_a", AgeGroup.U12, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 10, 55.7644, -4.1770);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 10, 55.7644, -4.1770);
         Team b = team("team_b", "club_b", AgeGroup.U12, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.AWAY, 10, 55.8300, -4.2600);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 10, 55.8300, -4.2600);
 
         List<AvailabilitySlot> aSlots = List.of(
                 slot("av_a", "team_a", "2026-08-22", "09:00", "13:00",
@@ -59,9 +59,9 @@ class MatchingEngineTest {
     @DisplayName("different age groups are excluded under MVP rules")
     void excludesDifferentAgeGroups() {
         Team a = team("a", "ca", AgeGroup.U12, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U14, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         Optional<MatchResult> result = new MatchingEngine()
                 .score(a, List.of(saturdaySlot("a", "venue")), b, List.of(saturdaySlot("b", "venue")));
@@ -74,11 +74,11 @@ class MatchingEngineTest {
     void keepsTeamsBeyondTravelRadius() {
         // ~35 miles apart. We would travel 50, they only 10.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 50, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 50, 55.76, -4.17);
         Team far = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 10, 56.20, -4.30);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 10, 56.20, -4.30);
         Team near = team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 10, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 10, 55.77, -4.18);
 
         List<MatchResult> ranked = new MatchingEngine().rank(a, List.of(saturdaySlot("a", "venue")), List.of(
                 new MatchingEngine.Candidate(far, List.of(saturdaySlot("b", "venue"))),
@@ -88,12 +88,12 @@ class MatchingEngineTest {
     }
 
     @Test
-    @DisplayName("two away-only teams have no usable shared fixture date")
+    @DisplayName("two away-only teams are shown, but with no usable shared dates")
     void showsWhenNobodyCanHostWithoutOverlap() {
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.AWAY, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
 
         List<AvailabilitySlot> aSlots = List.of(
                 slot("av_a", "a", "2026-08-22", "10:00", "14:00", HomeAwayPreference.AWAY, null));
@@ -109,9 +109,9 @@ class MatchingEngineTest {
     void noOverlapWhenTooShort() {
         // U13 needs 60 minutes; this overlap is 30.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         List<AvailabilitySlot> aSlots = List.of(
                 slot("av_a", "a", "2026-08-22", "10:00", "11:30", HomeAwayPreference.EITHER, "v1"));
@@ -125,9 +125,9 @@ class MatchingEngineTest {
     @DisplayName("a new team with no availability still sees opponents, ranked below ones with shared dates")
     void newTeamWithoutAvailabilitySeesOpponents() {
         Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         MatchResult m = new MatchingEngine().score(ours, List.of(), b, List.of()).orElseThrow();
         FactorResult availability = m.factors().stream()
@@ -139,42 +139,16 @@ class MatchingEngineTest {
     }
 
     @Test
-    @DisplayName("ranked search results require a bookable overlapping availability date")
-    void rankExcludesCandidatesWithoutAUsableOverlappingDate() {
-        Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
-        Team shared = team("shared", "c1", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
-        Team differentDate = team("different", "c2", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
-        Team cannotHost = team("cannot-host", "c3", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
-
-        List<MatchResult> ranked = new MatchingEngine().rank(ours,
-                List.of(saturdaySlot("ours", "venue")),
-                List.of(
-                        new MatchingEngine.Candidate(shared, List.of(saturdaySlot("shared", "venue"))),
-                        new MatchingEngine.Candidate(differentDate, List.of(
-                                slot("other-day", "different", "2026-08-23", "10:00", "14:00",
-                                        HomeAwayPreference.EITHER, "venue"))),
-                        new MatchingEngine.Candidate(cannotHost, List.of(
-                                slot("away", "cannot-host", "2026-08-22", "10:00", "14:00",
-                                        HomeAwayPreference.AWAY, null)))));
-
-        assertEquals(List.of("shared"), ranked.stream().map(MatchResult::teamId).toList());
-    }
-
-    @Test
     @DisplayName("gender must match exactly: mixed only plays mixed")
     void requiresExactGender() {
         Team mixed = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team girls = withGender(team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.GIRLS);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.GIRLS);
         Team boys = withGender(team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.BOYS);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18), Gender.BOYS);
         Team otherMixed = team("d", "cd", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         MatchingEngine engine = new MatchingEngine();
         assertAll("gender",
@@ -188,9 +162,9 @@ class MatchingEngineTest {
     @DisplayName("teams from the same club are excluded")
     void excludesSameClub() {
         Team a = team("a", "same_club", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team b = team("b", "same_club", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         assertTrue(new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
                 b, List.of(saturdaySlot("b", "v2"))).isEmpty());
@@ -200,11 +174,11 @@ class MatchingEngineTest {
     @DisplayName("format gap: shown either way, a one-step gap scores better than a two-step one")
     void handlesFormatGap() {
         Team a = team("a", "ca", AgeGroup.U13, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team wide = team("b", "cb", AgeGroup.U13, Format.ELEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
         Team adjacent = team("c", "cc", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         Optional<MatchResult> wideResult = new MatchingEngine().score(a, List.of(saturdaySlot("a", "v1")),
                 wide, List.of(saturdaySlot("b", "v2")));
@@ -221,16 +195,16 @@ class MatchingEngineTest {
     @DisplayName("ranks candidates by score, then distance")
     void ranksByScoreThenDistance() {
         Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 25, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 25, 55.76, -4.17);
 
         // near: identical profile, close. far: identical profile, further away.
         Team near = team("near", "c1", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 25, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 25, 55.77, -4.18);
         Team far = team("far", "c2", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 25, 55.95, -4.40);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 25, 55.95, -4.40);
         // weak: same distance as near, but mismatched format and ability.
         Team weak = team("weak", "c3", AgeGroup.U13, Format.ELEVEN_A_SIDE,
-                AbilityLevel.COMPETITIVE, HomeAwayPreference.EITHER, 25, 55.77, -4.18);
+                AbilityLevel.PREMIER, HomeAwayPreference.EITHER, 25, 55.77, -4.18);
 
         List<MatchResult> ranked = new MatchingEngine().rank(ours,
                 List.of(saturdaySlot("ours", "v0")),
@@ -254,9 +228,9 @@ class MatchingEngineTest {
     void penalisesButKeepsHomeAwayClash() {
         // Both prefer home, but both have venues, so a fixture remains possible.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.HOME, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.HOME, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.HOME, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.HOME, 20, 55.77, -4.18);
 
         Optional<MatchResult> result = new MatchingEngine().score(a,
                 List.of(slot("av_a", "a", "2026-08-22", "10:00", "14:00", HomeAwayPreference.HOME, "v1")),
@@ -277,9 +251,9 @@ class MatchingEngineTest {
     @DisplayName("age band tolerance: raising it admits one band apart, but youth/adult never bridge")
     void respectsAgeBandTolerance() {
         Team a = team("a", "ca", AgeGroup.U12, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
 
         MatchingWeights tolerant = new MatchingWeights(25, 25, 15, 15, 10, 10, 1, 5.0, 0.40);
 
@@ -292,7 +266,7 @@ class MatchingEngineTest {
 
         // Youth and adult must never bridge, whatever the tolerance.
         Team adult = team("c", "cc", AgeGroup.ADULT, Format.SEVEN_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
         MatchingWeights veryTolerant = new MatchingWeights(25, 25, 15, 15, 10, 10, 99, 5.0, 0.40);
         assertTrue(new MatchingEngine(veryTolerant).score(a, List.of(saturdaySlot("a", "v1")),
                 adult, List.of(saturdaySlot("c", "v3"))).isEmpty(),
@@ -304,9 +278,9 @@ class MatchingEngineTest {
     void distanceFloorKeepsDistantTeamsViable() {
         // A team at the very edge of the radius, otherwise a perfect match.
         Team a = team("a", "ca", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 25, 55.76, -4.17);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 25, 55.76, -4.17);
         Team b = team("b", "cb", AgeGroup.U13, Format.NINE_A_SIDE,
-                AbilityLevel.INTERMEDIATE, HomeAwayPreference.EITHER, 25, 56.06, -4.43);
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 25, 56.06, -4.43);
 
         Optional<MatchResult> result = new MatchingEngine().score(a,
                 List.of(saturdaySlot("a", "v1")), b, List.of(saturdaySlot("b", "v2")));
@@ -318,11 +292,37 @@ class MatchingEngineTest {
 
     // ---- Fixtures -----------------------------------------------------------
 
+    @Test
+    @DisplayName("ranked search results require a bookable overlapping availability date")
+    void rankExcludesCandidatesWithoutAUsableOverlappingDate() {
+        Team ours = team("ours", "c0", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.76, -4.17);
+        Team shared = team("shared", "c1", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+        Team differentDate = team("different", "c2", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.EITHER, 20, 55.77, -4.18);
+        Team cannotHost = team("cannot-host", "c3", AgeGroup.U13, Format.NINE_A_SIDE,
+                AbilityLevel.DIVISION_2, HomeAwayPreference.AWAY, 20, 55.77, -4.18);
+
+        List<MatchResult> ranked = new MatchingEngine().rank(ours,
+                List.of(saturdaySlot("ours", "venue")),
+                List.of(
+                        new MatchingEngine.Candidate(shared, List.of(saturdaySlot("shared", "venue"))),
+                        new MatchingEngine.Candidate(differentDate, List.of(
+                                slot("other-day", "different", "2026-08-23", "10:00", "14:00",
+                                        HomeAwayPreference.EITHER, "venue"))),
+                        new MatchingEngine.Candidate(cannotHost, List.of(
+                                slot("away", "cannot-host", "2026-08-22", "10:00", "14:00",
+                                        HomeAwayPreference.AWAY, null)))));
+
+        assertEquals(List.of("shared"), ranked.stream().map(MatchResult::teamId).toList());
+    }
+
     private static Team team(String id, String clubId, AgeGroup age, Format format,
                              AbilityLevel ability, HomeAwayPreference pref,
                              int radius, double lat, double lon) {
         return new Team(id, clubId, id + " FC", "Club " + clubId, null,
-                age, Gender.MIXED, format, ability, "Local League",
+                age, Gender.MIXED, format, ability, null, "Local League",
                 "G74", new GeoPoint(lon, lat), radius, pref,
                 "Manager", "07000 000000", "A team", VerificationStatus.VERIFIED,
                 "venue_" + id, null, Instant.now(), Instant.now(), false, false, true, true);
@@ -330,7 +330,7 @@ class MatchingEngineTest {
 
     private static Team withGender(Team t, Gender gender) {
         return new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
-                t.ageGroup(), gender, t.format(), t.abilityLevel(), t.league(),
+                t.ageGroup(), gender, t.format(), t.abilityLevel(), t.organisation(), t.league(),
                 t.postcode(), t.location(), t.travelRadiusMiles(), t.homeAwayPreference(),
                 t.managerName(), t.contactPhone(), t.description(), t.verification(),
                 t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
@@ -350,4 +350,3 @@ class MatchingEngineTest {
                 HomeAwayPreference.EITHER, venueId);
     }
 }
-
