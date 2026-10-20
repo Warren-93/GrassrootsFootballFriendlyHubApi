@@ -58,6 +58,7 @@ public final class MatchDtos {
             double milesApart,
             List<String> reasons,
             List<FactorView> factors,
+            List<String> overlappingDates,
             OverlapView earliestOverlap,
             boolean canReceiveRequests) {
 
@@ -70,6 +71,10 @@ public final class MatchDtos {
                     result.milesApart(),
                     result.summaryReasons(),
                     result.factors().stream().map(FactorView::from).toList(),
+                    result.overlappingSlots().stream()
+                            .map(overlap -> overlap.ours().date().toString())
+                            .distinct()
+                            .toList(),
                     first == null ? null : new OverlapView(
                             first.ours().date().toString(),
                             first.ours().overlapStartWith(first.theirs()).toString(),
@@ -93,7 +98,6 @@ public final class MatchDtos {
             String gender,
             String format,
             String abilityLevel,
-            String organisation,
             String league,
             String description,
             String generalArea,
@@ -109,7 +113,6 @@ public final class MatchDtos {
                     team.gender().label(),
                     team.format().label(),
                     team.abilityLevel().label(),
-                    team.organisation() == null ? null : team.organisation().label(),
                     team.league(),
                     team.description(),
                     outwardCode(team.postcode()),
@@ -168,3 +171,4 @@ public final class MatchDtos {
             int age, int availability, int format,
             int distance, int homeAway, int ability) {}
 }
+
