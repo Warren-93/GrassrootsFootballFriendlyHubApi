@@ -98,6 +98,7 @@ public final class MatchDtos {
             String gender,
             String format,
             String abilityLevel,
+            String organisation,
             String league,
             String description,
             String generalArea,
@@ -113,6 +114,7 @@ public final class MatchDtos {
                     team.gender().label(),
                     team.format().label(),
                     team.abilityLevel().label(),
+                    team.organisation() == null ? null : team.organisation().label(),
                     team.league(),
                     team.description(),
                     outwardCode(team.postcode()),
@@ -171,4 +173,3 @@ public final class MatchDtos {
             int age, int availability, int format,
             int distance, int homeAway, int ability) {}
 }
-
