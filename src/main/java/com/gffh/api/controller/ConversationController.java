@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -41,8 +42,9 @@ public class ConversationController {
 
     @GetMapping("/api/v1/conversations/{conversationId}/messages")
     public ResponseEntity<List<ConversationDtos.MessageView>> messages(@AuthenticationPrincipal Jwt principal,
-                                                                        @PathVariable String conversationId) {
-        return ResponseEntity.ok(conversationService.messages(principal.getSubject(), conversationId));
+                                                                        @PathVariable String conversationId,
+                                                                        @RequestParam(required = false) Instant since) {
+        return ResponseEntity.ok(conversationService.messages(principal.getSubject(), conversationId, since));
     }
 
     @PostMapping("/api/v1/conversations/{conversationId}/messages")
