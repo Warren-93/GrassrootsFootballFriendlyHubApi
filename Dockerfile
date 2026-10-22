@@ -21,6 +21,13 @@ USER gffh
 # Render (and most PaaS hosts) inject PORT at runtime; the app already reads
 # it via ${PORT:8090} in application.yml, so no extra wiring is needed here.
 EXPOSE 8090
-# Without this the JVM caps its heap at a quarter of the container's memory,
-# leaving most of a small Render instance unused.
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
+# Sized for Render's 512 MB Starter instance. The heap gets 60% of the
+# container's memory (the JVM's own default is only a quarter); the rest is
+# left for what lives outside the heap - class metadata, compiled code and
+# thread stacks - so the container doesn't hit its limit and get restarted.
+# The serial collector uses the least memory and suits one small CPU, smaller
+# thread stacks and code cache trim the rest, and stopping the JIT at its
+# first tier starts faster and uses less memory, which is ample at this load.
+# On a bigger instance, set JAVA_OPTS in Render to override these.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=60 -XX:+UseSerialGC -Xss512k -XX:ReservedCodeCacheSize=64m -XX:TieredStopAtLevel=1"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

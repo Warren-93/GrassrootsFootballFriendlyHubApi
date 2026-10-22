@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import org.bson.Document;
 
+import java.time.Duration;
+
 /**
  * Explicit index creation - deliberate rather than {@code auto-index-creation},
  * per section 10 of the Technical Specification and the note in
@@ -18,6 +20,11 @@ import org.bson.Document;
  */
 @Component
 public class IndexConfig {
+
+    /** How long after expiry a refresh or email token is kept before Mongo deletes it. */
+    static final Duration SPENT_TOKEN_RETENTION = Duration.ofDays(7);
+    /** How long a notification stays in a user's list. */
+    static final Duration NOTIFICATION_RETENTION = Duration.ofDays(180);
 
     private final MongoTemplate mongoTemplate;
 
@@ -69,11 +76,16 @@ public class IndexConfig {
         var refreshTokens = mongoTemplate.indexOps("refreshTokens");
         refreshTokens.ensureIndex(new Index("tokenHash", org.springframework.data.domain.Sort.Direction.ASC).unique());
         refreshTokens.ensureIndex(new Index("userId", org.springframework.data.domain.Sort.Direction.ASC));
+        // Mongo deletes a token a week after it expires; it can't be used by then anyway.
+        refreshTokens.ensureIndex(new Index("expiresAt", org.springframework.data.domain.Sort.Direction.ASC)
+                .expire(SPENT_TOKEN_RETENTION));
 
         var verificationTokens = mongoTemplate.indexOps("verificationTokens");
         verificationTokens.ensureIndex(new CompoundIndexDefinition(
                 new Document("token", 1).append("purpose", 1)).unique());
         verificationTokens.ensureIndex(new Index("userId", org.springframework.data.domain.Sort.Direction.ASC));
+        verificationTokens.ensureIndex(new Index("expiresAt", org.springframework.data.domain.Sort.Direction.ASC)
+                .expire(SPENT_TOKEN_RETENTION));
 
         var venues = mongoTemplate.indexOps("venues");
         venues.ensureIndex(new Index("clubId", org.springframework.data.domain.Sort.Direction.ASC));
@@ -86,10 +98,14 @@ public class IndexConfig {
         var notifications = mongoTemplate.indexOps("notifications");
         notifications.ensureIndex(new CompoundIndexDefinition(
                 new Document("userId", 1).append("createdAt", -1)));
+        // Old notifications are swept by Mongo itself.
+        notifications.ensureIndex(new Index("createdAt", org.springframework.data.domain.Sort.Direction.ASC)
+                .expire(NOTIFICATION_RETENTION));
 
+        // Chat polls read one conversation's messages in order, often only the newest.
         var messages = mongoTemplate.indexOps("messages");
         messages.ensureIndex(new CompoundIndexDefinition(
-                new Document("fixtureId", 1).append("createdAt", 1)));
+                new Document("conversationId", 1).append("createdAt", 1)));
 
         var joinCodes = mongoTemplate.indexOps("joinCodes");
         joinCodes.ensureIndex(new Index("code", org.springframework.data.domain.Sort.Direction.ASC).unique());

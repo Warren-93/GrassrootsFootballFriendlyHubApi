@@ -150,9 +150,18 @@ public class ConversationService {
         return view(conversation, other);
     }
 
-    public List<ConversationDtos.MessageView> messages(String userId, String conversationId) {
+    /**
+     * A conversation's messages, oldest first. With {@code since}, only those
+     * created at or after it: chat screens poll with their newest message's
+     * time and merge by id, so a poll returns a message or two instead of the
+     * whole history.
+     */
+    public List<ConversationDtos.MessageView> messages(String userId, String conversationId, Instant since) {
         Conversation conversation = requireVisible(userId, conversationId);
-        return messages.findByConversationId(conversation.id()).stream()
+        List<Message> found = since == null
+                ? messages.findByConversationId(conversation.id())
+                : messages.findByConversationIdSince(conversation.id(), since);
+        return found.stream()
                 .map(m -> ConversationDtos.MessageView.from(withMaskedBody(m))).toList();
     }
 
