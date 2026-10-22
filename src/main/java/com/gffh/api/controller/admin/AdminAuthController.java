@@ -5,6 +5,8 @@ import com.gffh.api.service.AdminAuthService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,5 +39,11 @@ public class AdminAuthController {
     public ResponseEntity<AdminAuthDtos.SessionResponse> verify(
             @Valid @RequestBody AdminAuthDtos.VerifyRequest request) {
         return ResponseEntity.ok(adminAuthService.verify(request));
+    }
+
+    /** Signed in (not in SecurityConfig's permitAll list): swaps the caller's admin token for a fresh one. */
+    @PostMapping("/refresh")
+    public ResponseEntity<AdminAuthDtos.SessionResponse> refresh(@AuthenticationPrincipal Jwt principal) {
+        return ResponseEntity.ok(adminAuthService.refresh(principal));
     }
 }

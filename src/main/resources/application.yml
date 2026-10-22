@@ -104,6 +104,11 @@ gffh:
     # default: password only. Set ADMIN_TOTP_REQUIRED=true to turn it back on
     # (admins created while it was off then need their secret from bootstrap).
     totp-required: ${ADMIN_TOTP_REQUIRED:false}
+    # Admin sign-in is an idle timeout: a token lasts this many minutes and
+    # the admin site renews it while the admin is active.
+    session-minutes: ${ADMIN_SESSION_MINUTES:30}
+    # However active, a session ends this many hours after signing in.
+    session-max-hours: ${ADMIN_SESSION_MAX_HOURS:12}
   auth:
     cookie:
       # The web app's refresh-token cookie. SameSite=None while the web app

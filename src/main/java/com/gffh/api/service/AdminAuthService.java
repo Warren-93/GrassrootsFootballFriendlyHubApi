@@ -12,6 +12,7 @@ import com.gffh.api.security.TotpService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -121,6 +122,27 @@ public class AdminAuthService {
 
     public boolean totpRequired() {
         return totpRequired;
+    }
+
+    /**
+     * Swaps a still-valid admin token for a fresh one, so an admin who keeps
+     * working isn't signed out every 30 minutes. The account is looked up
+     * again (a removed admin can't keep extending), and the session's start
+     * time is kept, so it still ends at the maximum length.
+     */
+    public AdminAuthDtos.SessionResponse refresh(Jwt token) {
+        PlatformAdmin admin = admins.findById(token.getSubject()).orElseThrow(() -> new BusinessRuleException(
+                "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
+        Instant sessionStart = adminJwtService.sessionStart(token);
+        Instant sessionEnd = adminJwtService.sessionEnd(sessionStart);
+        if (!Instant.now().isBefore(sessionEnd)) {
+            throw new BusinessRuleException("SESSION_TOO_OLD", HttpStatus.UNAUTHORIZED,
+                    "Your sign-in session has expired. Please sign in again.");
+        }
+        String accessToken = adminJwtService.issueSessionToken(admin.id(), admin.email(), sessionStart);
+        long expiresIn = Math.min(adminJwtService.sessionTtlSeconds(),
+                Math.max(0, sessionEnd.getEpochSecond() - Instant.now().getEpochSecond()));
+        return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", expiresIn, admin.email());
     }
 
     private AdminAuthDtos.SessionResponse startSession(PlatformAdmin admin) {
