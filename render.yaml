@@ -24,6 +24,8 @@ services:
         sync: false
       - key: BREVO_API_KEY
         sync: false
+      - key: GIPHY_API_KEY
+        sync: false
       - key: APP_BASE_URL
         sync: false
       - key: SUPPORT_EMAIL

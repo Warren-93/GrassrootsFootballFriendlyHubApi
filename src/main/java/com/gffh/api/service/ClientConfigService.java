@@ -2,12 +2,13 @@ package com.gffh.api.service;
 
 import com.gffh.api.config.OAuthProperties;
 import com.gffh.api.dto.ClientConfigDtos;
+import com.gffh.api.service.gif.GifService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * The public client configuration: the support address to show, and which
- * sign-in providers are switched on. Nothing here is secret - it is all
+ * The public client configuration: the support address to show, which
+ * sign-in providers are switched on, and whether the chat's GIF picker is. Nothing here is secret - it is all
  * visible in the clients anyway.
  */
 @Service
@@ -15,11 +16,13 @@ public class ClientConfigService {
 
     private final OAuthProperties oauth;
     private final String supportEmail;
+    private final GifService gifService;
 
-    public ClientConfigService(OAuthProperties oauth,
+    public ClientConfigService(OAuthProperties oauth, GifService gifService,
                                @Value("${gffh.mail.support-email:}") String supportEmail,
                                @Value("${gffh.mail.from:}") String mailFrom) {
         this.oauth = oauth;
+        this.gifService = gifService;
         this.supportEmail = supportEmail(supportEmail, mailFrom);
     }
 
@@ -29,7 +32,8 @@ public class ClientConfigService {
         return new ClientConfigDtos.ClientConfigView(supportEmail,
                 new ClientConfigDtos.GoogleConfig(google.isEnabled(), blankToNull(google.getClientId())),
                 new ClientConfigDtos.AppleConfig(apple.isEnabled(), blankToNull(apple.getServicesId()),
-                        !apple.getBundleId().isBlank()));
+                        !apple.getBundleId().isBlank()),
+                gifService.enabled());
     }
 
     /**

@@ -4,6 +4,7 @@ import com.gffh.api.dto.ConversationDtos;
 import com.gffh.api.exception.BusinessRuleException;
 import com.gffh.api.model.Conversation;
 import com.gffh.api.model.Message;
+import com.gffh.api.model.MessageGif;
 import com.gffh.api.model.Team;
 import com.gffh.api.model.enums.NotificationType;
 import com.gffh.api.repository.AvailabilityRepository;
@@ -12,6 +13,8 @@ import com.gffh.api.repository.ConversationRepository;
 import com.gffh.api.repository.FriendlyRequestRepository;
 import com.gffh.api.repository.MessageRepository;
 import com.gffh.api.repository.TeamRepository;
+import com.gffh.api.service.gif.GifService;
+import com.gffh.api.service.moderation.ChatFilterService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -38,11 +41,17 @@ public class ConversationService {
     private final MembershipService membershipService;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final ChatFilterService chatFilter;
+    private final GifService gifService;
+
+    /** The inbox preview and notification text for a GIF sent without words. */
+    static final String GIF_PREVIEW = "Sent a GIF";
 
     public ConversationService(ConversationRepository conversations, MessageRepository messages,
                                TeamRepository teams, AvailabilityRepository availability, BlockRepository blocks,
                                FriendlyRequestRepository friendlyRequests, MembershipService membershipService,
-                               NotificationService notificationService, AuditLogService auditLogService) {
+                               NotificationService notificationService, AuditLogService auditLogService,
+                               ChatFilterService chatFilter, GifService gifService) {
         this.conversations = conversations;
         this.messages = messages;
         this.teams = teams;
@@ -52,6 +61,8 @@ public class ConversationService {
         this.membershipService = membershipService;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.chatFilter = chatFilter;
+        this.gifService = gifService;
     }
 
     /**
@@ -102,7 +113,7 @@ public class ConversationService {
                         conversation.teamBId(), conversation.createdAt(), conversation.lastMessageAt(),
                         conversation.lastMessageBody(), conversation.lastMessageSenderTeamId(), request.fixtureId()));
             }
-            return ConversationDtos.ConversationView.of(conversation, otherTeam);
+            return view(conversation, otherTeam);
         }
 
         boolean hasPublishedAvailability = !availability
@@ -125,7 +136,7 @@ public class ConversationService {
         return conversations.findByTeamId(teamId).stream()
                 .map(c -> {
                     Team other = teams.findById(c.otherTeam(teamId)).orElse(null);
-                    return other == null ? null : ConversationDtos.ConversationView.of(c, other);
+                    return other == null ? null : view(c, other);
                 })
                 .filter(v -> v != null)
                 .toList();
@@ -136,13 +147,13 @@ public class ConversationService {
         String otherTeamId = canManage(userId, conversation.teamAId())
                 ? conversation.teamBId() : conversation.teamAId();
         Team other = teams.findById(otherTeamId).orElseThrow(BusinessRuleException::blocked);
-        return ConversationDtos.ConversationView.of(conversation, other);
+        return view(conversation, other);
     }
 
     public List<ConversationDtos.MessageView> messages(String userId, String conversationId) {
         Conversation conversation = requireVisible(userId, conversationId);
         return messages.findByConversationId(conversation.id()).stream()
-                .map(ConversationDtos.MessageView::from).toList();
+                .map(m -> ConversationDtos.MessageView.from(withMaskedBody(m))).toList();
     }
 
     public ConversationDtos.MessageView send(String userId, String conversationId,
@@ -156,17 +167,40 @@ public class ConversationService {
                 && membershipService.roleFor(userId, conversation.teamAId()).canManageTeam()
                 ? conversation.teamAId() : conversation.teamBId();
         String otherTeamId = conversation.otherTeam(senderTeamId);
-        String body = request.body().trim();
+        // Masked before it's stored, so the original wording never reaches
+        // the other team, a notification or the admin transcript.
+        String body = chatFilter.mask(request.body() == null ? "" : request.body().trim()).text();
+        boolean hasGif = request.gifId() != null && !request.gifId().isBlank();
+        if (body.isEmpty() && !hasGif) {
+            throw new BusinessRuleException("EMPTY_MESSAGE", HttpStatus.BAD_REQUEST, "Type a message or pick a GIF.");
+        }
+        MessageGif gif = hasGif ? gifService.resolveForMessage(request.gifId().trim()) : null;
 
-        Message saved = messages.save(new Message(null, conversation.id(), senderTeamId, userId, body, Instant.now()));
+        Message saved = messages.save(new Message(null, conversation.id(), senderTeamId, userId, body, Instant.now(), gif));
 
+        String preview = body.isEmpty() ? GIF_PREVIEW : body;
         conversations.save(new Conversation(conversation.id(), conversation.teamAId(), conversation.teamBId(),
-                conversation.createdAt(), saved.createdAt(), body, senderTeamId, conversation.relatedFixtureId()));
+                conversation.createdAt(), saved.createdAt(), preview, senderTeamId, conversation.relatedFixtureId()));
 
         notificationService.notifyTeam(otherTeamId, NotificationType.MESSAGE_RECEIVED,
-                "New message", body, null, null, conversation.id());
+                "New message", preview, null, null, conversation.id());
 
         return ConversationDtos.MessageView.from(saved);
+    }
+
+    /*
+     * Bodies are masked when sent, and again when read: that way a word an
+     * admin adds to the list later is also hidden in older messages.
+     */
+    private Message withMaskedBody(Message m) {
+        String body = chatFilter.mask(m.body()).text();
+        return new Message(m.id(), m.conversationId(), m.senderTeamId(), m.senderUserId(), body, m.createdAt(), m.gif());
+    }
+
+    private ConversationDtos.ConversationView view(Conversation c, Team other) {
+        ConversationDtos.ConversationView v = ConversationDtos.ConversationView.of(c, other);
+        return new ConversationDtos.ConversationView(v.id(), v.otherTeam(), chatFilter.mask(v.lastMessageBody()).text(),
+                v.lastMessageSenderTeamId(), v.lastMessageAt(), v.createdAt(), v.relatedFixtureId());
     }
 
     private Conversation requireVisible(String userId, String conversationId) {

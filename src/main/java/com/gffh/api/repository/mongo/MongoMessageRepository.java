@@ -41,6 +41,6 @@ public class MongoMessageRepository implements MessageRepository {
 
     private Message withGeneratedId(Message m) {
         return new Message(UUID.randomUUID().toString(), m.conversationId(), m.senderTeamId(), m.senderUserId(),
-                m.body(), m.createdAt() != null ? m.createdAt() : Instant.now());
+                m.body(), m.createdAt() != null ? m.createdAt() : Instant.now(), m.gif());
     }
 }
