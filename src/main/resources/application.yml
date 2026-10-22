@@ -79,6 +79,14 @@ gffh:
       # true for App Store/TestFlight builds; false uses the sandbox, which
       # only development builds can receive from.
       production: ${APNS_PRODUCTION:false}
+  gifs:
+    giphy:
+      # The chat's GIF picker, off until set. A GIPHY API key from
+      # developers.giphy.com; it stays on the server - clients search through
+      # /api/v1/gifs, never GIPHY directly (see GifService).
+      api-key: ${GIPHY_API_KEY:}
+      # The loosest content rating offered: y, g (default), pg, pg-13 or r.
+      rating: ${GIPHY_RATING:g}
   jwt:
     # PKCS#8 PEM RSA private key used to sign access tokens. Set it in every
     # deployed environment so tokens survive restarts; when unset, a key is

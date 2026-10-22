@@ -1,6 +1,7 @@
 package com.gffh.api.repository.mongo;
 
 import com.gffh.api.model.Message;
+import com.gffh.api.model.MessageGif;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,6 +17,7 @@ public class MessageDocument {
     public String senderUserId;
     public String body;
     public Instant createdAt;
+    public MessageGif gif;
 
     public static MessageDocument from(Message m) {
         MessageDocument d = new MessageDocument();
@@ -25,10 +27,11 @@ public class MessageDocument {
         d.senderUserId = m.senderUserId();
         d.body = m.body();
         d.createdAt = m.createdAt();
+        d.gif = m.gif();
         return d;
     }
 
     public Message toDomain() {
-        return new Message(id, conversationId, senderTeamId, senderUserId, body, createdAt);
+        return new Message(id, conversationId, senderTeamId, senderUserId, body, createdAt, gif);
     }
 }

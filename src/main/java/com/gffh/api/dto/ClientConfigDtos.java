@@ -7,8 +7,11 @@ public final class ClientConfigDtos {
 
     private ClientConfigDtos() {}
 
-    /** {@code supportEmail} is null (absent) when no address is configured. */
-    public record ClientConfigView(String supportEmail, GoogleConfig google, AppleConfig apple) {}
+    /**
+     * {@code supportEmail} is null (absent) when no address is configured.
+     * {@code gifsEnabled} says whether the chat's GIF picker works ({@code GIPHY_API_KEY} set).
+     */
+    public record ClientConfigView(String supportEmail, GoogleConfig google, AppleConfig apple, boolean gifsEnabled) {}
 
     /** {@code clientId} is null when Google sign-in is off. */
     public record GoogleConfig(boolean enabled, String clientId) {}

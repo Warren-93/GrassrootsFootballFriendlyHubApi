@@ -2,13 +2,17 @@ package com.gffh.api.service;
 
 import com.gffh.api.config.OAuthProperties;
 import com.gffh.api.dto.ClientConfigDtos;
+import com.gffh.api.service.gif.GifService;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClientConfigServiceTest {
+
+    private static final GifService GIFS_OFF = new GifService("", "g", RestClient.builder());
 
     @Test
     void supportEmailIsTheConfiguredAddressFirst() {
@@ -31,7 +35,7 @@ class ClientConfigServiceTest {
 
     @Test
     void providersAreOffUntilConfigured() {
-        ClientConfigDtos.ClientConfigView view = new ClientConfigService(new OAuthProperties(), "", "").current();
+        ClientConfigDtos.ClientConfigView view = new ClientConfigService(new OAuthProperties(), GIFS_OFF, "", "").current();
 
         assertNull(view.supportEmail());
         assertFalse(view.google().enabled());
@@ -49,7 +53,7 @@ class ClientConfigServiceTest {
         oauth.getApple().setServicesId("com.kickabout.web");
         oauth.getApple().setBundleId("com.gffh.mobile");
 
-        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, "", "").current();
+        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, GIFS_OFF, "", "").current();
 
         assertTrue(view.google().enabled());
         assertEquals("123-abc.apps.googleusercontent.com", view.google().clientId());
@@ -64,7 +68,7 @@ class ClientConfigServiceTest {
         OAuthProperties oauth = new OAuthProperties();
         oauth.getApple().setBundleId("com.gffh.mobile");
 
-        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, "", "").current();
+        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, GIFS_OFF, "", "").current();
 
         assertTrue(view.apple().enabled());
         assertNull(view.apple().servicesId());
@@ -76,7 +80,7 @@ class ClientConfigServiceTest {
         OAuthProperties oauth = new OAuthProperties();
         oauth.getApple().setServicesId("com.kickabout.web");
 
-        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, "", "").current();
+        ClientConfigDtos.ClientConfigView view = new ClientConfigService(oauth, GIFS_OFF, "", "").current();
 
         assertTrue(view.apple().enabled());
         assertEquals("com.kickabout.web", view.apple().servicesId());

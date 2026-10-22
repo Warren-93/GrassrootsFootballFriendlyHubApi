@@ -1,0 +1,67 @@
+# Built-in starter list for the chat language filter (ChatFilterService).
+# Used until an admin saves their own list on the Admin site's Chat filter
+# page, which starts from this one. One word per line; matching is
+# whole-word and ignores case, look-alike characters (sh1t), stretched
+# letters (shiiit) and common endings (shits, shitting) - see LanguageFilter.
+# Lines starting with # are comments.
+
+# Swearing
+arse
+arsehole
+asshole
+ass
+bastard
+bellend
+bitch
+bollocks
+bugger
+bullshit
+cock
+cocksucker
+crap
+cunt
+dick
+dickhead
+fanny
+feck
+fuck
+fucker
+motherfucker
+minge
+nob
+nobhead
+piss
+prick
+pussy
+shit
+shite
+slag
+slut
+tit
+tits
+tosser
+twat
+wank
+wanker
+whore
+
+# Slurs (racist, homophobic, ableist)
+chink
+coon
+dyke
+fag
+faggot
+gypo
+gyppo
+kike
+nigga
+nigger
+paki
+poof
+poofter
+retard
+spastic
+spaz
+spic
+tranny
+wog

@@ -44,7 +44,9 @@ src/main/java/com/gffh/api/
 │   └── admin/            Admin-site request and response shapes.
 ├── service/              Business logic, authorisation and the request state machine.
 │   ├── email/            Email sending (Gmail SMTP, or Brevo when BREVO_API_KEY is set) and templates.
+│   ├── gif/              The chat's GIF search, proxied to GIPHY (GIPHY_API_KEY stays on the server).
 │   ├── matching/         Opponent matching: the scoring engine and its tunable weights.
+│   ├── moderation/       The chat language filter: masks blocked words, list edited on the Admin site.
 │   └── push/             Push notifications: FCM (Android) and APNs (iOS) senders.
 ├── repository/           Persistence interfaces used by the services.
 │   └── mongo/            MongoDB implementations and their stored document classes.
@@ -137,6 +139,8 @@ environment. `render.yaml` declares the ones a deployment is expected to set
 | `MAIL_FROM` | Sender, e.g. `Kickabout <noreply@example.com>`. Email is "configured" once this and the host are set. |
 | `BREVO_API_KEY` | Optional. Sends every email through Brevo's HTTPS API instead of SMTP, for hosts that block SMTP ports (Render's free plan does). `MAIL_FROM` must then be a sender verified in Brevo. |
 | `APP_BASE_URL` | The web app that links in emails point at (including member invitations' `/register?email=` link). |
+| `GIPHY_API_KEY` | Optional. Turns the chat's GIF picker on (`GET /api/v1/gifs/search`, `/trending`). A key from developers.giphy.com; clients never see it. |
+| `GIPHY_RATING` | Optional. The loosest GIF content rating offered: `y`, `g` (default), `pg`, `pg-13` or `r`. |
 | `SUPPORT_EMAIL` | Help address the clients show, served by `GET /api/v1/config`. Default: the bare address inside `MAIL_FROM`, else none. |
 | `GOOGLE_CLIENT_ID` | Google OAuth *Web* client ID. Turns Google sign-in on (`POST /api/v1/auth/oauth/google`); also Android's `serverClientId` and an accepted token audience. |
 | `GOOGLE_ADDITIONAL_CLIENT_IDS` | More accepted Google audiences, comma-separated (e.g. an iOS client ID). A Google token for any other client is refused. |
