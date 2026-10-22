@@ -1,16 +1,23 @@
 package com.gffh.api.service;
 
 import com.gffh.api.dto.FriendlyRequestDtos;
+import com.gffh.api.dto.admin.AdminFixtureInspectorDtos;
 import com.gffh.api.exception.BusinessRuleException;
 import com.gffh.api.model.Fixture;
 import com.gffh.api.model.Team;
 import com.gffh.api.model.Venue;
+import com.gffh.api.model.enums.FixtureStatus;
 import com.gffh.api.repository.FixtureRepository;
 import com.gffh.api.repository.TeamRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FixtureService {
@@ -81,6 +88,30 @@ public class FixtureService {
     /** ADM-07's read-only fixture inspector: no team-management check, already gated by PLATFORM_ADMIN at the controller. */
     public Fixture getForAdmin(String fixtureId) {
         return find(fixtureId);
+    }
+
+    /**
+     * The admin fixture list. {@code teamQuery} matches team names (part of a
+     * name, any case); a query that matches no team returns no fixtures.
+     */
+    public List<AdminFixtureInspectorDtos.FixtureListItem> searchForAdmin(String teamQuery, LocalDate from, LocalDate to,
+                                                                          FixtureStatus status, int limit) {
+        Set<String> teamIds = teamQuery == null || teamQuery.isBlank() ? null
+                : teams.searchByName(teamQuery.trim(), 500).stream().map(Team::id).collect(Collectors.toSet());
+        Map<String, String> names = new HashMap<>();
+        Map<String, String> venueNames = new HashMap<>();
+        return fixtures.search(teamIds, from, to, status, Math.min(Math.max(limit, 1), 500)).stream()
+                .map(f -> new AdminFixtureInspectorDtos.FixtureListItem(f.id(), f.date(), f.startTime(), f.endTime(),
+                        f.status().name(), f.homeTeamId(), teamName(names, f.homeTeamId()), f.awayTeamId(),
+                        teamName(names, f.awayTeamId()),
+                        f.venueId() == null ? null : venueNames.computeIfAbsent(f.venueId(),
+                                id -> venues.findById(id).map(Venue::name).orElse(null)),
+                        f.createdAt()))
+                .toList();
+    }
+
+    private String teamName(Map<String, String> cache, String teamId) {
+        return cache.computeIfAbsent(teamId, id -> teams.findById(id).map(Team::name).orElse("(deleted team)"));
     }
 
     /** Whether the caller manages either side - the reach that discloses contact details and allows cancelling. */

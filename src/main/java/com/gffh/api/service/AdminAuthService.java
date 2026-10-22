@@ -4,6 +4,7 @@ import com.gffh.api.config.RateLimitProperties;
 import com.gffh.api.dto.admin.AdminAuthDtos;
 import com.gffh.api.exception.BusinessRuleException;
 import com.gffh.api.model.PlatformAdmin;
+import com.gffh.api.model.enums.AdminRole;
 import com.gffh.api.repository.PlatformAdminRepository;
 import com.gffh.api.security.AdminJwtService;
 import com.gffh.api.security.RateLimiter;
@@ -40,9 +41,9 @@ public class AdminAuthService {
     }
 
     /**
-     * Creates the first (and, through this endpoint, only) admin account.
-     * There is no public admin registration - every account after the first
-     * is created by an existing admin through ADM-06 Users.
+     * Creates the first (and, through this endpoint, only) admin account, as
+     * the super admin. There is no public admin registration - every account
+     * after the first is added by the super admin (see AdminAccountService).
      */
     public AdminAuthDtos.BootstrapResponse bootstrap(AdminAuthDtos.BootstrapRequest request) {
         if (admins.count() > 0) {
@@ -51,7 +52,7 @@ public class AdminAuthService {
         }
         String secret = totpService.generateSecret();
         PlatformAdmin admin = admins.save(new PlatformAdmin(null, request.email(),
-                passwordEncoder.encode(request.password()), secret, Instant.now(), null));
+                passwordEncoder.encode(request.password()), secret, Instant.now(), null, AdminRole.SUPER_ADMIN));
         if (!totpRequired) return new AdminAuthDtos.BootstrapResponse(admin.id(), null, null);
         String uri = totpService.provisioningUri(secret, admin.email(), "Kickabout Admin");
         return new AdminAuthDtos.BootstrapResponse(admin.id(), secret, uri);
@@ -93,9 +94,37 @@ public class AdminAuthService {
         return startSession(admin);
     }
 
+    /**
+     * Asks a signed-in admin to prove it's still them before something that
+     * can't be undone (approving a permanent delete): their password again,
+     * plus a fresh authenticator code when those are on. A stolen or
+     * unattended session alone isn't enough. Failures count towards the same
+     * hourly limit as sign-in, and answer 403 rather than 401 so the admin
+     * site doesn't treat a mistyped password as an expired session.
+     */
+    public PlatformAdmin confirmIdentity(String adminId, String password, String code) {
+        String limitKey = "admin-reauth:" + adminId;
+        if (rateLimiter.isExhausted(limitKey, rateLimits.getAuthAttemptsPerHour())) {
+            throw BusinessRuleException.rateLimited();
+        }
+        PlatformAdmin admin = admins.findById(adminId).orElseThrow(() -> new BusinessRuleException(
+                "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
+        boolean passwordOk = password != null && passwordEncoder.matches(password, admin.passwordHash());
+        boolean codeOk = !totpRequired || (code != null && totpService.verifyCode(admin.totpSecret(), code));
+        if (!passwordOk || !codeOk) {
+            rateLimiter.record(limitKey);
+            throw new BusinessRuleException("REAUTH_FAILED", HttpStatus.FORBIDDEN,
+                    totpRequired ? "That password or authenticator code is incorrect." : "That password is incorrect.");
+        }
+        return admin;
+    }
+
+    public boolean totpRequired() {
+        return totpRequired;
+    }
+
     private AdminAuthDtos.SessionResponse startSession(PlatformAdmin admin) {
-        admins.save(new PlatformAdmin(admin.id(), admin.email(), admin.passwordHash(), admin.totpSecret(),
-                admin.createdAt(), Instant.now()));
+        admins.save(admin.withLastLoginAt(Instant.now()));
         String accessToken = adminJwtService.issueSessionToken(admin.id(), admin.email());
         return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", adminJwtService.sessionTtlSeconds(), admin.email());
     }

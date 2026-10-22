@@ -1,6 +1,8 @@
 package com.gffh.api.controller.admin;
 
+import com.gffh.api.dto.admin.AdminDetailDtos;
 import com.gffh.api.dto.admin.AdminUserDtos;
+import com.gffh.api.service.AdminActivityService;
 import com.gffh.api.service.AdminUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +15,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
-@Tag(name = "Admin users", description = "ADM-06 Users: search, role inspection, suspend, force password reset, resend verification")
+@Tag(name = "Admin users", description = "ADM-06 Users: search, detail and activity timeline, suspend, force password reset, resend verification")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final AdminActivityService adminActivityService;
 
-    public AdminUserController(AdminUserService adminUserService) {
+    public AdminUserController(AdminUserService adminUserService, AdminActivityService adminActivityService) {
         this.adminUserService = adminUserService;
+        this.adminActivityService = adminActivityService;
     }
 
     @GetMapping
@@ -66,9 +70,8 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.verifyEmail(principal.getSubject(), userId));
     }
 
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal Jwt principal, @PathVariable String userId) {
-        adminUserService.delete(principal.getSubject(), userId);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{userId}/detail")
+    public ResponseEntity<AdminDetailDtos.AdminUserDetail> detail(@PathVariable String userId) {
+        return ResponseEntity.ok(adminActivityService.userDetail(userId));
     }
 }

@@ -2,12 +2,14 @@ package com.gffh.api.repository.mongo;
 
 import com.gffh.api.model.PlatformAdmin;
 import com.gffh.api.repository.PlatformAdminRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,6 +47,18 @@ public class MongoPlatformAdminRepository implements PlatformAdminRepository {
     }
 
     @Override
+    public List<PlatformAdmin> findAll() {
+        Query query = new Query().with(Sort.by(Sort.Direction.ASC, "createdAt"));
+        return mongoTemplate.find(query, PlatformAdminDocument.class, COLLECTION).stream()
+                .map(PlatformAdminDocument::toDomain).toList();
+    }
+
+    @Override
+    public void delete(String id) {
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), PlatformAdminDocument.class, COLLECTION);
+    }
+
+    @Override
     public long count() {
         return mongoTemplate.getCollection(COLLECTION).countDocuments();
     }
@@ -52,6 +66,6 @@ public class MongoPlatformAdminRepository implements PlatformAdminRepository {
     private PlatformAdmin withGeneratedId(PlatformAdmin admin) {
         return new PlatformAdmin(UUID.randomUUID().toString(), admin.email(), admin.passwordHash(),
                 admin.totpSecret(), admin.createdAt() != null ? admin.createdAt() : Instant.now(),
-                admin.lastLoginAt());
+                admin.lastLoginAt(), admin.role());
     }
 }

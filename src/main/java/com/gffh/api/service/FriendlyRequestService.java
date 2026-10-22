@@ -286,6 +286,22 @@ public class FriendlyRequestService {
     }
 
     /**
+     * Before an admin permanently deletes teams: every open request and
+     * confirmed fixture they have with another team is cancelled, so the
+     * other team's slots are freed and it is told, as if the deleted team had
+     * cancelled. Requests between two teams that are both being deleted are
+     * left alone - there's nobody left to tell.
+     */
+    public void cancelOpenForDeletedTeams(Set<String> teamIds) {
+        for (String teamId : teamIds) {
+            requests.findByTeamId(teamId).stream()
+                    .filter(fr -> !fr.status().isTerminal())
+                    .filter(fr -> !(teamIds.contains(fr.senderTeamId()) && teamIds.contains(fr.recipientTeamId())))
+                    .forEach(fr -> cancelOnBehalfOf(fr, teamId));
+        }
+    }
+
+    /**
      * A cancellation neither team asked for through {@link #act}, so it
      * bypasses {@link RequestStateMachine}'s actor rules - but otherwise does
      * what a cancel does: frees the slots, cancels any fixture and notifies

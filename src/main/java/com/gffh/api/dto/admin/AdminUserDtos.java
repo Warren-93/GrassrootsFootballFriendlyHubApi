@@ -3,6 +3,7 @@ package com.gffh.api.dto.admin;
 import com.gffh.api.model.Membership;
 import com.gffh.api.model.User;
 
+import java.time.Instant;
 import java.util.List;
 
 public final class AdminUserDtos {
@@ -15,13 +16,14 @@ public final class AdminUserDtos {
         }
     }
 
+    /** {@code lastActiveAt} is the last sign-in or app/session refresh; null if they've never signed in since sessions were recorded. */
     public record AdminUserView(
             String id, String email, String displayName, boolean emailVerified, boolean suspended,
-            List<MembershipView> memberships) {
+            List<MembershipView> memberships, Instant createdAt, Instant lastActiveAt) {
 
-        public static AdminUserView from(User u, List<Membership> memberships) {
+        public static AdminUserView from(User u, List<Membership> memberships, Instant lastActiveAt) {
             return new AdminUserView(u.id(), u.email(), u.displayName(), u.emailVerified(), u.suspended(),
-                    memberships.stream().map(MembershipView::from).toList());
+                    memberships.stream().map(MembershipView::from).toList(), u.createdAt(), lastActiveAt);
         }
     }
 }

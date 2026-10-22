@@ -4,12 +4,15 @@ import com.gffh.api.dto.admin.AdminUserDtos;
 import com.gffh.api.exception.BusinessRuleException;
 import com.gffh.api.model.User;
 import com.gffh.api.model.enums.VerificationTokenPurpose;
+import com.gffh.api.repository.AdminActivityRepository;
 import com.gffh.api.repository.MembershipRepository;
 import com.gffh.api.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminUserService {
@@ -18,32 +21,35 @@ public class AdminUserService {
     private final MembershipRepository memberships;
     private final VerificationTokenService verificationTokenService;
     private final AuditLogService auditLogService;
-    private final PrivacyService privacyService;
     private final MemberInviteService memberInvites;
     private final RefreshTokenService refreshTokenService;
+    private final AdminActivityRepository activity;
 
     public AdminUserService(UserRepository users, MembershipRepository memberships,
                             VerificationTokenService verificationTokenService, AuditLogService auditLogService,
-                            PrivacyService privacyService, MemberInviteService memberInvites,
-                            RefreshTokenService refreshTokenService) {
+                            MemberInviteService memberInvites,
+                            RefreshTokenService refreshTokenService, AdminActivityRepository activity) {
         this.users = users;
         this.memberships = memberships;
         this.verificationTokenService = verificationTokenService;
         this.auditLogService = auditLogService;
-        this.privacyService = privacyService;
         this.memberInvites = memberInvites;
         this.refreshTokenService = refreshTokenService;
+        this.activity = activity;
     }
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
-        return users.search(query, 500).stream()
-                .map(u -> AdminUserDtos.AdminUserView.from(u, memberships.findByUserId(u.id())))
+        List<User> found = users.search(query, 500);
+        Map<String, Instant> lastActive = activity.lastActiveAt(found.stream().map(User::id).toList());
+        return found.stream()
+                .map(u -> AdminUserDtos.AdminUserView.from(u, memberships.findByUserId(u.id()), lastActive.get(u.id())))
                 .toList();
     }
 
     public AdminUserDtos.AdminUserView get(String userId) {
         User user = find(userId);
-        return AdminUserDtos.AdminUserView.from(user, memberships.findByUserId(userId));
+        return AdminUserDtos.AdminUserView.from(user, memberships.findByUserId(userId),
+                activity.lastActiveAt(List.of(userId)).get(userId));
     }
 
     /** Signs the user out everywhere too, so no session outlives the suspension by more than an access token. */
@@ -88,27 +94,6 @@ public class AdminUserService {
         memberInvites.acceptPendingInvites(users.save(withEmailVerified(user, true)));
         auditLogService.record(adminId, "USER_EMAIL_VERIFIED_BY_ADMIN", "USER", userId, null);
         return get(userId);
-    }
-
-    /**
-     * Reuses PrivacyService.deleteAccount for the actual removal (and its
-     * "not the sole CLUB_ADMIN of any club" guard) so an admin-initiated
-     * delete can't orphan a club any more than a self-service one can. The
-     * guard's message is written for the self-service caller ("your
-     * account"), so it's reworded here for an admin deleting someone else's.
-     */
-    public void delete(String adminId, String userId) {
-        User user = find(userId);
-        try {
-            privacyService.deleteAccount(userId);
-        } catch (BusinessRuleException ex) {
-            if ("LAST_CLUB_ADMIN".equals(ex.code())) {
-                throw new BusinessRuleException(ex.code(), ex.status(), user.displayName()
-                        + " is the only admin for at least one club - promote someone else there first.");
-            }
-            throw ex;
-        }
-        auditLogService.record(adminId, "USER_DELETED", "USER", userId, "Deleted by admin (was " + user.email() + ")");
     }
 
     private User find(String userId) {

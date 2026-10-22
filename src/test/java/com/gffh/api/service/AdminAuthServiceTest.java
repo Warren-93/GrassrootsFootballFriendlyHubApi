@@ -29,7 +29,7 @@ class AdminAuthServiceTest {
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final TotpService totpService = mock(TotpService.class);
     private final AdminJwtService jwt = mock(AdminJwtService.class);
-    private final PlatformAdmin admin = new PlatformAdmin("a1", "admin@test.dev", "hash", "SECRET", Instant.now(), null);
+    private final PlatformAdmin admin = new PlatformAdmin("a1", "admin@test.dev", "hash", "SECRET", Instant.now(), null, null);
 
     @BeforeEach
     void setUp() {
