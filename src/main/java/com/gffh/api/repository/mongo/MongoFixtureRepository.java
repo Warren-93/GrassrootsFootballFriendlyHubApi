@@ -1,15 +1,20 @@
 package com.gffh.api.repository.mongo;
 
 import com.gffh.api.model.Fixture;
+import com.gffh.api.model.enums.FixtureStatus;
 import com.gffh.api.repository.FixtureRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -34,6 +39,22 @@ public class MongoFixtureRepository implements FixtureRepository {
         Query query = new Query(new Criteria().orOperator(
                 Criteria.where("homeTeamId").is(teamId),
                 Criteria.where("awayTeamId").is(teamId)));
+        return mongoTemplate.find(query, FixtureDocument.class, COLLECTION).stream()
+                .map(FixtureDocument::toDomain).toList();
+    }
+
+    @Override
+    public List<Fixture> search(Set<String> teamIds, LocalDate from, LocalDate to, FixtureStatus status, int limit) {
+        List<Criteria> filters = new ArrayList<>();
+        if (teamIds != null) {
+            filters.add(new Criteria().orOperator(
+                    Criteria.where("homeTeamId").in(teamIds), Criteria.where("awayTeamId").in(teamIds)));
+        }
+        if (from != null) filters.add(Criteria.where("date").gte(from));
+        if (to != null) filters.add(Criteria.where("date").lte(to));
+        if (status != null) filters.add(Criteria.where("status").is(status.name()));
+        Query query = filters.isEmpty() ? new Query() : new Query(new Criteria().andOperator(filters.toArray(new Criteria[0])));
+        query.with(Sort.by(Sort.Direction.DESC, "date", "startTime")).limit(limit);
         return mongoTemplate.find(query, FixtureDocument.class, COLLECTION).stream()
                 .map(FixtureDocument::toDomain).toList();
     }

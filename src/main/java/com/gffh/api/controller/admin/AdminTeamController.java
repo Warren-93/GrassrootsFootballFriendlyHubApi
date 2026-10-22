@@ -1,6 +1,8 @@
 package com.gffh.api.controller.admin;
 
+import com.gffh.api.dto.admin.AdminDetailDtos;
 import com.gffh.api.dto.admin.AdminTeamDtos;
+import com.gffh.api.service.AdminActivityService;
 import com.gffh.api.service.AdminTeamService;
 import com.gffh.api.service.VerificationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,10 +22,13 @@ public class AdminTeamController {
 
     private final AdminTeamService adminTeamService;
     private final VerificationService verificationService;
+    private final AdminActivityService adminActivityService;
 
-    public AdminTeamController(AdminTeamService adminTeamService, VerificationService verificationService) {
+    public AdminTeamController(AdminTeamService adminTeamService, VerificationService verificationService,
+                               AdminActivityService adminActivityService) {
         this.adminTeamService = adminTeamService;
         this.verificationService = verificationService;
+        this.adminActivityService = adminActivityService;
     }
 
     @GetMapping
@@ -34,6 +39,11 @@ public class AdminTeamController {
     @GetMapping("/{teamId}")
     public ResponseEntity<AdminTeamDtos.AdminTeamView> get(@PathVariable String teamId) {
         return ResponseEntity.ok(adminTeamService.get(teamId));
+    }
+
+    @GetMapping("/{teamId}/detail")
+    public ResponseEntity<AdminDetailDtos.AdminTeamDetail> detail(@PathVariable String teamId) {
+        return ResponseEntity.ok(adminActivityService.teamDetail(teamId));
     }
 
     @PostMapping("/{teamId}/suspend")
