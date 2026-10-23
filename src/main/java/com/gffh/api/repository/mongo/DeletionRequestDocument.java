@@ -30,21 +30,21 @@ public class DeletionRequestDocument {
 
     public static DeletionRequestDocument from(DeletionRequest r) {
         DeletionRequestDocument d = new DeletionRequestDocument();
-        d.id = r.id();
-        d.targetType = r.targetType().name();
-        d.targetId = r.targetId();
-        d.targetLabel = r.targetLabel();
-        d.reason = r.reason();
-        d.status = r.status().name();
-        d.requestedByAdminId = r.requestedByAdminId();
-        d.requestedByEmail = r.requestedByEmail();
-        d.requestedAt = r.requestedAt();
-        d.decidedByAdminId = r.decidedByAdminId();
-        d.decidedByEmail = r.decidedByEmail();
-        d.decidedAt = r.decidedAt();
-        d.decisionNote = r.decisionNote();
-        d.summary = r.summary();
-        d.result = r.result();
+        d.id = r.getId();
+        d.targetType = r.getTargetType().name();
+        d.targetId = r.getTargetId();
+        d.targetLabel = r.getTargetLabel();
+        d.reason = r.getReason();
+        d.status = r.getStatus().name();
+        d.requestedByAdminId = r.getRequestedByAdminId();
+        d.requestedByEmail = r.getRequestedByEmail();
+        d.requestedAt = r.getRequestedAt();
+        d.decidedByAdminId = r.getDecidedByAdminId();
+        d.decidedByEmail = r.getDecidedByEmail();
+        d.decidedAt = r.getDecidedAt();
+        d.decisionNote = r.getDecisionNote();
+        d.summary = r.getSummary();
+        d.result = r.getResult();
         return d;
     }
 

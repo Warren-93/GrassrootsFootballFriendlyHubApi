@@ -67,7 +67,7 @@ public class MatchingService {
 
         // The caller must actually manage this team. Without this check any
         // authenticated user could search on behalf of anyone.
-        memberships.requireCanManageTeam(userId, ourTeam.id());
+        memberships.requireCanManageTeam(userId, ourTeam.getId());
 
         return score(ourTeam, request, weightsProvider.current());
     }
@@ -93,7 +93,7 @@ public class MatchingService {
         // dates are scored, not required, so new accounts are not met with
         // an empty list.
         List<AvailabilitySlot> ourSlots =
-                availability.findBookableForTeamBetween(ourTeam.id(), from, to);
+                availability.findBookableForTeamBetween(ourTeam.getId(), from, to);
 
         // Narrow in the database before scoring in memory. The 2dsphere index
         // and the ageGroup/format/gender compound index carry this query; see
@@ -106,21 +106,21 @@ public class MatchingService {
                 : UNLIMITED_RADIUS_MILES;
 
         List<Team> candidates = teams.findCandidates(
-                ourTeam.location(),
+                ourTeam.getLocation(),
                 radius,
-                ourTeam.ageGroup().withinBands(weights.ageBandTolerance()),
-                ourTeam.gender(),
+                ourTeam.getAgeGroup().withinBands(weights.ageBandTolerance()),
+                ourTeam.getGender(),
                 request.formats(),
                 currentDivisionNames(request.abilityLevels()),
                 Boolean.TRUE.equals(request.verifiedOnly()),
-                ourTeam.clubId(),
+                ourTeam.getClubId(),
                 CANDIDATE_LIMIT);
 
         // Blocking is bidirectional and must be invisible: a blocked team is
         // simply absent, never flagged.
-        Set<String> excluded = blocks.blockedTeamIdsEitherDirection(ourTeam.id());
+        Set<String> excluded = blocks.blockedTeamIdsEitherDirection(ourTeam.getId());
         candidates = candidates.stream()
-                .filter(t -> !excluded.contains(t.id()))
+                .filter(t -> !excluded.contains(t.getId()))
                 .toList();
         if (candidates.isEmpty()) {
             return empty(weights);
@@ -128,19 +128,19 @@ public class MatchingService {
 
         Map<String, List<AvailabilitySlot>> slotsByTeam =
                 availability.findBookableForTeamsBetween(
-                                candidates.stream().map(Team::id).toList(), from, to)
+                                candidates.stream().map(Team::getId).toList(), from, to)
                         .stream()
-                        .collect(Collectors.groupingBy(AvailabilitySlot::teamId));
+                        .collect(Collectors.groupingBy(AvailabilitySlot::getTeamId));
 
         List<MatchingEngine.Candidate> scored = candidates.stream()
                 .map(t -> new MatchingEngine.Candidate(
-                        t, slotsByTeam.getOrDefault(t.id(), List.of())))
+                        t, slotsByTeam.getOrDefault(t.getId(), List.of())))
                 .toList();
 
         List<MatchResult> ranked = new MatchingEngine(weights).rank(ourTeam, ourSlots, scored);
 
         Map<String, Team> byId = candidates.stream()
-                .collect(Collectors.toMap(Team::id, t -> t));
+                .collect(Collectors.toMap(Team::getId, t -> t));
 
         List<MatchDtos.MatchSummary> page = ranked.stream()
                 .limit(request.limitOrDefault())

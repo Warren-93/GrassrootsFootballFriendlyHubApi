@@ -22,13 +22,13 @@ public class PlatformAdminDocument {
 
     public static PlatformAdminDocument from(PlatformAdmin a) {
         PlatformAdminDocument d = new PlatformAdminDocument();
-        d.id = a.id();
-        d.email = a.email();
-        d.passwordHash = a.passwordHash();
-        d.totpSecret = a.totpSecret();
-        d.createdAt = a.createdAt();
-        d.lastLoginAt = a.lastLoginAt();
-        d.role = a.role() == null ? null : a.role().name();
+        d.id = a.getId();
+        d.email = a.getEmail();
+        d.passwordHash = a.getPasswordHash();
+        d.totpSecret = a.getTotpSecret();
+        d.createdAt = a.getCreatedAt();
+        d.lastLoginAt = a.getLastLoginAt();
+        d.role = a.getRole() == null ? null : a.getRole().name();
         return d;
     }
 

@@ -33,6 +33,6 @@ public class SuperAdminMigration {
         if (all.isEmpty() || all.stream().anyMatch(PlatformAdmin::isSuperAdmin)) return;
         PlatformAdmin oldest = all.get(0);
         admins.save(oldest.withRole(AdminRole.SUPER_ADMIN));
-        log.info("Made the oldest admin account ({}) the super admin", oldest.email());
+        log.info("Made the oldest admin account ({}) the super admin", oldest.getEmail());
     }
 }

@@ -29,19 +29,19 @@ public class VenueDocument {
 
     public static VenueDocument from(Venue v) {
         VenueDocument d = new VenueDocument();
-        d.id = v.id();
-        d.clubId = v.clubId();
-        d.name = v.name();
-        d.address = v.address();
-        d.postcode = v.postcode();
-        d.location = v.location() == null ? null : new GeoJsonPoint(v.location().longitude(), v.location().latitude());
-        d.pitchSurface = v.pitchSurface() == null ? null : v.pitchSurface().name();
-        d.facilities = v.facilities() == null ? List.of() : v.facilities().stream().map(Enum::name).toList();
-        d.accessNotes = v.accessNotes();
-        d.parkingNotes = v.parkingNotes();
-        d.pitchNumber = v.pitchNumber();
+        d.id = v.getId();
+        d.clubId = v.getClubId();
+        d.name = v.getName();
+        d.address = v.getAddress();
+        d.postcode = v.getPostcode();
+        d.location = v.getLocation() == null ? null : new GeoJsonPoint(v.getLocation().longitude(), v.getLocation().latitude());
+        d.pitchSurface = v.getPitchSurface() == null ? null : v.getPitchSurface().name();
+        d.facilities = v.getFacilities() == null ? List.of() : v.getFacilities().stream().map(Enum::name).toList();
+        d.accessNotes = v.getAccessNotes();
+        d.parkingNotes = v.getParkingNotes();
+        d.pitchNumber = v.getPitchNumber();
         d.isDefault = v.isDefault();
-        d.createdAt = v.createdAt();
+        d.createdAt = v.getCreatedAt();
         return d;
     }
 

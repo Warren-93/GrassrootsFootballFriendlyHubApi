@@ -112,6 +112,6 @@ class AuthServiceTest {
     }
 
     private User verifiedPlayer() {
-        return new User("u1", "player@example.com", "hash", "Player", true, unverified.createdAt(), false);
+        return new User("u1", "player@example.com", "hash", "Player", true, unverified.getCreatedAt(), false);
     }
 }

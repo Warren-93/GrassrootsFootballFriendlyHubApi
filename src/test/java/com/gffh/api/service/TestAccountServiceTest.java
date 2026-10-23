@@ -47,13 +47,13 @@ class TestAccountServiceTest {
         when(users.findByEmail(anyString())).thenReturn(Optional.empty());
         when(users.save(any())).thenAnswer(i -> {
             User u = i.getArgument(0);
-            return new User("u-" + UUID.randomUUID(), u.email(), u.passwordHash(), u.displayName(),
-                    u.emailVerified(), u.createdAt(), u.suspended());
+            return new User("u-" + UUID.randomUUID(), u.getEmail(), u.getPasswordHash(), u.getDisplayName(),
+                    u.isEmailVerified(), u.getCreatedAt(), u.isSuspended());
         });
         when(testAccounts.save(any())).thenAnswer(i -> {
             TestAccount a = i.getArgument(0);
-            return a.id() != null ? a : new TestAccount("t1", a.userId(), a.email(), a.displayName(), a.kind(),
-                    a.clubId(), a.teamId(), a.createdByAdminId(), a.createdAt());
+            return a.getId() != null ? a : new TestAccount("t1", a.getUserId(), a.getEmail(), a.getDisplayName(), a.getKind(),
+                    a.getClubId(), a.getTeamId(), a.getCreatedByAdminId(), a.getCreatedAt());
         });
     }
 
@@ -64,9 +64,9 @@ class TestAccountServiceTest {
 
         ArgumentCaptor<User> user = ArgumentCaptor.forClass(User.class);
         verify(users).save(user.capture());
-        assertThat(user.getValue().emailVerified()).isTrue();
-        assertThat(user.getValue().passwordHash()).isEqualTo("hash");
-        assertThat(user.getValue().email()).startsWith("kickabout-test+").endsWith("@example.com");
+        assertThat(user.getValue().isEmailVerified()).isTrue();
+        assertThat(user.getValue().getPasswordHash()).isEqualTo("hash");
+        assertThat(user.getValue().getEmail()).startsWith("kickabout-test+").endsWith("@example.com");
         verify(testAccounts).save(argThatKind(TestAccountKind.VERIFIED));
         verifyNoInteractions(teamService);
         assertThat(result).hasSize(1);
@@ -90,8 +90,8 @@ class TestAccountServiceTest {
 
         ArgumentCaptor<TestAccount> saved = ArgumentCaptor.forClass(TestAccount.class);
         verify(testAccounts, times(2)).save(saved.capture());
-        assertThat(saved.getAllValues().get(1).teamId()).isEqualTo("team-1");
-        assertThat(saved.getAllValues().get(1).clubId()).isEqualTo("club-1");
+        assertThat(saved.getAllValues().get(1).getTeamId()).isEqualTo("team-1");
+        assertThat(saved.getAllValues().get(1).getClubId()).isEqualTo("club-1");
     }
 
     @Test
@@ -129,13 +129,13 @@ class TestAccountServiceTest {
     }
 
     private static TestAccount argThatKind(TestAccountKind kind) {
-        return argThat(a -> a.kind() == kind);
+        return argThat(a -> a.getKind() == kind);
     }
 
     private static Team team(String id, String clubId) {
         Team team = mock(Team.class);
-        when(team.id()).thenReturn(id);
-        when(team.clubId()).thenReturn(clubId);
+        when(team.getId()).thenReturn(id);
+        when(team.getClubId()).thenReturn(clubId);
         return team;
     }
 }

@@ -51,16 +51,16 @@ public class MongoConversationRepository implements ConversationRepository {
 
     @Override
     public Conversation save(Conversation conversation) {
-        Conversation toSave = conversation.id() != null ? conversation : withGeneratedId(conversation);
+        Conversation toSave = conversation.getId() != null ? conversation : withGeneratedId(conversation);
         ConversationDocument doc = ConversationDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
     }
 
     private Conversation withGeneratedId(Conversation c) {
-        Instant now = c.createdAt() != null ? c.createdAt() : Instant.now();
-        return new Conversation(UUID.randomUUID().toString(), c.teamAId(), c.teamBId(), now,
-                c.lastMessageAt() != null ? c.lastMessageAt() : now, c.lastMessageBody(), c.lastMessageSenderTeamId(),
-                c.relatedFixtureId());
+        Instant now = c.getCreatedAt() != null ? c.getCreatedAt() : Instant.now();
+        return new Conversation(UUID.randomUUID().toString(), c.getTeamAId(), c.getTeamBId(), now,
+                c.getLastMessageAt() != null ? c.getLastMessageAt() : now, c.getLastMessageBody(), c.getLastMessageSenderTeamId(),
+                c.getRelatedFixtureId());
     }
 }

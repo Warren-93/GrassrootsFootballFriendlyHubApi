@@ -54,8 +54,8 @@ public class FixtureController {
     /** Members who don't manage either team see the fixture without the managers' contact details. */
     private FixtureDtos.FixtureView toView(String userId, Fixture fixture) {
         return FixtureDtos.FixtureView.from(fixture,
-                fixtureService.team(fixture.homeTeamId()),
-                fixtureService.team(fixture.awayTeamId()),
+                fixtureService.team(fixture.getHomeTeamId()),
+                fixtureService.team(fixture.getAwayTeamId()),
                 fixtureService.venueFor(fixture),
                 fixtureService.managesEitherTeam(userId, fixture));
     }

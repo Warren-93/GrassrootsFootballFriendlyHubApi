@@ -53,7 +53,7 @@ class AdminTestAccountsIntegrationTest extends AbstractIntegrationTest {
         assertEquals(0, mongoTemplate.count(new Query(Criteria.where("_id").is(id)), "test_accounts"));
         assertEquals(0, mongoTemplate.count(new Query(Criteria.where("email").is(email)), "users"));
         String teamId = created.get("teamId").asText();
-        assertTrue(teamRepository.findById(teamId).orElseThrow().archived());
+        assertTrue(teamRepository.findById(teamId).orElseThrow().isArchived());
     }
 
     @Test

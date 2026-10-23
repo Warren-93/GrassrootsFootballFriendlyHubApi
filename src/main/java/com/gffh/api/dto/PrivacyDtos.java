@@ -29,8 +29,8 @@ public final class PrivacyDtos {
 
         public static AccountExport of(User user, List<MembershipExport> memberships,
                                        NotificationPreference notificationPreferences, List<TeamExport> teams) {
-            return new AccountExport(user.id(), user.email(), user.displayName(), user.emailVerified(),
-                    user.createdAt(), memberships, notificationPreferences, teams);
+            return new AccountExport(user.getId(), user.getEmail(), user.getDisplayName(), user.isEmailVerified(),
+                    user.getCreatedAt(), memberships, notificationPreferences, teams);
         }
     }
 }

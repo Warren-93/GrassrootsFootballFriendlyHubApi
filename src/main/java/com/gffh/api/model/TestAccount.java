@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.TestAccountKind;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -10,14 +13,18 @@ import java.time.Instant;
  * touching) real accounts. The user, club and team themselves stay in their
  * normal collections so the account signs in and behaves like any other.
  */
-public record TestAccount(
-        String id,
-        String userId,
-        String email,
-        String displayName,
-        TestAccountKind kind,
-        String clubId,
-        String teamId,
-        String createdByAdminId,
-        Instant createdAt) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class TestAccount {
+
+    private String id;
+    private String userId;
+    private String email;
+    private String displayName;
+    private TestAccountKind kind;
+    private String clubId;
+    private String teamId;
+    private String createdByAdminId;
+    private Instant createdAt;
 }

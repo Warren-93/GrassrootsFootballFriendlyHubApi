@@ -41,7 +41,7 @@ public class MongoMatchingWeightsVersionRepository implements MatchingWeightsVer
 
     @Override
     public MatchingWeightsVersion save(MatchingWeightsVersion version) {
-        MatchingWeightsVersion toSave = version.id() != null ? version : withGeneratedId(version);
+        MatchingWeightsVersion toSave = version.getId() != null ? version : withGeneratedId(version);
         mongoTemplate.save(MatchingWeightsVersionDocument.from(toSave), COLLECTION);
         return toSave;
     }
@@ -53,7 +53,7 @@ public class MongoMatchingWeightsVersionRepository implements MatchingWeightsVer
     }
 
     private MatchingWeightsVersion withGeneratedId(MatchingWeightsVersion v) {
-        return new MatchingWeightsVersion(UUID.randomUUID().toString(), v.weights(), v.versionNote(),
-                v.publishedByAdminId(), v.publishedAt() != null ? v.publishedAt() : Instant.now(), v.active());
+        return new MatchingWeightsVersion(UUID.randomUUID().toString(), v.getWeights(), v.getVersionNote(),
+                v.getPublishedByAdminId(), v.getPublishedAt() != null ? v.getPublishedAt() : Instant.now(), v.isActive());
     }
 }

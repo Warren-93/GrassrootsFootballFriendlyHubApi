@@ -1,5 +1,9 @@
 package com.gffh.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 
 /**
@@ -8,10 +12,14 @@ import java.time.Instant;
  * still has a clear owner - only the blocking team can see it in a list or
  * undo it.
  */
-public record Block(
-        String id,
-        String blockingTeamId,
-        String blockedTeamId,
-        String reason,
-        Instant createdAt) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Block {
+
+    private String id;
+    private String blockingTeamId;
+    private String blockedTeamId;
+    private String reason;
+    private Instant createdAt;
 }

@@ -38,7 +38,7 @@ public class MongoJoinCodeRepository implements JoinCodeRepository {
 
     @Override
     public JoinCode save(JoinCode joinCode) {
-        JoinCode toSave = joinCode.id() != null ? joinCode : withGeneratedId(joinCode);
+        JoinCode toSave = joinCode.getId() != null ? joinCode : withGeneratedId(joinCode);
         JoinCodeDocument doc = JoinCodeDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -50,7 +50,7 @@ public class MongoJoinCodeRepository implements JoinCodeRepository {
     }
 
     private JoinCode withGeneratedId(JoinCode j) {
-        return new JoinCode(UUID.randomUUID().toString(), j.teamId(), j.code(), j.createdByUserId(),
-                j.createdAt() != null ? j.createdAt() : Instant.now());
+        return new JoinCode(UUID.randomUUID().toString(), j.getTeamId(), j.getCode(), j.getCreatedByUserId(),
+                j.getCreatedAt() != null ? j.getCreatedAt() : Instant.now());
     }
 }

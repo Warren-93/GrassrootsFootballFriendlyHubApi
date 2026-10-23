@@ -20,12 +20,12 @@ public class MembershipDocument {
 
     public static MembershipDocument from(Membership m) {
         MembershipDocument d = new MembershipDocument();
-        d.id = m.id();
-        d.userId = m.userId();
-        d.teamId = m.teamId();
-        d.clubId = m.clubId();
-        d.role = m.role().name();
-        d.createdAt = m.createdAt();
+        d.id = m.getId();
+        d.userId = m.getUserId();
+        d.teamId = m.getTeamId();
+        d.clubId = m.getClubId();
+        d.role = m.getRole().name();
+        d.createdAt = m.getCreatedAt();
         return d;
     }
 

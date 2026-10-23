@@ -80,7 +80,7 @@ public class CascadeDeletionService {
 
         CascadeDeletionRepository.Scope scope(Instant notificationsBefore) {
             return new CascadeDeletionRepository.Scope(teamsDeleted.keySet(), clubsDeleted.keySet(),
-                    user == null ? null : user.id(), user == null ? null : user.email(), notificationsBefore);
+                    user == null ? null : user.getId(), user == null ? null : user.getEmail(), notificationsBefore);
         }
     }
 
@@ -91,8 +91,8 @@ public class CascadeDeletionService {
                 .map(e -> new AdminDeletionDtos.CountLine(e.getKey(), e.getValue()))
                 .toList();
         return new AdminDeletionDtos.DeletionPreview(type.name(), targetId, plan.label(),
-                plan.teamsDeleted().values().stream().map(t -> new AdminDeletionDtos.NamedItem(t.id(), t.name())).toList(),
-                plan.clubsDeleted().values().stream().map(c -> new AdminDeletionDtos.NamedItem(c.id(), c.name())).toList(),
+                plan.teamsDeleted().values().stream().map(t -> new AdminDeletionDtos.NamedItem(t.getId(), t.getName())).toList(),
+                plan.clubsDeleted().values().stream().map(c -> new AdminDeletionDtos.NamedItem(c.getId(), c.getName())).toList(),
                 otherTeamsAffected(plan.teamsDeleted().keySet()),
                 records, plan.warnings());
     }
@@ -112,7 +112,7 @@ public class CascadeDeletionService {
     /** A one-line label for the target, or empty if it no longer exists. */
     public Optional<String> labelFor(DeletionTargetType type, String targetId) {
         return switch (type) {
-            case USER -> users.findById(targetId).map(u -> u.displayName() + " (" + u.email() + ")");
+            case USER -> users.findById(targetId).map(u -> u.getDisplayName() + " (" + u.getEmail() + ")");
             case TEAM -> teams.findById(targetId).map(CascadeDeletionService::teamLabel);
         };
     }
@@ -131,8 +131,8 @@ public class CascadeDeletionService {
 
         Set<String> clubIds = new LinkedHashSet<>();
         for (Membership m : own) {
-            if (m.isClubScoped()) clubIds.add(m.clubId());
-            else teams.findById(m.teamId()).ifPresent(t -> clubIds.add(t.clubId()));
+            if (m.isClubScoped()) clubIds.add(m.getClubId());
+            else teams.findById(m.getTeamId()).ifPresent(t -> clubIds.add(t.getClubId()));
         }
 
         Map<String, Team> teamsDeleted = new LinkedHashMap<>();
@@ -141,29 +141,29 @@ public class CascadeDeletionService {
         for (String clubId : clubIds) {
             List<Team> clubTeams = teams.findByClubId(clubId);
             List<Membership> others = membersOf(clubId, clubTeams).stream()
-                    .filter(m -> !m.userId().equals(userId))
+                    .filter(m -> !m.getUserId().equals(userId))
                     .toList();
-            String clubName = clubs.findById(clubId).map(Club::name).orElse("A club");
+            String clubName = clubs.findById(clubId).map(Club::getName).orElse("A club");
             if (others.isEmpty()) {
-                clubs.findById(clubId).ifPresent(c -> clubsDeleted.put(c.id(), c));
-                clubTeams.forEach(t -> teamsDeleted.put(t.id(), t));
+                clubs.findById(clubId).ifPresent(c -> clubsDeleted.put(c.getId(), c));
+                clubTeams.forEach(t -> teamsDeleted.put(t.getId(), t));
                 continue;
             }
-            boolean wasClubAdmin = own.stream().anyMatch(m -> clubId.equals(m.clubId()) && m.role() == Role.CLUB_ADMIN);
-            boolean otherClubAdmin = others.stream().anyMatch(m -> m.role() == Role.CLUB_ADMIN);
+            boolean wasClubAdmin = own.stream().anyMatch(m -> clubId.equals(m.getClubId()) && m.getRole() == Role.CLUB_ADMIN);
+            boolean otherClubAdmin = others.stream().anyMatch(m -> m.getRole() == Role.CLUB_ADMIN);
             if (wasClubAdmin && !otherClubAdmin) {
                 warnings.add(clubName + " stays (" + others.size() + " other member"
                         + (others.size() == 1 ? "" : "s") + ") but will have no club admin left.");
             }
             for (Team t : clubTeams) {
-                boolean member = own.stream().anyMatch(m -> t.id().equals(m.teamId()));
-                boolean othersOnTeam = others.stream().anyMatch(m -> t.id().equals(m.teamId()));
+                boolean member = own.stream().anyMatch(m -> t.getId().equals(m.getTeamId()));
+                boolean othersOnTeam = others.stream().anyMatch(m -> t.getId().equals(m.getTeamId()));
                 if (member && !othersOnTeam && !otherClubAdmin) {
-                    warnings.add(t.name() + " stays, but nobody will be able to manage it.");
+                    warnings.add(t.getName() + " stays, but nobody will be able to manage it.");
                 }
             }
         }
-        return new Plan(DeletionTargetType.USER, userId, user.displayName() + " (" + user.email() + ")", user,
+        return new Plan(DeletionTargetType.USER, userId, user.getDisplayName() + " (" + user.getEmail() + ")", user,
                 teamsDeleted, clubsDeleted, warnings);
     }
 
@@ -171,12 +171,12 @@ public class CascadeDeletionService {
         Team team = teams.findById(teamId).orElseThrow(() -> new BusinessRuleException(
                 "TEAM_NOT_FOUND", HttpStatus.NOT_FOUND, "That team could not be found."));
         Map<String, Team> teamsDeleted = new LinkedHashMap<>();
-        teamsDeleted.put(team.id(), team);
+        teamsDeleted.put(team.getId(), team);
 
         Map<String, Club> clubsDeleted = new LinkedHashMap<>();
-        boolean lastTeam = teams.findByClubId(team.clubId()).stream().allMatch(t -> t.id().equals(teamId));
-        if (lastTeam && memberships.findByClubId(team.clubId()).isEmpty()) {
-            clubs.findById(team.clubId()).ifPresent(c -> clubsDeleted.put(c.id(), c));
+        boolean lastTeam = teams.findByClubId(team.getClubId()).stream().allMatch(t -> t.getId().equals(teamId));
+        if (lastTeam && memberships.findByClubId(team.getClubId()).isEmpty()) {
+            clubs.findById(team.getClubId()).ifPresent(c -> clubsDeleted.put(c.getId(), c));
         }
 
         List<String> warnings = new ArrayList<>();
@@ -186,7 +186,7 @@ public class CascadeDeletionService {
                     + " lose access to this team. Their accounts are kept.");
         }
         if (lastTeam && clubsDeleted.isEmpty()) {
-            warnings.add(Optional.ofNullable(team.clubName()).orElse("The club")
+            warnings.add(Optional.ofNullable(team.getClubName()).orElse("The club")
                     + " is kept with no teams, because it still has club members.");
         }
         return new Plan(DeletionTargetType.TEAM, teamId, teamLabel(team), null, teamsDeleted, clubsDeleted, warnings);
@@ -194,7 +194,7 @@ public class CascadeDeletionService {
 
     private List<Membership> membersOf(String clubId, List<Team> clubTeams) {
         List<Membership> all = new ArrayList<>(memberships.findByClubId(clubId));
-        clubTeams.forEach(t -> all.addAll(memberships.findByTeamId(t.id())));
+        clubTeams.forEach(t -> all.addAll(memberships.findByTeamId(t.getId())));
         return all;
     }
 
@@ -204,12 +204,12 @@ public class CascadeDeletionService {
         Set<String> seen = new LinkedHashSet<>();
         for (String teamId : teamIds) {
             for (FriendlyRequest fr : requests.findByTeamId(teamId)) {
-                if (fr.status().isTerminal() || !seen.add(fr.id())) continue;
-                String otherId = fr.senderTeamId().equals(teamId) ? fr.recipientTeamId() : fr.senderTeamId();
+                if (fr.getStatus().isTerminal() || !seen.add(fr.getId())) continue;
+                String otherId = fr.getSenderTeamId().equals(teamId) ? fr.getRecipientTeamId() : fr.getSenderTeamId();
                 if (teamIds.contains(otherId)) continue;
-                String other = teams.findById(otherId).map(Team::name).orElse("Another team");
-                String what = fr.status() == RequestStatus.CONFIRMED || fr.status() == RequestStatus.ACCEPTED
-                        ? "confirmed fixture on " + fr.date() : "open request for " + fr.date();
+                String other = teams.findById(otherId).map(Team::getName).orElse("Another team");
+                String what = fr.getStatus() == RequestStatus.CONFIRMED || fr.getStatus() == RequestStatus.ACCEPTED
+                        ? "confirmed fixture on " + fr.getDate() : "open request for " + fr.getDate();
                 lines.add(other + " - " + what + " will be cancelled and they'll be notified");
             }
         }
@@ -217,7 +217,7 @@ public class CascadeDeletionService {
     }
 
     private static String teamLabel(Team t) {
-        return t.clubName() == null || t.clubName().isBlank() || t.clubName().equals(t.name())
-                ? t.name() : t.name() + " (" + t.clubName() + ")";
+        return t.getClubName() == null || t.getClubName().isBlank() || t.getClubName().equals(t.getName())
+                ? t.getName() : t.getName() + " (" + t.getClubName() + ")";
     }
 }

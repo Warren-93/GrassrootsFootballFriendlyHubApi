@@ -28,19 +28,19 @@ public class VerificationRequestDocument {
 
     public static VerificationRequestDocument from(VerificationRequest r) {
         VerificationRequestDocument d = new VerificationRequestDocument();
-        d.id = r.id();
-        d.teamId = r.teamId();
-        d.submittedByUserId = r.submittedByUserId();
-        d.affiliationNumber = r.affiliationNumber();
-        d.contactDetails = r.contactDetails();
-        d.evidenceUrls = r.evidenceUrls();
-        d.status = r.status().name();
-        d.firstRejectionAdminId = r.firstRejectionAdminId();
-        d.firstRejectionReason = r.firstRejectionReason();
-        d.finalRejectionReason = r.finalRejectionReason();
-        d.reviewedByAdminId = r.reviewedByAdminId();
-        d.submittedAt = r.submittedAt();
-        d.reviewedAt = r.reviewedAt();
+        d.id = r.getId();
+        d.teamId = r.getTeamId();
+        d.submittedByUserId = r.getSubmittedByUserId();
+        d.affiliationNumber = r.getAffiliationNumber();
+        d.contactDetails = r.getContactDetails();
+        d.evidenceUrls = r.getEvidenceUrls();
+        d.status = r.getStatus().name();
+        d.firstRejectionAdminId = r.getFirstRejectionAdminId();
+        d.firstRejectionReason = r.getFirstRejectionReason();
+        d.finalRejectionReason = r.getFinalRejectionReason();
+        d.reviewedByAdminId = r.getReviewedByAdminId();
+        d.submittedAt = r.getSubmittedAt();
+        d.reviewedAt = r.getReviewedAt();
         return d;
     }
 

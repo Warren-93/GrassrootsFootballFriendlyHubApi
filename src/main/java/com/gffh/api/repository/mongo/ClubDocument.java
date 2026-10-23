@@ -23,14 +23,14 @@ public class ClubDocument {
 
     public static ClubDocument from(Club c) {
         ClubDocument d = new ClubDocument();
-        d.id = c.id();
-        d.name = c.name();
-        d.badgeUrl = c.badgeUrl();
-        d.postcode = c.postcode();
-        d.location = c.location() == null ? null : new GeoJsonPoint(c.location().longitude(), c.location().latitude());
-        d.website = c.website();
-        d.contactEmail = c.contactEmail();
-        d.createdAt = c.createdAt();
+        d.id = c.getId();
+        d.name = c.getName();
+        d.badgeUrl = c.getBadgeUrl();
+        d.postcode = c.getPostcode();
+        d.location = c.getLocation() == null ? null : new GeoJsonPoint(c.getLocation().longitude(), c.getLocation().latitude());
+        d.website = c.getWebsite();
+        d.contactEmail = c.getContactEmail();
+        d.createdAt = c.getCreatedAt();
         return d;
     }
 

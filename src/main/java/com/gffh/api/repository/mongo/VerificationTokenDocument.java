@@ -23,14 +23,14 @@ public class VerificationTokenDocument {
 
     public static VerificationTokenDocument from(VerificationToken t) {
         VerificationTokenDocument d = new VerificationTokenDocument();
-        d.id = t.id();
-        d.userId = t.userId();
-        d.token = t.token();
-        d.purpose = t.purpose().name();
-        d.email = t.email();
-        d.expiresAt = t.expiresAt();
-        d.used = t.used();
-        d.createdAt = t.createdAt();
+        d.id = t.getId();
+        d.userId = t.getUserId();
+        d.token = t.getToken();
+        d.purpose = t.getPurpose().name();
+        d.email = t.getEmail();
+        d.expiresAt = t.getExpiresAt();
+        d.used = t.isUsed();
+        d.createdAt = t.getCreatedAt();
         return d;
     }
 

@@ -49,9 +49,9 @@ public class MongoRegisteredOrganisationRepository implements RegisteredOrganisa
     public RegisteredOrganisation save(RegisteredOrganisation o) {
         Instant now = Instant.now();
         RegisteredOrganisation toSave = new RegisteredOrganisation(
-                o.id() != null ? o.id() : UUID.randomUUID().toString(), o.name(), o.shortName(),
-                o.linkedOrganisation(), o.contactName(), o.contactEmail(), o.website(), o.notes(), o.leagues(),
-                o.createdAt() != null ? o.createdAt() : now, o.createdByEmail(), now);
+                o.getId() != null ? o.getId() : UUID.randomUUID().toString(), o.getName(), o.getShortName(),
+                o.getLinkedOrganisation(), o.getContactName(), o.getContactEmail(), o.getWebsite(), o.getNotes(), o.getLeagues(),
+                o.getCreatedAt() != null ? o.getCreatedAt() : now, o.getCreatedByEmail(), now);
         RegisteredOrganisationDocument doc = RegisteredOrganisationDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();

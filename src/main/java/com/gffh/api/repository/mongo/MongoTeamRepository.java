@@ -52,8 +52,8 @@ public class MongoTeamRepository implements TeamRepository {
     @Override
     public Team save(Team team) {
         Instant now = Instant.now();
-        Team toSave = team.id() != null ? team : withGeneratedId(team, now);
-        toSave = toSave.createdAt() != null ? toSave : withCreatedAt(toSave, now);
+        Team toSave = team.getId() != null ? team : withGeneratedId(team, now);
+        toSave = toSave.getCreatedAt() != null ? toSave : withCreatedAt(toSave, now);
         TeamDocument doc = TeamDocument.from(toSave);
         doc.updatedAt = now;
         mongoTemplate.save(doc, COLLECTION);
@@ -61,21 +61,21 @@ public class MongoTeamRepository implements TeamRepository {
     }
 
     private Team withGeneratedId(Team team, Instant now) {
-        return new Team(UUID.randomUUID().toString(), team.clubId(), team.name(), team.clubName(),
-                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(),
-                team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
-                team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
-                team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now, team.suspended(), team.archived(), team.searchVisible(), team.shareContactDetails());
+        return new Team(UUID.randomUUID().toString(), team.getClubId(), team.getName(), team.getClubName(),
+                team.getBadgeUrl(), team.getAgeGroup(), team.getGender(), team.getFormat(), team.getAbilityLevel(), team.getOrganisation(),
+                team.getLeague(), team.getPostcode(), team.getLocation(), team.getTravelRadiusMiles(),
+                team.getHomeAwayPreference(), team.getManagerName(), team.getContactPhone(), team.getDescription(),
+                team.getVerification(), team.getDefaultVenueId(), team.getFirstFixtureConfirmedAt(),
+                now, now, team.isSuspended(), team.isArchived(), team.isSearchVisible(), team.isShareContactDetails());
     }
 
     private Team withCreatedAt(Team team, Instant now) {
-        return new Team(team.id(), team.clubId(), team.name(), team.clubName(),
-                team.badgeUrl(), team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(),
-                team.league(), team.postcode(), team.location(), team.travelRadiusMiles(),
-                team.homeAwayPreference(), team.managerName(), team.contactPhone(), team.description(),
-                team.verification(), team.defaultVenueId(), team.firstFixtureConfirmedAt(),
-                now, now, team.suspended(), team.archived(), team.searchVisible(), team.shareContactDetails());
+        return new Team(team.getId(), team.getClubId(), team.getName(), team.getClubName(),
+                team.getBadgeUrl(), team.getAgeGroup(), team.getGender(), team.getFormat(), team.getAbilityLevel(), team.getOrganisation(),
+                team.getLeague(), team.getPostcode(), team.getLocation(), team.getTravelRadiusMiles(),
+                team.getHomeAwayPreference(), team.getManagerName(), team.getContactPhone(), team.getDescription(),
+                team.getVerification(), team.getDefaultVenueId(), team.getFirstFixtureConfirmedAt(),
+                now, now, team.isSuspended(), team.isArchived(), team.isSearchVisible(), team.isShareContactDetails());
     }
 
     @Override

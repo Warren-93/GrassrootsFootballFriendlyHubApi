@@ -82,15 +82,15 @@ public class MongoFixtureRepository implements FixtureRepository {
 
     @Override
     public Fixture save(Fixture fixture) {
-        Fixture toSave = fixture.id() != null ? fixture : withGeneratedId(fixture);
+        Fixture toSave = fixture.getId() != null ? fixture : withGeneratedId(fixture);
         FixtureDocument doc = FixtureDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
     }
 
     private Fixture withGeneratedId(Fixture f) {
-        return new Fixture(UUID.randomUUID().toString(), f.friendlyRequestId(), f.homeTeamId(),
-                f.awayTeamId(), f.date(), f.startTime(), f.endTime(), f.venueId(), f.status(),
-                f.costShare(), f.refereeArrangement(), f.createdAt() != null ? f.createdAt() : Instant.now());
+        return new Fixture(UUID.randomUUID().toString(), f.getFriendlyRequestId(), f.getHomeTeamId(),
+                f.getAwayTeamId(), f.getDate(), f.getStartTime(), f.getEndTime(), f.getVenueId(), f.getStatus(),
+                f.getCostShare(), f.getRefereeArrangement(), f.getCreatedAt() != null ? f.getCreatedAt() : Instant.now());
     }
 }

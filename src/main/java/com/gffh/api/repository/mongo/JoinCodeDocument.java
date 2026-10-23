@@ -18,11 +18,11 @@ public class JoinCodeDocument {
 
     public static JoinCodeDocument from(JoinCode j) {
         JoinCodeDocument d = new JoinCodeDocument();
-        d.id = j.id();
-        d.teamId = j.teamId();
-        d.code = j.code();
-        d.createdByUserId = j.createdByUserId();
-        d.createdAt = j.createdAt();
+        d.id = j.getId();
+        d.teamId = j.getTeamId();
+        d.code = j.getCode();
+        d.createdByUserId = j.getCreatedByUserId();
+        d.createdAt = j.getCreatedAt();
         return d;
     }
 

@@ -26,7 +26,7 @@ public class MongoMessageRepository implements MessageRepository {
 
     @Override
     public Message save(Message message) {
-        Message toSave = message.id() != null ? message : withGeneratedId(message);
+        Message toSave = message.getId() != null ? message : withGeneratedId(message);
         MessageDocument doc = MessageDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -52,7 +52,7 @@ public class MongoMessageRepository implements MessageRepository {
     }
 
     private Message withGeneratedId(Message m) {
-        return new Message(UUID.randomUUID().toString(), m.conversationId(), m.senderTeamId(), m.senderUserId(),
-                m.body(), m.createdAt() != null ? m.createdAt() : Instant.now(), m.gif());
+        return new Message(UUID.randomUUID().toString(), m.getConversationId(), m.getSenderTeamId(), m.getSenderUserId(),
+                m.getBody(), m.getCreatedAt() != null ? m.getCreatedAt() : Instant.now(), m.getGif());
     }
 }

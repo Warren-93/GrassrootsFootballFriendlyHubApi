@@ -2,6 +2,9 @@ package com.gffh.api.model;
 
 import com.gffh.api.model.enums.DeletionRequestStatus;
 import com.gffh.api.model.enums.DeletionTargetType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -12,26 +15,30 @@ import java.time.Instant;
  * removed when it ran. Kept after the target is gone, as the record of who
  * asked, who approved and why.
  */
-public record DeletionRequest(
-        String id,
-        DeletionTargetType targetType,
-        String targetId,
-        String targetLabel,
-        String reason,
-        DeletionRequestStatus status,
-        String requestedByAdminId,
-        String requestedByEmail,
-        Instant requestedAt,
-        String decidedByAdminId,
-        String decidedByEmail,
-        Instant decidedAt,
-        String decisionNote,
-        String summary,
-        String result) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class DeletionRequest {
+
+    private String id;
+    private DeletionTargetType targetType;
+    private String targetId;
+    private String targetLabel;
+    private String reason;
+    private DeletionRequestStatus status;
+    private String requestedByAdminId;
+    private String requestedByEmail;
+    private Instant requestedAt;
+    private String decidedByAdminId;
+    private String decidedByEmail;
+    private Instant decidedAt;
+    private String decisionNote;
+    private String summary;
+    private String result;
 
     public DeletionRequest decided(DeletionRequestStatus newStatus, PlatformAdmin by, String note, String newResult) {
         return new DeletionRequest(id, targetType, targetId, targetLabel, reason, newStatus,
-                requestedByAdminId, requestedByEmail, requestedAt, by.id(), by.email(), Instant.now(),
+                requestedByAdminId, requestedByEmail, requestedAt, by.getId(), by.getEmail(), Instant.now(),
                 note, summary, newResult);
     }
 }

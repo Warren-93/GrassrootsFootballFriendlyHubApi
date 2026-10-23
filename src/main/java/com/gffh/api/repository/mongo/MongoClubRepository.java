@@ -32,16 +32,16 @@ public class MongoClubRepository implements ClubRepository {
 
     @Override
     public Club save(Club club) {
-        Club toSave = club.id() != null ? club : withGeneratedId(club);
+        Club toSave = club.getId() != null ? club : withGeneratedId(club);
         ClubDocument doc = ClubDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
     }
 
     private Club withGeneratedId(Club club) {
-        return new Club(UUID.randomUUID().toString(), club.name(), club.badgeUrl(), club.postcode(),
-                club.location(), club.website(), club.contactEmail(),
-                club.createdAt() != null ? club.createdAt() : Instant.now());
+        return new Club(UUID.randomUUID().toString(), club.getName(), club.getBadgeUrl(), club.getPostcode(),
+                club.getLocation(), club.getWebsite(), club.getContactEmail(),
+                club.getCreatedAt() != null ? club.getCreatedAt() : Instant.now());
     }
 
     @Override

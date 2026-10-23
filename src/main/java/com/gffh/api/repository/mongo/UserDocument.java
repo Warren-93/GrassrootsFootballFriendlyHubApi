@@ -20,13 +20,13 @@ public class UserDocument {
 
     public static UserDocument from(User u) {
         UserDocument d = new UserDocument();
-        d.id = u.id();
-        d.email = u.email();
-        d.passwordHash = u.passwordHash();
-        d.displayName = u.displayName();
-        d.emailVerified = u.emailVerified();
-        d.createdAt = u.createdAt();
-        d.suspended = u.suspended();
+        d.id = u.getId();
+        d.email = u.getEmail();
+        d.passwordHash = u.getPasswordHash();
+        d.displayName = u.getDisplayName();
+        d.emailVerified = u.isEmailVerified();
+        d.createdAt = u.getCreatedAt();
+        d.suspended = u.isSuspended();
         return d;
     }
 

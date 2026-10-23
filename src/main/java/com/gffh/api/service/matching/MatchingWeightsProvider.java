@@ -30,7 +30,7 @@ public class MatchingWeightsProvider {
 
     @PostConstruct
     void loadPersisted() {
-        versions.findActive().map(MatchingWeightsVersion::weights).ifPresent(current::set);
+        versions.findActive().map(MatchingWeightsVersion::getWeights).ifPresent(current::set);
     }
 
     public MatchingWeights current() {

@@ -39,8 +39,8 @@ public class AvailabilityService {
      */
     private String venueOrDefault(String teamId, String venueId) {
         if (venueId != null && !venueId.isBlank()) return venueId;
-        return teams.findById(teamId).map(t -> t.defaultVenueId() != null ? t.defaultVenueId()
-                : venues.findByClubId(t.clubId()).stream().filter(v -> v.isDefault()).map(v -> v.id())
+        return teams.findById(teamId).map(t -> t.getDefaultVenueId() != null ? t.getDefaultVenueId()
+                : venues.findByClubId(t.getClubId()).stream().filter(v -> v.isDefault()).map(v -> v.getId())
                         .findFirst().orElse(null))
                 .orElse(null);
     }
@@ -104,7 +104,7 @@ public class AvailabilityService {
         memberships.requireCanManageTeam(userId, teamId);
         AvailabilitySlot current = findOwned(teamId, slotId);
 
-        if (current.status() != AvailabilityStatus.AVAILABLE) {
+        if (current.getStatus() != AvailabilityStatus.AVAILABLE) {
             throw new BusinessRuleException("SLOT_NOT_EDITABLE", HttpStatus.CONFLICT,
                     "This slot is attached to a friendly request and cannot be edited directly.");
         }
@@ -115,7 +115,7 @@ public class AvailabilityService {
 
         requireValidWindow(request.startTime(), request.endTime());
         Format format = parseFormat(request.format());
-        AvailabilitySlot updated = new AvailabilitySlot(current.id(), teamId, request.date(),
+        AvailabilitySlot updated = new AvailabilitySlot(current.getId(), teamId, request.date(),
                 request.startTime(), request.endTime(), request.homeAwayPreference(),
                 venueOrDefault(teamId, request.venueId()), format, request.notes(), AvailabilityStatus.AVAILABLE);
         return availability.save(updated);
@@ -137,7 +137,7 @@ public class AvailabilityService {
 
     private AvailabilitySlot findOwned(String teamId, String slotId) {
         return availability.findById(slotId)
-                .filter(s -> s.teamId().equals(teamId))
+                .filter(s -> s.getTeamId().equals(teamId))
                 .orElseThrow(() -> new BusinessRuleException("SLOT_NOT_FOUND", HttpStatus.NOT_FOUND,
                         "That availability slot could not be found."));
     }
@@ -146,7 +146,7 @@ public class AvailabilityService {
         memberships.requireCanManageTeam(userId, teamId);
         AvailabilitySlot slot = findOwned(teamId, slotId);
 
-        if (slot.status() != AvailabilityStatus.AVAILABLE) {
+        if (slot.getStatus() != AvailabilityStatus.AVAILABLE) {
             // RESERVED/BOOKED slots are attached to a negotiation or fixture -
             // withdrawing here would silently break it. That must go through
             // the friendly-request cancellation flow instead.
@@ -154,8 +154,8 @@ public class AvailabilityService {
                     "This slot is attached to a friendly request and cannot be withdrawn directly.");
         }
 
-        availability.save(new AvailabilitySlot(slot.id(), slot.teamId(), slot.date(),
-                slot.startTime(), slot.endTime(), slot.homeAwayPreference(), slot.venueId(),
-                slot.format(), slot.notes(), AvailabilityStatus.WITHDRAWN));
+        availability.save(new AvailabilitySlot(slot.getId(), slot.getTeamId(), slot.getDate(),
+                slot.getStartTime(), slot.getEndTime(), slot.getHomeAwayPreference(), slot.getVenueId(),
+                slot.getFormat(), slot.getNotes(), AvailabilityStatus.WITHDRAWN));
     }
 }

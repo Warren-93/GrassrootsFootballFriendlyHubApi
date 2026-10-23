@@ -33,10 +33,10 @@ public final class ClubDtos {
             Double longitude, Double latitude, String website, String contactEmail, Instant createdAt) {
 
         public static ClubView from(Club c) {
-            return new ClubView(c.id(), c.name(), c.badgeUrl(), c.postcode(),
-                    c.location() == null ? null : c.location().longitude(),
-                    c.location() == null ? null : c.location().latitude(),
-                    c.website(), c.contactEmail(), c.createdAt());
+            return new ClubView(c.getId(), c.getName(), c.getBadgeUrl(), c.getPostcode(),
+                    c.getLocation() == null ? null : c.getLocation().longitude(),
+                    c.getLocation() == null ? null : c.getLocation().latitude(),
+                    c.getWebsite(), c.getContactEmail(), c.getCreatedAt());
         }
     }
 
@@ -48,7 +48,7 @@ public final class ClubDtos {
      */
     public record ClubSearchView(String id, String name, String badgeUrl, String postcode) {
         public static ClubSearchView from(Club c) {
-            return new ClubSearchView(c.id(), c.name(), c.badgeUrl(), c.postcode());
+            return new ClubSearchView(c.getId(), c.getName(), c.getBadgeUrl(), c.getPostcode());
         }
     }
 }

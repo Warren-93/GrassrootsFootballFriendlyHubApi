@@ -96,7 +96,7 @@ public final class AuthDtos {
 
     public record UserView(String id, String email, String displayName, boolean emailVerified) {
         public static UserView from(User user) {
-            return new UserView(user.id(), user.email(), user.displayName(), user.emailVerified());
+            return new UserView(user.getId(), user.getEmail(), user.getDisplayName(), user.isEmailVerified());
         }
     }
 }

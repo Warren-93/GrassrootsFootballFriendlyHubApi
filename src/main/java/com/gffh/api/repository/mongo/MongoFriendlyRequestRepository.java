@@ -96,7 +96,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
 
     @Override
     public FriendlyRequest save(FriendlyRequest request) {
-        FriendlyRequest toSave = request.id() != null ? request : withGeneratedId(request);
+        FriendlyRequest toSave = request.getId() != null ? request : withGeneratedId(request);
         FriendlyRequestDocument doc = FriendlyRequestDocument.from(toSave);
         doc.updatedAt = Instant.now();
         mongoTemplate.save(doc, COLLECTION);
@@ -107,7 +107,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
     public Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus) {
         FriendlyRequestDocument doc = FriendlyRequestDocument.from(request);
         doc.updatedAt = Instant.now();
-        Query query = new Query(Criteria.where("_id").is(request.id()).and("status").is(expectedStatus.name()));
+        Query query = new Query(Criteria.where("_id").is(request.getId()).and("status").is(expectedStatus.name()));
         FriendlyRequestDocument saved = mongoTemplate.findAndReplace(query, doc,
                 FindAndReplaceOptions.options().returnNew(), COLLECTION);
         return Optional.ofNullable(saved).map(FriendlyRequestDocument::toDomain);
@@ -115,10 +115,10 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
 
     private FriendlyRequest withGeneratedId(FriendlyRequest r) {
         Instant now = Instant.now();
-        return new FriendlyRequest(UUID.randomUUID().toString(), r.senderTeamId(), r.recipientTeamId(),
-                r.senderSlotId(), r.recipientSlotId(), r.status(), r.date(), r.startTime(), r.endTime(),
-                r.venueId(), r.homeTeamId(), r.costShare(), r.refereeArrangement(), r.message(),
-                r.createdByUserId(), now, now, r.actionReason(),
-                r.proposedStartTime(), r.proposedEndTime(), r.proposedVenueId());
+        return new FriendlyRequest(UUID.randomUUID().toString(), r.getSenderTeamId(), r.getRecipientTeamId(),
+                r.getSenderSlotId(), r.getRecipientSlotId(), r.getStatus(), r.getDate(), r.getStartTime(), r.getEndTime(),
+                r.getVenueId(), r.getHomeTeamId(), r.getCostShare(), r.getRefereeArrangement(), r.getMessage(),
+                r.getCreatedByUserId(), now, now, r.getActionReason(),
+                r.getProposedStartTime(), r.getProposedEndTime(), r.getProposedVenueId());
     }
 }

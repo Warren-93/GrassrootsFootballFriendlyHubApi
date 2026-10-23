@@ -22,9 +22,9 @@ public class ChatFilterSettingsDocument {
     public static ChatFilterSettingsDocument from(ChatFilterSettings s) {
         ChatFilterSettingsDocument d = new ChatFilterSettingsDocument();
         d.id = SINGLETON_ID;
-        d.blockedWords = s.blockedWords();
-        d.updatedByAdminId = s.updatedByAdminId();
-        d.updatedAt = s.updatedAt();
+        d.blockedWords = s.getBlockedWords();
+        d.updatedByAdminId = s.getUpdatedByAdminId();
+        d.updatedAt = s.getUpdatedAt();
         return d;
     }
 

@@ -53,7 +53,7 @@ public class MatchingConfigService {
                 request.versionNote(), adminId, Instant.now(), true));
 
         weightsProvider.publish(weights);
-        auditLogService.record(adminId, "MATCHING_CONFIG_PUBLISHED", "MATCHING_CONFIG", saved.id(), request.versionNote());
+        auditLogService.record(adminId, "MATCHING_CONFIG_PUBLISHED", "MATCHING_CONFIG", saved.getId(), request.versionNote());
         return MatchingConfigDtos.VersionView.from(saved);
     }
 

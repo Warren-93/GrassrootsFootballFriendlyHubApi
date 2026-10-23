@@ -57,13 +57,13 @@ public class BlockService {
         membershipService.requireCanManageTeam(userId, teamId);
         Block block = blocks.findById(blockId).orElseThrow(() -> new BusinessRuleException(
                 "BLOCK_NOT_FOUND", HttpStatus.NOT_FOUND, "That block could not be found."));
-        if (!block.blockingTeamId().equals(teamId)) {
+        if (!block.getBlockingTeamId().equals(teamId)) {
             throw new BusinessRuleException("BLOCK_NOT_FOUND", HttpStatus.NOT_FOUND, "That block could not be found.");
         }
         blocks.deleteById(blockId);
     }
 
     private String blockedTeamName(Block block) {
-        return teams.findById(block.blockedTeamId()).map(team -> team.name()).orElse("Unknown team");
+        return teams.findById(block.getBlockedTeamId()).map(team -> team.getName()).orElse("Unknown team");
     }
 }

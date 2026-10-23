@@ -56,8 +56,8 @@ class PushTokensIntegrationTest extends AbstractIntegrationTest {
         register(account, "IOS", hex.toUpperCase()).andExpect(status().isNoContent());
         List<PushToken> stored = pushTokens.findByUserId(account.userId());
         assertEquals(1, stored.size());
-        assertEquals(hex, stored.get(0).token());
-        assertEquals(PushPlatform.IOS, stored.get(0).platform());
+        assertEquals(hex, stored.get(0).getToken());
+        assertEquals(PushPlatform.IOS, stored.get(0).getPlatform());
 
         register(account, "IOS", "not-hex-at-all")
                 .andExpect(status().isBadRequest())
@@ -113,6 +113,6 @@ class PushTokensIntegrationTest extends AbstractIntegrationTest {
     }
 
     private List<String> tokensOf(TestAccount account) {
-        return pushTokens.findByUserId(account.userId()).stream().map(PushToken::token).toList();
+        return pushTokens.findByUserId(account.userId()).stream().map(PushToken::getToken).toList();
     }
 }

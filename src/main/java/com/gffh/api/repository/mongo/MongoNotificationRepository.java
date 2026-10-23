@@ -26,7 +26,7 @@ public class MongoNotificationRepository implements NotificationRepository {
 
     @Override
     public Notification save(Notification notification) {
-        Notification toSave = notification.id() != null ? notification : withGeneratedId(notification);
+        Notification toSave = notification.getId() != null ? notification : withGeneratedId(notification);
         NotificationDocument doc = NotificationDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -60,8 +60,8 @@ public class MongoNotificationRepository implements NotificationRepository {
     }
 
     private Notification withGeneratedId(Notification n) {
-        return new Notification(UUID.randomUUID().toString(), n.userId(), n.type(), n.title(), n.body(),
-                n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(), n.read(),
-                n.createdAt() != null ? n.createdAt() : Instant.now());
+        return new Notification(UUID.randomUUID().toString(), n.getUserId(), n.getType(), n.getTitle(), n.getBody(),
+                n.getRelatedTeamId(), n.getRelatedRequestId(), n.getRelatedFixtureId(), n.getRelatedConversationId(), n.isRead(),
+                n.getCreatedAt() != null ? n.getCreatedAt() : Instant.now());
     }
 }

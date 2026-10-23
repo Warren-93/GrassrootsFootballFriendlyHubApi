@@ -66,7 +66,7 @@ public class MongoMembershipRepository implements MembershipRepository {
 
     @Override
     public Membership save(Membership membership) {
-        Membership toSave = membership.id() != null ? membership : withGeneratedId(membership);
+        Membership toSave = membership.getId() != null ? membership : withGeneratedId(membership);
         MembershipDocument doc = MembershipDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -78,7 +78,7 @@ public class MongoMembershipRepository implements MembershipRepository {
     }
 
     private Membership withGeneratedId(Membership m) {
-        return new Membership(UUID.randomUUID().toString(), m.userId(), m.teamId(), m.clubId(),
-                m.role(), m.createdAt() != null ? m.createdAt() : Instant.now());
+        return new Membership(UUID.randomUUID().toString(), m.getUserId(), m.getTeamId(), m.getClubId(),
+                m.getRole(), m.getCreatedAt() != null ? m.getCreatedAt() : Instant.now());
     }
 }

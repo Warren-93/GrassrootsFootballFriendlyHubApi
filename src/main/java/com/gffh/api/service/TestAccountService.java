@@ -80,14 +80,14 @@ public class TestAccountService {
         TestAccount account = testAccounts.findById(id).orElseThrow(() -> new BusinessRuleException(
                 "TEST_ACCOUNT_NOT_FOUND", HttpStatus.NOT_FOUND, "That test account could not be found."));
 
-        if (account.teamId() != null) teamService.archiveTestTeam(account.teamId());
-        if (users.findById(account.userId()).isPresent()) {
-            memberships.findByUserId(account.userId()).forEach(m -> memberships.delete(m.id()));
-            privacyService.deleteAccount(account.userId());
+        if (account.getTeamId() != null) teamService.archiveTestTeam(account.getTeamId());
+        if (users.findById(account.getUserId()).isPresent()) {
+            memberships.findByUserId(account.getUserId()).forEach(m -> memberships.delete(m.getId()));
+            privacyService.deleteAccount(account.getUserId());
         }
-        testAccounts.delete(account.id());
-        auditLogService.record(adminId, "TEST_ACCOUNT_DELETED", "USER", account.userId(),
-                "Test account removed (was " + account.email() + ")");
+        testAccounts.delete(account.getId());
+        auditLogService.record(adminId, "TEST_ACCOUNT_DELETED", "USER", account.getUserId(),
+                "Test account removed (was " + account.getEmail() + ")");
     }
 
     private AdminTestAccountDtos.TestAccountView createOne(String adminId, AdminTestAccountDtos.CreateRequest request,
@@ -103,15 +103,15 @@ public class TestAccountService {
 
         User user = users.save(new User(null, email, passwordHash, displayName, verified, Instant.now(), false));
         // Recorded straight away, so a failure creating the team still leaves the user removable.
-        TestAccount account = testAccounts.save(new TestAccount(null, user.id(), email, displayName,
+        TestAccount account = testAccounts.save(new TestAccount(null, user.getId(), email, displayName,
                 request.kind(), null, null, adminId, Instant.now()));
 
         if (manager) {
-            Team team = teamService.create(user.id(), teamRequest(suffix, displayName, request.team()));
-            account = testAccounts.save(new TestAccount(account.id(), account.userId(), email, displayName,
-                    account.kind(), team.clubId(), team.id(), adminId, account.createdAt()));
+            Team team = teamService.create(user.getId(), teamRequest(suffix, displayName, request.team()));
+            account = testAccounts.save(new TestAccount(account.getId(), account.getUserId(), email, displayName,
+                    account.getKind(), team.getClubId(), team.getId(), adminId, account.getCreatedAt()));
         }
-        auditLogService.record(adminId, "TEST_ACCOUNT_CREATED", "USER", user.id(),
+        auditLogService.record(adminId, "TEST_ACCOUNT_CREATED", "USER", user.getId(),
                 request.kind() + " test account " + email);
         return view(account);
     }
@@ -138,10 +138,10 @@ public class TestAccountService {
     }
 
     private AdminTestAccountDtos.TestAccountView view(TestAccount a) {
-        boolean verified = users.findById(a.userId()).map(User::emailVerified).orElse(false);
-        String teamName = a.teamId() == null ? null : teams.findById(a.teamId()).map(Team::name).orElse(null);
-        return new AdminTestAccountDtos.TestAccountView(a.id(), a.userId(), a.email(), a.displayName(),
-                a.kind().name(), verified, a.clubId(), a.teamId(), teamName, a.createdAt());
+        boolean verified = users.findById(a.getUserId()).map(User::isEmailVerified).orElse(false);
+        String teamName = a.getTeamId() == null ? null : teams.findById(a.getTeamId()).map(Team::getName).orElse(null);
+        return new AdminTestAccountDtos.TestAccountView(a.getId(), a.getUserId(), a.getEmail(), a.getDisplayName(),
+                a.getKind().name(), verified, a.getClubId(), a.getTeamId(), teamName, a.getCreatedAt());
     }
 
     private static byte[] randomBytes(int n) {

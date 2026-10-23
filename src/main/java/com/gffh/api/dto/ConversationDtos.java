@@ -36,8 +36,8 @@ public final class ConversationDtos {
             String relatedFixtureId) {
 
         public static ConversationView of(Conversation c, Team other) {
-            return new ConversationView(c.id(), MatchDtos.TeamSummary.from(other), c.lastMessageBody(),
-                    c.lastMessageSenderTeamId(), c.lastMessageAt(), c.createdAt(), c.relatedFixtureId());
+            return new ConversationView(c.getId(), MatchDtos.TeamSummary.from(other), c.getLastMessageBody(),
+                    c.getLastMessageSenderTeamId(), c.getLastMessageAt(), c.getCreatedAt(), c.getRelatedFixtureId());
         }
     }
 
@@ -46,8 +46,8 @@ public final class ConversationDtos {
                                String body, Instant createdAt, GifDtos.GifView gif) {
 
         public static MessageView from(Message m) {
-            return new MessageView(m.id(), m.conversationId(), m.senderTeamId(), m.senderUserId(), m.body(),
-                    m.createdAt(), GifDtos.GifView.from(m.gif()));
+            return new MessageView(m.getId(), m.getConversationId(), m.getSenderTeamId(), m.getSenderUserId(), m.getBody(),
+                    m.getCreatedAt(), GifDtos.GifView.from(m.getGif()));
         }
     }
 }

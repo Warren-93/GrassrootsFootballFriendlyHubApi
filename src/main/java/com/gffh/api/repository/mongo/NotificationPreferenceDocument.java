@@ -19,13 +19,13 @@ public class NotificationPreferenceDocument {
 
     public static NotificationPreferenceDocument from(NotificationPreference p) {
         NotificationPreferenceDocument d = new NotificationPreferenceDocument();
-        d.userId = p.userId();
-        d.friendlyRequests = p.friendlyRequests();
-        d.fixtures = p.fixtures();
-        d.verification = p.verification();
-        d.messages = p.messages();
-        d.emailEnabled = p.emailEnabled();
-        d.pushEnabled = p.pushEnabled();
+        d.userId = p.getUserId();
+        d.friendlyRequests = p.isFriendlyRequests();
+        d.fixtures = p.isFixtures();
+        d.verification = p.isVerification();
+        d.messages = p.isMessages();
+        d.emailEnabled = p.isEmailEnabled();
+        d.pushEnabled = p.isPushEnabled();
         return d;
     }
 

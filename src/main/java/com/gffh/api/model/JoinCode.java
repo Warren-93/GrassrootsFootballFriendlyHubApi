@@ -1,5 +1,9 @@
 package com.gffh.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 
 /**
@@ -8,4 +12,14 @@ import java.time.Instant;
  * an existing manager needing to look up their account. One active code per
  * team - regenerating replaces it, immediately invalidating the old one.
  */
-public record JoinCode(String id, String teamId, String code, String createdByUserId, Instant createdAt) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JoinCode {
+
+    private String id;
+    private String teamId;
+    private String code;
+    private String createdByUserId;
+    private Instant createdAt;
+}

@@ -29,8 +29,8 @@ public class MatchingWeightsVersionDocument {
 
     public static MatchingWeightsVersionDocument from(MatchingWeightsVersion v) {
         MatchingWeightsVersionDocument d = new MatchingWeightsVersionDocument();
-        d.id = v.id();
-        MatchingWeights w = v.weights();
+        d.id = v.getId();
+        MatchingWeights w = v.getWeights();
         d.age = w.age();
         d.availability = w.availability();
         d.format = w.format();
@@ -40,10 +40,10 @@ public class MatchingWeightsVersionDocument {
         d.ageBandTolerance = w.ageBandTolerance();
         d.distanceFreeMiles = w.distanceFreeMiles();
         d.distanceFloor = w.distanceFloor();
-        d.versionNote = v.versionNote();
-        d.publishedByAdminId = v.publishedByAdminId();
-        d.publishedAt = v.publishedAt();
-        d.active = v.active();
+        d.versionNote = v.getVersionNote();
+        d.publishedByAdminId = v.getPublishedByAdminId();
+        d.publishedAt = v.getPublishedAt();
+        d.active = v.isActive();
         return d;
     }
 

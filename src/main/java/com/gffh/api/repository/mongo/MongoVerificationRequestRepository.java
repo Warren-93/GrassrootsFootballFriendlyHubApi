@@ -57,16 +57,16 @@ public class MongoVerificationRequestRepository implements VerificationRequestRe
 
     @Override
     public VerificationRequest save(VerificationRequest request) {
-        VerificationRequest toSave = request.id() != null ? request : withGeneratedId(request);
+        VerificationRequest toSave = request.getId() != null ? request : withGeneratedId(request);
         VerificationRequestDocument doc = VerificationRequestDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
     }
 
     private VerificationRequest withGeneratedId(VerificationRequest r) {
-        return new VerificationRequest(UUID.randomUUID().toString(), r.teamId(), r.submittedByUserId(),
-                r.affiliationNumber(), r.contactDetails(), r.evidenceUrls(), r.status(),
-                r.firstRejectionAdminId(), r.firstRejectionReason(), r.finalRejectionReason(),
-                r.reviewedByAdminId(), r.submittedAt() != null ? r.submittedAt() : Instant.now(), r.reviewedAt());
+        return new VerificationRequest(UUID.randomUUID().toString(), r.getTeamId(), r.getSubmittedByUserId(),
+                r.getAffiliationNumber(), r.getContactDetails(), r.getEvidenceUrls(), r.getStatus(),
+                r.getFirstRejectionAdminId(), r.getFirstRejectionReason(), r.getFinalRejectionReason(),
+                r.getReviewedByAdminId(), r.getSubmittedAt() != null ? r.getSubmittedAt() : Instant.now(), r.getReviewedAt());
     }
 }

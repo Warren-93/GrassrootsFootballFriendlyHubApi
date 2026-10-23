@@ -21,14 +21,14 @@ public class ConversationDocument {
 
     public static ConversationDocument from(Conversation c) {
         ConversationDocument d = new ConversationDocument();
-        d.id = c.id();
-        d.teamAId = c.teamAId();
-        d.teamBId = c.teamBId();
-        d.createdAt = c.createdAt();
-        d.lastMessageAt = c.lastMessageAt();
-        d.lastMessageBody = c.lastMessageBody();
-        d.lastMessageSenderTeamId = c.lastMessageSenderTeamId();
-        d.relatedFixtureId = c.relatedFixtureId();
+        d.id = c.getId();
+        d.teamAId = c.getTeamAId();
+        d.teamBId = c.getTeamBId();
+        d.createdAt = c.getCreatedAt();
+        d.lastMessageAt = c.getLastMessageAt();
+        d.lastMessageBody = c.getLastMessageBody();
+        d.lastMessageSenderTeamId = c.getLastMessageSenderTeamId();
+        d.relatedFixtureId = c.getRelatedFixtureId();
         return d;
     }
 

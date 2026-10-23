@@ -1,5 +1,9 @@
 package com.gffh.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 
 /**
@@ -16,15 +20,19 @@ import java.time.Instant;
  * "Message" entry point, so the most recently relevant fixture is what
  * shows in the thread's context banner.
  */
-public record Conversation(
-        String id,
-        String teamAId,
-        String teamBId,
-        Instant createdAt,
-        Instant lastMessageAt,
-        String lastMessageBody,
-        String lastMessageSenderTeamId,
-        String relatedFixtureId) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Conversation {
+
+    private String id;
+    private String teamAId;
+    private String teamBId;
+    private Instant createdAt;
+    private Instant lastMessageAt;
+    private String lastMessageBody;
+    private String lastMessageSenderTeamId;
+    private String relatedFixtureId;
 
     public boolean involves(String teamId) {
         return teamAId.equals(teamId) || teamBId.equals(teamId);

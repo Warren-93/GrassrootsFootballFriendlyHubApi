@@ -51,7 +51,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
         String otherTeam = createTeam(other.accessToken(), "Deletion FC Other", 56.014582, -3.790261);
         makeTeamReadyForRequests(doomed.accessToken(), doomedTeam);
         makeTeamReadyForRequests(other.accessToken(), otherTeam);
-        String doomedClub = teamRepository.findById(doomedTeam).orElseThrow().clubId();
+        String doomedClub = teamRepository.findById(doomedTeam).orElseThrow().getClubId();
         String otherSlot = confirmFixture(doomed, doomedTeam, other, otherTeam);
 
         JsonNode preview = json(mockMvc.perform(get("/api/v1/admin/deletions/preview")
@@ -75,7 +75,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
 
         approve(superAdmin, requestId, ADMIN_PASSWORD).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.decidedByEmail").value(superAdmin.email()));
+                .andExpect(jsonPath("$.decidedByEmail").value(superAdmin.getEmail()));
 
         assertEquals(0, count("users", "_id", doomed.userId()));
         assertEquals(0, count("teams", "_id", doomedTeam));
@@ -138,7 +138,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
         PlatformAdmin superAdmin = newAdmin(AdminRole.SUPER_ADMIN);
         TestAccount owner = registerAccount("Team Owner");
         String team = createTeam(owner.accessToken(), "Deletion FC Team Only", 56.0, -3.7);
-        String club = teamRepository.findById(team).orElseThrow().clubId();
+        String club = teamRepository.findById(team).orElseThrow().getClubId();
         publishAvailability(owner.accessToken(), team, daysFromNow(12));
 
         JsonNode preview = json(mockMvc.perform(get("/api/v1/admin/deletions/preview")
@@ -163,7 +163,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
         PlatformAdmin admin = newAdmin(AdminRole.ADMIN);
         TestAccount owner = registerAccount("Shared Owner");
         String team = createTeam(owner.accessToken(), "Deletion FC Shared", 56.0, -3.7);
-        String club = teamRepository.findById(team).orElseThrow().clubId();
+        String club = teamRepository.findById(team).orElseThrow().getClubId();
         TestAccount colleague = registerAccount("Shared Colleague");
         mongoTemplate.insert(new org.bson.Document("_id", UUID.randomUUID().toString())
                 .append("userId", colleague.userId()).append("teamId", team)
@@ -216,7 +216,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .delete("/api/v1/admin/admins/" + superAdmin.id()).header("Authorization", bearer(superAdmin)))
+                        .delete("/api/v1/admin/admins/" + superAdmin.getId()).header("Authorization", bearer(superAdmin)))
                 .andExpect(status().isConflict());
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/api/v1/admin/admins/" + created.get("admin").get("id").asText())
@@ -255,7 +255,7 @@ class AdminDeletionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private String bearer(PlatformAdmin admin) {
-        return "Bearer " + adminJwtService.issueSessionToken(admin.id(), admin.email());
+        return "Bearer " + adminJwtService.issueSessionToken(admin.getId(), admin.getEmail());
     }
 
     private String requestDeletion(PlatformAdmin admin, String type, String id) throws Exception {

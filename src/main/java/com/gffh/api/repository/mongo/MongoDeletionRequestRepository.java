@@ -52,7 +52,7 @@ public class MongoDeletionRequestRepository implements DeletionRequestRepository
 
     @Override
     public DeletionRequest save(DeletionRequest request) {
-        DeletionRequest toSave = request.id() != null ? request : withGeneratedId(request);
+        DeletionRequest toSave = request.getId() != null ? request : withGeneratedId(request);
         DeletionRequestDocument doc = DeletionRequestDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -60,16 +60,16 @@ public class MongoDeletionRequestRepository implements DeletionRequestRepository
 
     @Override
     public Optional<DeletionRequest> saveIfStatus(DeletionRequest updated, DeletionRequestStatus expected) {
-        Query query = new Query(Criteria.where("_id").is(updated.id()).and("status").is(expected.name()));
+        Query query = new Query(Criteria.where("_id").is(updated.getId()).and("status").is(expected.name()));
         DeletionRequestDocument replaced = mongoTemplate.findAndReplace(query, DeletionRequestDocument.from(updated),
                 FindAndReplaceOptions.options().returnNew(), DeletionRequestDocument.class, COLLECTION);
         return Optional.ofNullable(replaced).map(DeletionRequestDocument::toDomain);
     }
 
     private DeletionRequest withGeneratedId(DeletionRequest r) {
-        return new DeletionRequest(UUID.randomUUID().toString(), r.targetType(), r.targetId(), r.targetLabel(),
-                r.reason(), r.status(), r.requestedByAdminId(), r.requestedByEmail(),
-                r.requestedAt() != null ? r.requestedAt() : Instant.now(), r.decidedByAdminId(),
-                r.decidedByEmail(), r.decidedAt(), r.decisionNote(), r.summary(), r.result());
+        return new DeletionRequest(UUID.randomUUID().toString(), r.getTargetType(), r.getTargetId(), r.getTargetLabel(),
+                r.getReason(), r.getStatus(), r.getRequestedByAdminId(), r.getRequestedByEmail(),
+                r.getRequestedAt() != null ? r.getRequestedAt() : Instant.now(), r.getDecidedByAdminId(),
+                r.getDecidedByEmail(), r.getDecidedAt(), r.getDecisionNote(), r.getSummary(), r.getResult());
     }
 }

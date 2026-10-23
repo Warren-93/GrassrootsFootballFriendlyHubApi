@@ -37,27 +37,27 @@ public class FriendlyRequestDocument {
 
     public static FriendlyRequestDocument from(FriendlyRequest r) {
         FriendlyRequestDocument d = new FriendlyRequestDocument();
-        d.id = r.id();
-        d.senderTeamId = r.senderTeamId();
-        d.recipientTeamId = r.recipientTeamId();
-        d.senderSlotId = r.senderSlotId();
-        d.recipientSlotId = r.recipientSlotId();
-        d.status = r.status().name();
-        d.date = r.date();
-        d.startTime = r.startTime();
-        d.endTime = r.endTime();
-        d.venueId = r.venueId();
-        d.homeTeamId = r.homeTeamId();
-        d.costShare = r.costShare().name();
-        d.refereeArrangement = r.refereeArrangement().name();
-        d.message = r.message();
-        d.createdByUserId = r.createdByUserId();
-        d.createdAt = r.createdAt();
-        d.updatedAt = r.updatedAt();
-        d.actionReason = r.actionReason();
-        d.proposedStartTime = r.proposedStartTime();
-        d.proposedEndTime = r.proposedEndTime();
-        d.proposedVenueId = r.proposedVenueId();
+        d.id = r.getId();
+        d.senderTeamId = r.getSenderTeamId();
+        d.recipientTeamId = r.getRecipientTeamId();
+        d.senderSlotId = r.getSenderSlotId();
+        d.recipientSlotId = r.getRecipientSlotId();
+        d.status = r.getStatus().name();
+        d.date = r.getDate();
+        d.startTime = r.getStartTime();
+        d.endTime = r.getEndTime();
+        d.venueId = r.getVenueId();
+        d.homeTeamId = r.getHomeTeamId();
+        d.costShare = r.getCostShare().name();
+        d.refereeArrangement = r.getRefereeArrangement().name();
+        d.message = r.getMessage();
+        d.createdByUserId = r.getCreatedByUserId();
+        d.createdAt = r.getCreatedAt();
+        d.updatedAt = r.getUpdatedAt();
+        d.actionReason = r.getActionReason();
+        d.proposedStartTime = r.getProposedStartTime();
+        d.proposedEndTime = r.getProposedEndTime();
+        d.proposedVenueId = r.getProposedVenueId();
         return d;
     }
 

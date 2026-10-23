@@ -25,17 +25,17 @@ public class NotificationDocument {
 
     public static NotificationDocument from(Notification n) {
         NotificationDocument d = new NotificationDocument();
-        d.id = n.id();
-        d.userId = n.userId();
-        d.type = n.type().name();
-        d.title = n.title();
-        d.body = n.body();
-        d.relatedTeamId = n.relatedTeamId();
-        d.relatedRequestId = n.relatedRequestId();
-        d.relatedFixtureId = n.relatedFixtureId();
-        d.relatedConversationId = n.relatedConversationId();
-        d.read = n.read();
-        d.createdAt = n.createdAt();
+        d.id = n.getId();
+        d.userId = n.getUserId();
+        d.type = n.getType().name();
+        d.title = n.getTitle();
+        d.body = n.getBody();
+        d.relatedTeamId = n.getRelatedTeamId();
+        d.relatedRequestId = n.getRelatedRequestId();
+        d.relatedFixtureId = n.getRelatedFixtureId();
+        d.relatedConversationId = n.getRelatedConversationId();
+        d.read = n.isRead();
+        d.createdAt = n.getCreatedAt();
         return d;
     }
 

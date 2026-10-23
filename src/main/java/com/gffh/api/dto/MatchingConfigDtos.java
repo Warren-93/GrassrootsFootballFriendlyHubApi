@@ -52,10 +52,10 @@ public final class MatchingConfigDtos {
             String versionNote, String publishedByAdminId, Instant publishedAt, boolean active) {
 
         public static VersionView from(MatchingWeightsVersion v) {
-            MatchingWeights w = v.weights();
-            return new VersionView(v.id(), w.age(), w.availability(), w.format(), w.distance(), w.homeAway(),
+            MatchingWeights w = v.getWeights();
+            return new VersionView(v.getId(), w.age(), w.availability(), w.format(), w.distance(), w.homeAway(),
                     w.ability(), w.ageBandTolerance(), w.distanceFreeMiles(), w.distanceFloor(),
-                    v.versionNote(), v.publishedByAdminId(), v.publishedAt(), v.active());
+                    v.getVersionNote(), v.getPublishedByAdminId(), v.getPublishedAt(), v.isActive());
         }
     }
 }

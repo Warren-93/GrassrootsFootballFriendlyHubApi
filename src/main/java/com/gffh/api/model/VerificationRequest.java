@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.VerificationRequestStatus;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.List;
@@ -11,18 +14,22 @@ import java.util.List;
  * there's no file/blob storage service in this build; a real deployment
  * would need one before this is production-ready.
  */
-public record VerificationRequest(
-        String id,
-        String teamId,
-        String submittedByUserId,
-        String affiliationNumber,
-        String contactDetails,
-        List<String> evidenceUrls,
-        VerificationRequestStatus status,
-        String firstRejectionAdminId,
-        String firstRejectionReason,
-        String finalRejectionReason,
-        String reviewedByAdminId,
-        Instant submittedAt,
-        Instant reviewedAt) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class VerificationRequest {
+
+    private String id;
+    private String teamId;
+    private String submittedByUserId;
+    private String affiliationNumber;
+    private String contactDetails;
+    private List<String> evidenceUrls;
+    private VerificationRequestStatus status;
+    private String firstRejectionAdminId;
+    private String firstRejectionReason;
+    private String finalRejectionReason;
+    private String reviewedByAdminId;
+    private Instant submittedAt;
+    private Instant reviewedAt;
 }

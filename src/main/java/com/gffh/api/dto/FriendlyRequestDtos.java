@@ -33,7 +33,7 @@ public final class FriendlyRequestDtos {
                               String venueId) {
 
         public static TeamContact from(Team t) {
-            return new TeamContact(t.id(), t.name(), t.managerName(), t.contactPhone(), t.defaultVenueId());
+            return new TeamContact(t.getId(), t.getName(), t.getManagerName(), t.getContactPhone(), t.getDefaultVenueId());
         }
     }
 
@@ -41,7 +41,7 @@ public final class FriendlyRequestDtos {
     public record TeamRef(String id, String name, String clubName, String badgeUrl) {
 
         public static TeamRef from(Team t) {
-            return new TeamRef(t.id(), t.name(), t.clubName(), t.badgeUrl());
+            return new TeamRef(t.getId(), t.getName(), t.getClubName(), t.getBadgeUrl());
         }
     }
 
@@ -73,17 +73,17 @@ public final class FriendlyRequestDtos {
 
         public static FriendlyRequestView from(FriendlyRequest r, boolean isSender,
                                                Team sender, Team recipient, Venue venue, Venue proposedVenue) {
-            List<String> actions = RequestStateMachine.transitionsFor(r.status(), isSender).stream()
+            List<String> actions = RequestStateMachine.transitionsFor(r.getStatus(), isSender).stream()
                     .map(RequestStateMachine.Transition::action)
                     .toList();
-            boolean disclose = RequestStateMachine.disclosesContactDetails(r.status());
+            boolean disclose = RequestStateMachine.disclosesContactDetails(r.getStatus());
             return new FriendlyRequestView(
-                    r.id(), r.senderTeamId(), r.recipientTeamId(), r.status().name(),
-                    r.date(), r.startTime(), r.endTime(), r.venueId(), r.homeTeamId(), r.awayTeamId(),
-                    r.costShare().name(), r.refereeArrangement().name(), r.message(), r.actionReason(), actions,
+                    r.getId(), r.getSenderTeamId(), r.getRecipientTeamId(), r.getStatus().name(),
+                    r.getDate(), r.getStartTime(), r.getEndTime(), r.getVenueId(), r.getHomeTeamId(), r.awayTeamId(),
+                    r.getCostShare().name(), r.getRefereeArrangement().name(), r.getMessage(), r.getActionReason(), actions,
                     disclose && sender != null ? TeamContact.from(sender) : null,
                     disclose && recipient != null ? TeamContact.from(recipient) : null,
-                    r.proposedStartTime(), r.proposedEndTime(), r.proposedVenueId(),
+                    r.getProposedStartTime(), r.getProposedEndTime(), r.getProposedVenueId(),
                     VenueDtos.VenueSummary.from(venue), VenueDtos.VenueSummary.from(proposedVenue),
                     sender == null ? null : TeamRef.from(sender),
                     recipient == null ? null : TeamRef.from(recipient));

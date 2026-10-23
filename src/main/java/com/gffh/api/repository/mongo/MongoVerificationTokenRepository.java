@@ -33,7 +33,7 @@ public class MongoVerificationTokenRepository implements VerificationTokenReposi
 
     @Override
     public VerificationToken save(VerificationToken token) {
-        VerificationToken toSave = token.id() != null ? token : withGeneratedId(token);
+        VerificationToken toSave = token.getId() != null ? token : withGeneratedId(token);
         VerificationTokenDocument doc = VerificationTokenDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -46,7 +46,7 @@ public class MongoVerificationTokenRepository implements VerificationTokenReposi
     }
 
     private VerificationToken withGeneratedId(VerificationToken t) {
-        return new VerificationToken(UUID.randomUUID().toString(), t.userId(), t.token(), t.purpose(),
-                t.email(), t.expiresAt(), t.used(), t.createdAt() != null ? t.createdAt() : Instant.now());
+        return new VerificationToken(UUID.randomUUID().toString(), t.getUserId(), t.getToken(), t.getPurpose(),
+                t.getEmail(), t.getExpiresAt(), t.isUsed(), t.getCreatedAt() != null ? t.getCreatedAt() : Instant.now());
     }
 }

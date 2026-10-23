@@ -30,19 +30,19 @@ public class RegisteredOrganisationDocument {
 
     public static RegisteredOrganisationDocument from(RegisteredOrganisation o) {
         RegisteredOrganisationDocument d = new RegisteredOrganisationDocument();
-        d.id = o.id();
-        d.name = o.name();
-        d.shortName = o.shortName();
-        d.linkedOrganisation = o.linkedOrganisation() == null ? null : o.linkedOrganisation().name();
-        d.contactName = o.contactName();
-        d.contactEmail = o.contactEmail();
-        d.website = o.website();
-        d.notes = o.notes();
-        d.leagues = o.leagues() == null ? new ArrayList<>()
-                : o.leagues().stream().map(l -> new LeagueDoc(l.id(), l.name(), l.divisions())).toList();
-        d.createdAt = o.createdAt();
-        d.createdByEmail = o.createdByEmail();
-        d.updatedAt = o.updatedAt();
+        d.id = o.getId();
+        d.name = o.getName();
+        d.shortName = o.getShortName();
+        d.linkedOrganisation = o.getLinkedOrganisation() == null ? null : o.getLinkedOrganisation().name();
+        d.contactName = o.getContactName();
+        d.contactEmail = o.getContactEmail();
+        d.website = o.getWebsite();
+        d.notes = o.getNotes();
+        d.leagues = o.getLeagues() == null ? new ArrayList<>()
+                : o.getLeagues().stream().map(l -> new LeagueDoc(l.id(), l.name(), l.divisions())).toList();
+        d.createdAt = o.getCreatedAt();
+        d.createdByEmail = o.getCreatedByEmail();
+        d.updatedAt = o.getUpdatedAt();
         return d;
     }
 

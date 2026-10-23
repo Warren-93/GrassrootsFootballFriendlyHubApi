@@ -21,13 +21,13 @@ public class MemberInviteDocument {
 
     public static MemberInviteDocument from(MemberInvite i) {
         MemberInviteDocument d = new MemberInviteDocument();
-        d.id = i.id();
-        d.email = i.email();
-        d.teamId = i.teamId();
-        d.role = i.role();
-        d.invitedByUserId = i.invitedByUserId();
-        d.createdAt = i.createdAt();
-        d.expiresAt = i.expiresAt();
+        d.id = i.getId();
+        d.email = i.getEmail();
+        d.teamId = i.getTeamId();
+        d.role = i.getRole();
+        d.invitedByUserId = i.getInvitedByUserId();
+        d.createdAt = i.getCreatedAt();
+        d.expiresAt = i.getExpiresAt();
         return d;
     }
 

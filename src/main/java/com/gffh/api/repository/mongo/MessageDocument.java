@@ -21,13 +21,13 @@ public class MessageDocument {
 
     public static MessageDocument from(Message m) {
         MessageDocument d = new MessageDocument();
-        d.id = m.id();
-        d.conversationId = m.conversationId();
-        d.senderTeamId = m.senderTeamId();
-        d.senderUserId = m.senderUserId();
-        d.body = m.body();
-        d.createdAt = m.createdAt();
-        d.gif = m.gif();
+        d.id = m.getId();
+        d.conversationId = m.getConversationId();
+        d.senderTeamId = m.getSenderTeamId();
+        d.senderUserId = m.getSenderUserId();
+        d.body = m.getBody();
+        d.createdAt = m.getCreatedAt();
+        d.gif = m.getGif();
         return d;
     }
 

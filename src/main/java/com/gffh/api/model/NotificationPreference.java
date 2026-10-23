@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.NotificationCategory;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * SCR-PR-09. One row per user; created lazily with all categories on the first time it's read or written.
@@ -8,14 +11,18 @@ import com.gffh.api.model.enums.NotificationCategory;
  * <p>The four category flags decide which events reach the user at all. {@code emailEnabled} and
  * {@code pushEnabled} then decide which channels carry them beyond the in-app centre.
  */
-public record NotificationPreference(
-        String userId,
-        boolean friendlyRequests,
-        boolean fixtures,
-        boolean verification,
-        boolean messages,
-        boolean emailEnabled,
-        boolean pushEnabled) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class NotificationPreference {
+
+    private String userId;
+    private boolean friendlyRequests;
+    private boolean fixtures;
+    private boolean verification;
+    private boolean messages;
+    private boolean emailEnabled;
+    private boolean pushEnabled;
 
     public static NotificationPreference defaultsFor(String userId) {
         return new NotificationPreference(userId, true, true, true, true, true, true);

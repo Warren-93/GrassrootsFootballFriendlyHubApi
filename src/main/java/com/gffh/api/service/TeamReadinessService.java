@@ -20,8 +20,8 @@ public class TeamReadinessService {
     }
 
     public boolean hasVenue(Team team) {
-        if (team.defaultVenueId() != null) return true;
-        return team.clubId() != null && !venues.findByClubId(team.clubId()).isEmpty();
+        if (team.getDefaultVenueId() != null) return true;
+        return team.getClubId() != null && !venues.findByClubId(team.getClubId()).isEmpty();
     }
 
     public boolean isReady(Team team) {

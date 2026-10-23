@@ -21,14 +21,14 @@ public class AuditLogDocument {
 
     public static AuditLogDocument from(AuditLogEntry e) {
         AuditLogDocument d = new AuditLogDocument();
-        d.id = e.id();
-        d.actorAdminId = e.actorAdminId();
-        d.actorEmail = e.actorEmail();
-        d.action = e.action();
-        d.targetType = e.targetType();
-        d.targetId = e.targetId();
-        d.reason = e.reason();
-        d.timestamp = e.timestamp();
+        d.id = e.getId();
+        d.actorAdminId = e.getActorAdminId();
+        d.actorEmail = e.getActorEmail();
+        d.action = e.getAction();
+        d.targetType = e.getTargetType();
+        d.targetId = e.getTargetId();
+        d.reason = e.getReason();
+        d.timestamp = e.getTimestamp();
         return d;
     }
 

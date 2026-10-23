@@ -64,9 +64,9 @@ class PushServiceTest {
 
         ArgumentCaptor<PushToken> saved = ArgumentCaptor.forClass(PushToken.class);
         verify(tokens, times(2)).save(saved.capture());
-        assertEquals(APNS, saved.getAllValues().get(0).token());
-        assertEquals("dXyZ:APA91b-Token_1", saved.getAllValues().get(1).token());
-        assertEquals("u1", saved.getAllValues().get(1).userId());
+        assertEquals(APNS, saved.getAllValues().get(0).getToken());
+        assertEquals("dXyZ:APA91b-Token_1", saved.getAllValues().get(1).getToken());
+        assertEquals("u1", saved.getAllValues().get(1).getUserId());
     }
 
     @Test

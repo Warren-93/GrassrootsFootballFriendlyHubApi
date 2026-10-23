@@ -20,13 +20,13 @@ public class RefreshTokenDocument {
 
     public static RefreshTokenDocument from(RefreshToken t) {
         RefreshTokenDocument d = new RefreshTokenDocument();
-        d.id = t.id();
-        d.userId = t.userId();
-        d.tokenHash = t.tokenHash();
-        d.expiresAt = t.expiresAt();
-        d.revoked = t.revoked();
-        d.createdAt = t.createdAt();
-        d.rotatedAt = t.rotatedAt();
+        d.id = t.getId();
+        d.userId = t.getUserId();
+        d.tokenHash = t.getTokenHash();
+        d.expiresAt = t.getExpiresAt();
+        d.revoked = t.isRevoked();
+        d.createdAt = t.getCreatedAt();
+        d.rotatedAt = t.getRotatedAt();
         return d;
     }
 

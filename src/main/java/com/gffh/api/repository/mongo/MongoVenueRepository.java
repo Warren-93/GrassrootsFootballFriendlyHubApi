@@ -39,7 +39,7 @@ public class MongoVenueRepository implements VenueRepository {
 
     @Override
     public Venue save(Venue venue) {
-        Venue toSave = venue.id() != null ? venue : withGeneratedId(venue);
+        Venue toSave = venue.getId() != null ? venue : withGeneratedId(venue);
         VenueDocument doc = VenueDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -57,8 +57,8 @@ public class MongoVenueRepository implements VenueRepository {
     }
 
     private Venue withGeneratedId(Venue v) {
-        return new Venue(UUID.randomUUID().toString(), v.clubId(), v.name(), v.address(), v.postcode(), v.location(),
-                v.pitchSurface(), v.facilities(), v.accessNotes(), v.parkingNotes(), v.pitchNumber(),
-                v.isDefault(), v.createdAt() != null ? v.createdAt() : Instant.now());
+        return new Venue(UUID.randomUUID().toString(), v.getClubId(), v.getName(), v.getAddress(), v.getPostcode(), v.getLocation(),
+                v.getPitchSurface(), v.getFacilities(), v.getAccessNotes(), v.getParkingNotes(), v.getPitchNumber(),
+                v.isDefault(), v.getCreatedAt() != null ? v.getCreatedAt() : Instant.now());
     }
 }

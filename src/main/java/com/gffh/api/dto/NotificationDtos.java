@@ -14,8 +14,8 @@ public final class NotificationDtos {
                                     boolean read, Instant createdAt) {
 
         public static NotificationView from(Notification n) {
-            return new NotificationView(n.id(), n.type().name(), n.title(), n.body(), n.relatedTeamId(),
-                    n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(), n.read(), n.createdAt());
+            return new NotificationView(n.getId(), n.getType().name(), n.getTitle(), n.getBody(), n.getRelatedTeamId(),
+                    n.getRelatedRequestId(), n.getRelatedFixtureId(), n.getRelatedConversationId(), n.isRead(), n.getCreatedAt());
         }
     }
 

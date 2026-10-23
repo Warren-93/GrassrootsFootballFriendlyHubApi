@@ -39,10 +39,10 @@ public class MongoTestAccountRepository implements TestAccountRepository {
 
     @Override
     public TestAccount save(TestAccount account) {
-        TestAccount toSave = account.id() != null ? account : new TestAccount(UUID.randomUUID().toString(),
-                account.userId(), account.email(), account.displayName(), account.kind(), account.clubId(),
-                account.teamId(), account.createdByAdminId(),
-                account.createdAt() != null ? account.createdAt() : Instant.now());
+        TestAccount toSave = account.getId() != null ? account : new TestAccount(UUID.randomUUID().toString(),
+                account.getUserId(), account.getEmail(), account.getDisplayName(), account.getKind(), account.getClubId(),
+                account.getTeamId(), account.getCreatedByAdminId(),
+                account.getCreatedAt() != null ? account.getCreatedAt() : Instant.now());
         TestAccountDocument doc = TestAccountDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();

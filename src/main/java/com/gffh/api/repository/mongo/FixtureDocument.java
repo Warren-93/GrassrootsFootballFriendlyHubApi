@@ -28,18 +28,18 @@ public class FixtureDocument {
 
     public static FixtureDocument from(Fixture f) {
         FixtureDocument d = new FixtureDocument();
-        d.id = f.id();
-        d.friendlyRequestId = f.friendlyRequestId();
-        d.homeTeamId = f.homeTeamId();
-        d.awayTeamId = f.awayTeamId();
-        d.date = f.date();
-        d.startTime = f.startTime();
-        d.endTime = f.endTime();
-        d.venueId = f.venueId();
-        d.status = f.status().name();
-        d.costShare = f.costShare().name();
-        d.refereeArrangement = f.refereeArrangement().name();
-        d.createdAt = f.createdAt();
+        d.id = f.getId();
+        d.friendlyRequestId = f.getFriendlyRequestId();
+        d.homeTeamId = f.getHomeTeamId();
+        d.awayTeamId = f.getAwayTeamId();
+        d.date = f.getDate();
+        d.startTime = f.getStartTime();
+        d.endTime = f.getEndTime();
+        d.venueId = f.getVenueId();
+        d.status = f.getStatus().name();
+        d.costShare = f.getCostShare().name();
+        d.refereeArrangement = f.getRefereeArrangement().name();
+        d.createdAt = f.getCreatedAt();
         return d;
     }
 

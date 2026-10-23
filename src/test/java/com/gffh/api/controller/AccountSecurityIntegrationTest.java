@@ -185,8 +185,8 @@ class AccountSecurityIntegrationTest extends AbstractIntegrationTest {
         TestAccount account = registerAccount("Suspended Refresh");
         JsonNode session = login(account.email(), "TestPass123!");
         User user = users.findById(account.userId()).orElseThrow();
-        users.save(new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
-                user.emailVerified(), user.createdAt(), true));
+        users.save(new User(user.getId(), user.getEmail(), user.getPasswordHash(), user.getDisplayName(),
+                user.isEmailVerified(), user.getCreatedAt(), true));
 
         refresh(session.get("refreshToken").asText())
                 .andExpect(status().isForbidden())

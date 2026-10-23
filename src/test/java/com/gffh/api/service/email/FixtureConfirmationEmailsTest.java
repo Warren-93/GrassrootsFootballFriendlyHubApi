@@ -108,7 +108,7 @@ class FixtureConfirmationEmailsTest {
 
     @Test
     void associationRecipientsAreCopiedInWhenProvided() {
-        AssociationRecipients fa = team -> List.of("fixtures@" + team.id() + "-fa.example");
+        AssociationRecipients fa = team -> List.of("fixtures@" + team.getId() + "-fa.example");
 
         emails(providerOf(fa), "noreply@example.com").sendFor(fixture);
 

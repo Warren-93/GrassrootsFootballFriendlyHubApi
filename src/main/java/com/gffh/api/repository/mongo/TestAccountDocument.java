@@ -23,15 +23,15 @@ public class TestAccountDocument {
 
     public static TestAccountDocument from(TestAccount a) {
         TestAccountDocument d = new TestAccountDocument();
-        d.id = a.id();
-        d.userId = a.userId();
-        d.email = a.email();
-        d.displayName = a.displayName();
-        d.kind = a.kind().name();
-        d.clubId = a.clubId();
-        d.teamId = a.teamId();
-        d.createdByAdminId = a.createdByAdminId();
-        d.createdAt = a.createdAt();
+        d.id = a.getId();
+        d.userId = a.getUserId();
+        d.email = a.getEmail();
+        d.displayName = a.getDisplayName();
+        d.kind = a.getKind().name();
+        d.clubId = a.getClubId();
+        d.teamId = a.getTeamId();
+        d.createdByAdminId = a.getCreatedByAdminId();
+        d.createdAt = a.getCreatedAt();
         return d;
     }
 

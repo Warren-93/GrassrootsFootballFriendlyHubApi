@@ -75,15 +75,15 @@ public class PushService {
             return;
         }
         for (PushToken device : devices) {
-            PushSender sender = senders.get(device.platform());
+            PushSender sender = senders.get(device.getPlatform());
             if (sender == null || !sender.isConfigured()) continue;
             try {
-                if (sender.send(device.token(), message) == PushSender.Result.INVALID_TOKEN) {
-                    tokens.delete(device.token());
-                    log.info("Forgot a push token ({}) the provider reported as invalid", device.platform());
+                if (sender.send(device.getToken(), message) == PushSender.Result.INVALID_TOKEN) {
+                    tokens.delete(device.getToken());
+                    log.info("Forgot a push token ({}) the provider reported as invalid", device.getPlatform());
                 }
             } catch (Exception e) {
-                log.warn("Could not push to a {} device for user {}", device.platform(), userId, e);
+                log.warn("Could not push to a {} device for user {}", device.getPlatform(), userId, e);
             }
         }
     }

@@ -75,37 +75,37 @@ public class NotificationDelivery {
                 try {
                     deliverNow(notification);
                 } catch (Exception e) {
-                    log.warn("Could not deliver notification {}", notification.id(), e);
+                    log.warn("Could not deliver notification {}", notification.getId(), e);
                 }
             });
         } catch (Exception e) {
-            log.warn("Could not queue delivery of notification {}", notification.id(), e);
+            log.warn("Could not queue delivery of notification {}", notification.getId(), e);
         }
     }
 
     void deliverNow(Notification n) {
-        User user = users.findById(n.userId()).orElse(null);
-        if (user == null || user.suspended()) return;
-        NotificationPreference preference = preferences.findByUserId(user.id())
-                .orElseGet(() -> NotificationPreference.defaultsFor(user.id()));
-        if (!preference.allows(n.type().category())) return;
+        User user = users.findById(n.getUserId()).orElse(null);
+        if (user == null || user.isSuspended()) return;
+        NotificationPreference preference = preferences.findByUserId(user.getId())
+                .orElseGet(() -> NotificationPreference.defaultsFor(user.getId()));
+        if (!preference.allows(n.getType().category())) return;
 
         if (shouldEmail(n, user, preference)) {
-            email.send(user.email(), n.title(), emailBody(n));
+            email.send(user.getEmail(), n.getTitle(), emailBody(n));
         }
-        if (preference.pushEnabled() && push.isConfigured()) {
-            push.sendToUser(user.id(), pushMessage(n));
+        if (preference.isPushEnabled() && push.isConfigured()) {
+            push.sendToUser(user.getId(), pushMessage(n));
         }
     }
 
     private boolean shouldEmail(Notification n, User user, NotificationPreference preference) {
-        return email.isConfigured() && preference.emailEnabled() && user.emailVerified()
-                && !NOT_EMAILED.contains(n.type());
+        return email.isConfigured() && preference.isEmailEnabled() && user.isEmailVerified()
+                && !NOT_EMAILED.contains(n.getType());
     }
 
     String emailBody(Notification n) {
-        String teamName = n.relatedTeamId() == null ? null
-                : teams.findById(n.relatedTeamId()).map(Team::name).orElse(null);
+        String teamName = n.getRelatedTeamId() == null ? null
+                : teams.findById(n.getRelatedTeamId()).map(Team::getName).orElse(null);
         String why = teamName != null
                 ? "You're getting this because you manage " + teamName + " on Kickabout."
                 : "You're getting this because you manage a team on Kickabout.";
@@ -118,16 +118,16 @@ public class NotificationDelivery {
                 %s
 
                 %s You can turn these emails off in your notification settings.
-                """.formatted(n.title(), n.body(), email.appLink(pathFor(n)), why);
+                """.formatted(n.getTitle(), n.getBody(), email.appLink(pathFor(n)), why);
     }
 
     /** The web app page a notification is about. */
     static String pathFor(Notification n) {
-        if (n.relatedConversationId() != null) return "/messages/" + n.relatedConversationId();
-        if (n.relatedFixtureId() != null) return "/fixtures/" + n.relatedFixtureId();
-        if (n.relatedRequestId() != null) return "/request/" + n.relatedRequestId();
-        if (n.type().category() == NotificationCategory.VERIFICATION && n.relatedTeamId() != null) {
-            return "/team/" + n.relatedTeamId() + "/verification";
+        if (n.getRelatedConversationId() != null) return "/messages/" + n.getRelatedConversationId();
+        if (n.getRelatedFixtureId() != null) return "/fixtures/" + n.getRelatedFixtureId();
+        if (n.getRelatedRequestId() != null) return "/request/" + n.getRelatedRequestId();
+        if (n.getType().category() == NotificationCategory.VERIFICATION && n.getRelatedTeamId() != null) {
+            return "/team/" + n.getRelatedTeamId() + "/verification";
         }
         return "/notifications";
     }
@@ -135,12 +135,12 @@ public class NotificationDelivery {
     /** Title and body as in the app, plus the ids the app needs to open the right screen. */
     static PushMessage pushMessage(Notification n) {
         Map<String, String> data = new LinkedHashMap<>();
-        data.put("type", n.type().name());
-        putIfPresent(data, "requestId", n.relatedRequestId());
-        putIfPresent(data, "fixtureId", n.relatedFixtureId());
-        putIfPresent(data, "conversationId", n.relatedConversationId());
-        putIfPresent(data, "teamId", n.relatedTeamId());
-        return new PushMessage(n.title(), n.body(), data);
+        data.put("type", n.getType().name());
+        putIfPresent(data, "requestId", n.getRelatedRequestId());
+        putIfPresent(data, "fixtureId", n.getRelatedFixtureId());
+        putIfPresent(data, "conversationId", n.getRelatedConversationId());
+        putIfPresent(data, "teamId", n.getRelatedTeamId());
+        return new PushMessage(n.getTitle(), n.getBody(), data);
     }
 
     private static void putIfPresent(Map<String, String> data, String key, String value) {

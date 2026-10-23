@@ -26,7 +26,7 @@ public class AuditLogService {
     }
 
     public void record(String actorAdminId, String action, String targetType, String targetId, String reason) {
-        String actorEmail = admins.findById(actorAdminId).map(PlatformAdmin::email).orElse("unknown");
+        String actorEmail = admins.findById(actorAdminId).map(PlatformAdmin::getEmail).orElse("unknown");
         auditLog.save(new AuditLogEntry(null, actorAdminId, actorEmail, action, targetType, targetId, reason, Instant.now()));
     }
 

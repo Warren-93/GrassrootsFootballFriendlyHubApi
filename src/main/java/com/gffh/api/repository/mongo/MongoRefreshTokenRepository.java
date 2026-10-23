@@ -32,7 +32,7 @@ public class MongoRefreshTokenRepository implements RefreshTokenRepository {
 
     @Override
     public RefreshToken save(RefreshToken token) {
-        RefreshToken toSave = token.id() != null ? token : withGeneratedId(token);
+        RefreshToken toSave = token.getId() != null ? token : withGeneratedId(token);
         RefreshTokenDocument doc = RefreshTokenDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
@@ -63,7 +63,7 @@ public class MongoRefreshTokenRepository implements RefreshTokenRepository {
     }
 
     private RefreshToken withGeneratedId(RefreshToken t) {
-        return new RefreshToken(UUID.randomUUID().toString(), t.userId(), t.tokenHash(),
-                t.expiresAt(), t.revoked(), t.createdAt() != null ? t.createdAt() : Instant.now(), t.rotatedAt());
+        return new RefreshToken(UUID.randomUUID().toString(), t.getUserId(), t.getTokenHash(),
+                t.getExpiresAt(), t.isRevoked(), t.getCreatedAt() != null ? t.getCreatedAt() : Instant.now(), t.getRotatedAt());
     }
 }

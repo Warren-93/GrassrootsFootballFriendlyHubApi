@@ -36,12 +36,12 @@ public final class AdminAssociationDtos {
             Instant createdAt, String createdByEmail, Instant updatedAt) {
 
         public static OrganisationView from(RegisteredOrganisation o) {
-            return new OrganisationView(o.id(), o.name(), o.shortName(),
-                    o.linkedOrganisation() == null ? null : o.linkedOrganisation().name(),
-                    o.linkedOrganisation() == null ? null : o.linkedOrganisation().label(),
-                    o.contactName(), o.contactEmail(), o.website(), o.notes(),
-                    o.leagues().stream().map(l -> new LeagueView(l.id(), l.name(), l.divisions())).toList(),
-                    o.createdAt(), o.createdByEmail(), o.updatedAt());
+            return new OrganisationView(o.getId(), o.getName(), o.getShortName(),
+                    o.getLinkedOrganisation() == null ? null : o.getLinkedOrganisation().name(),
+                    o.getLinkedOrganisation() == null ? null : o.getLinkedOrganisation().label(),
+                    o.getContactName(), o.getContactEmail(), o.getWebsite(), o.getNotes(),
+                    o.getLeagues().stream().map(l -> new LeagueView(l.id(), l.name(), l.divisions())).toList(),
+                    o.getCreatedAt(), o.getCreatedByEmail(), o.getUpdatedAt());
         }
     }
 }

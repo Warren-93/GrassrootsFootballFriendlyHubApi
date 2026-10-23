@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.VerificationTokenPurpose;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -13,15 +16,19 @@ import java.time.Instant;
  * token proves ownership of that address only, so it stops applying once the
  * account changes to another one (see AuthService#confirmVerification).
  */
-public record VerificationToken(
-        String id,
-        String userId,
-        String token,
-        VerificationTokenPurpose purpose,
-        String email,
-        Instant expiresAt,
-        boolean used,
-        Instant createdAt) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class VerificationToken {
+
+    private String id;
+    private String userId;
+    private String token;
+    private VerificationTokenPurpose purpose;
+    private String email;
+    private Instant expiresAt;
+    private boolean used;
+    private Instant createdAt;
 
     public boolean isUsable(Instant now) {
         return !used && now.isBefore(expiresAt);

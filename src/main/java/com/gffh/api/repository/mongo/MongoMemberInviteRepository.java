@@ -57,7 +57,7 @@ public class MongoMemberInviteRepository implements MemberInviteRepository {
 
     @Override
     public MemberInvite save(MemberInvite invite) {
-        MemberInvite toSave = invite.id() != null ? invite : withGeneratedId(invite);
+        MemberInvite toSave = invite.getId() != null ? invite : withGeneratedId(invite);
         MemberInviteDocument doc = MemberInviteDocument.from(toSave);
         doc.email = normalised(doc.email);
         mongoTemplate.save(doc, COLLECTION);
@@ -80,7 +80,7 @@ public class MongoMemberInviteRepository implements MemberInviteRepository {
     }
 
     private MemberInvite withGeneratedId(MemberInvite i) {
-        return new MemberInvite(UUID.randomUUID().toString(), i.email(), i.teamId(), i.role(), i.invitedByUserId(),
-                i.createdAt() != null ? i.createdAt() : Instant.now(), i.expiresAt());
+        return new MemberInvite(UUID.randomUUID().toString(), i.getEmail(), i.getTeamId(), i.getRole(), i.getInvitedByUserId(),
+                i.getCreatedAt() != null ? i.getCreatedAt() : Instant.now(), i.getExpiresAt());
     }
 }

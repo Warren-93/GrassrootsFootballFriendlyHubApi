@@ -40,9 +40,9 @@ public class AdminUserService {
 
     public List<AdminUserDtos.AdminUserView> search(String query) {
         List<User> found = users.search(query, 500);
-        Map<String, Instant> lastActive = activity.lastActiveAt(found.stream().map(User::id).toList());
+        Map<String, Instant> lastActive = activity.lastActiveAt(found.stream().map(User::getId).toList());
         return found.stream()
-                .map(u -> AdminUserDtos.AdminUserView.from(u, memberships.findByUserId(u.id()), lastActive.get(u.id())))
+                .map(u -> AdminUserDtos.AdminUserView.from(u, memberships.findByUserId(u.getId()), lastActive.get(u.getId())))
                 .toList();
     }
 
@@ -70,14 +70,14 @@ public class AdminUserService {
 
     public void forcePasswordReset(String adminId, String userId) {
         User user = find(userId);
-        verificationTokenService.issue(user.id(), VerificationTokenPurpose.PASSWORD_RESET, user.email());
+        verificationTokenService.issue(user.getId(), VerificationTokenPurpose.PASSWORD_RESET, user.getEmail());
         auditLogService.record(adminId, "USER_PASSWORD_RESET_FORCED", "USER", userId, null);
     }
 
     public void resendVerification(String adminId, String userId) {
         User user = find(userId);
-        if (!user.emailVerified()) {
-            verificationTokenService.issue(user.id(), VerificationTokenPurpose.EMAIL_VERIFY, user.email());
+        if (!user.isEmailVerified()) {
+            verificationTokenService.issue(user.getId(), VerificationTokenPurpose.EMAIL_VERIFY, user.getEmail());
         }
         auditLogService.record(adminId, "USER_VERIFICATION_RESENT", "USER", userId, null);
     }
@@ -102,12 +102,12 @@ public class AdminUserService {
     }
 
     private static User withSuspended(User user, boolean suspended) {
-        return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
-                user.emailVerified(), user.createdAt(), suspended);
+        return new User(user.getId(), user.getEmail(), user.getPasswordHash(), user.getDisplayName(),
+                user.isEmailVerified(), user.getCreatedAt(), suspended);
     }
 
     private static User withEmailVerified(User user, boolean verified) {
-        return new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
-                verified, user.createdAt(), user.suspended());
+        return new User(user.getId(), user.getEmail(), user.getPasswordHash(), user.getDisplayName(),
+                verified, user.getCreatedAt(), user.isSuspended());
     }
 }

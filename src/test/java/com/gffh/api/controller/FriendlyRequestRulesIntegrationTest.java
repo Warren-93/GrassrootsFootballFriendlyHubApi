@@ -140,7 +140,7 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         // A stale read of SENT can't be turned into an acceptance any more.
         FriendlyRequest staleAccept = withStatus(read, RequestStatus.ACCEPTED);
         assertThat(requests.saveIfStatus(staleAccept, RequestStatus.SENT)).isEmpty();
-        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.DECLINED);
+        assertThat(requests.findById(requestId).orElseThrow().getStatus()).isEqualTo(RequestStatus.DECLINED);
 
         act(p.recipient(), requestId, "accept", null)
                 .andExpect(status().isConflict())
@@ -155,9 +155,9 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         act(p.recipient(), requestId, "accept", null).andExpect(status().isOk());
         Fixture existing = fixtures.findByTeamId(p.senderTeam()).get(0);
 
-        assertThatThrownBy(() -> fixtures.save(new Fixture(null, requestId, existing.homeTeamId(),
-                existing.awayTeamId(), existing.date(), existing.startTime(), existing.endTime(), existing.venueId(),
-                existing.status(), existing.costShare(), existing.refereeArrangement(), existing.createdAt())))
+        assertThatThrownBy(() -> fixtures.save(new Fixture(null, requestId, existing.getHomeTeamId(),
+                existing.getAwayTeamId(), existing.getDate(), existing.getStartTime(), existing.getEndTime(), existing.getVenueId(),
+                existing.getStatus(), existing.getCostShare(), existing.getRefereeArrangement(), existing.getCreatedAt())))
                 .isInstanceOf(DuplicateKeyException.class);
     }
 
@@ -171,9 +171,9 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         block(p.recipient(), p.recipientTeam(), p.senderTeam()).andExpect(status().isOk());
         block(p.recipient(), p.recipientTeam(), p.senderTeam()).andExpect(status().isOk());
 
-        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
-        assertThat(fixtures.findByTeamId(p.senderTeam()).get(0).status()).isEqualTo(FixtureStatus.CANCELLED);
-        assertThat(availability.findById(p.senderSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        assertThat(requests.findById(requestId).orElseThrow().getStatus()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(fixtures.findByTeamId(p.senderTeam()).get(0).getStatus()).isEqualTo(FixtureStatus.CANCELLED);
+        assertThat(availability.findById(p.senderSlot()).orElseThrow().getStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
         mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + p.sender().accessToken()))
                 .andExpect(jsonPath("$[*].type", hasItem("FIXTURE_CANCELLED")));
         mockMvc.perform(get("/api/v1/teams/" + p.recipientTeam() + "/blocks")
@@ -201,8 +201,8 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
 
         adminTeams.suspend("test-admin", p.senderTeam(), "Testing");
 
-        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
-        assertThat(availability.findById(p.recipientSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        assertThat(requests.findById(requestId).orElseThrow().getStatus()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(availability.findById(p.recipientSlot()).orElseThrow().getStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
         mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + p.recipient().accessToken()))
                 .andExpect(jsonPath("$[*].type", hasItem("REQUEST_WITHDRAWN")));
     }
@@ -247,10 +247,10 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
         String requestId = sendValid(p);
         FriendlyRequest sent = requests.findById(requestId).orElseThrow();
         LocalDate yesterday = LocalDate.now(FriendlyRequestService.FIXTURE_ZONE).minusDays(1);
-        requests.save(new FriendlyRequest(sent.id(), sent.senderTeamId(), sent.recipientTeamId(),
-                sent.senderSlotId(), sent.recipientSlotId(), sent.status(), yesterday, sent.startTime(),
-                sent.endTime(), sent.venueId(), sent.homeTeamId(), sent.costShare(), sent.refereeArrangement(),
-                sent.message(), sent.createdByUserId(), sent.createdAt(), sent.updatedAt(), null, null, null, null));
+        requests.save(new FriendlyRequest(sent.getId(), sent.getSenderTeamId(), sent.getRecipientTeamId(),
+                sent.getSenderSlotId(), sent.getRecipientSlotId(), sent.getStatus(), yesterday, sent.getStartTime(),
+                sent.getEndTime(), sent.getVenueId(), sent.getHomeTeamId(), sent.getCostShare(), sent.getRefereeArrangement(),
+                sent.getMessage(), sent.getCreatedByUserId(), sent.getCreatedAt(), sent.getUpdatedAt(), null, null, null, null));
 
         act(p.recipient(), requestId, "accept", null)
                 .andExpect(status().isConflict())
@@ -263,20 +263,20 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
 
         friendlyRequestService.expirePastDue(LocalDate.now(FriendlyRequestService.FIXTURE_ZONE));
 
-        assertThat(requests.findById(requestId).orElseThrow().status()).isEqualTo(RequestStatus.CANCELLED);
-        assertThat(availability.findById(p.senderSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
-        assertThat(availability.findById(p.recipientSlot()).orElseThrow().status()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        assertThat(requests.findById(requestId).orElseThrow().getStatus()).isEqualTo(RequestStatus.CANCELLED);
+        assertThat(availability.findById(p.senderSlot()).orElseThrow().getStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
+        assertThat(availability.findById(p.recipientSlot()).orElseThrow().getStatus()).isEqualTo(AvailabilityStatus.AVAILABLE);
         // No longer open, so the two teams can arrange another.
         sendValid(p);
     }
 
     private void setSuspendedAndArchived(String teamId, boolean suspended, boolean archived) {
         Team t = teamRepository.findById(teamId).orElseThrow();
-        teamRepository.save(new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(), t.ageGroup(),
-                t.gender(), t.format(), t.abilityLevel(), t.organisation(), t.league(), t.postcode(), t.location(),
-                t.travelRadiusMiles(), t.homeAwayPreference(), t.managerName(), t.contactPhone(), t.description(),
-                t.verification(), t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
-                suspended, archived, t.searchVisible(), t.shareContactDetails()));
+        teamRepository.save(new Team(t.getId(), t.getClubId(), t.getName(), t.getClubName(), t.getBadgeUrl(), t.getAgeGroup(),
+                t.getGender(), t.getFormat(), t.getAbilityLevel(), t.getOrganisation(), t.getLeague(), t.getPostcode(), t.getLocation(),
+                t.getTravelRadiusMiles(), t.getHomeAwayPreference(), t.getManagerName(), t.getContactPhone(), t.getDescription(),
+                t.getVerification(), t.getDefaultVenueId(), t.getFirstFixtureConfirmedAt(), t.getCreatedAt(), t.getUpdatedAt(),
+                suspended, archived, t.isSearchVisible(), t.isShareContactDetails()));
     }
 
     private ResultActions block(TestAccount account, String teamId, String blockedTeamId) throws Exception {
@@ -289,10 +289,10 @@ class FriendlyRequestRulesIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status) {
-        return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(), fr.senderSlotId(),
-                fr.recipientSlotId(), status, fr.date(), fr.startTime(), fr.endTime(), fr.venueId(),
-                fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(), fr.createdByUserId(),
-                fr.createdAt(), fr.updatedAt(), fr.actionReason(), fr.proposedStartTime(), fr.proposedEndTime(),
-                fr.proposedVenueId());
+        return new FriendlyRequest(fr.getId(), fr.getSenderTeamId(), fr.getRecipientTeamId(), fr.getSenderSlotId(),
+                fr.getRecipientSlotId(), status, fr.getDate(), fr.getStartTime(), fr.getEndTime(), fr.getVenueId(),
+                fr.getHomeTeamId(), fr.getCostShare(), fr.getRefereeArrangement(), fr.getMessage(), fr.getCreatedByUserId(),
+                fr.getCreatedAt(), fr.getUpdatedAt(), fr.getActionReason(), fr.getProposedStartTime(), fr.getProposedEndTime(),
+                fr.getProposedVenueId());
     }
 }

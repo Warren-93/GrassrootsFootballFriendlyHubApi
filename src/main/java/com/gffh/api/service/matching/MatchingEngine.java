@@ -82,14 +82,14 @@ public final class MatchingEngine {
 
         // ---- Exclusions -----------------------------------------------------
 
-        if (ourTeam.id().equals(theirTeam.id())) return Optional.empty();
-        if (ourTeam.clubId().equals(theirTeam.clubId())) return Optional.empty();
+        if (ourTeam.getId().equals(theirTeam.getId())) return Optional.empty();
+        if (ourTeam.getClubId().equals(theirTeam.getClubId())) return Optional.empty();
 
         // Gender categories are a hard constraint, never a scored preference,
         // and must match exactly.
-        if (!ourTeam.gender().isCompatibleWith(theirTeam.gender())) return Optional.empty();
+        if (!ourTeam.getGender().isCompatibleWith(theirTeam.getGender())) return Optional.empty();
 
-        int ageBands = ourTeam.ageGroup().bandsApart(theirTeam.ageGroup());
+        int ageBands = ourTeam.getAgeGroup().bandsApart(theirTeam.getAgeGroup());
         if (ageBands > weights.ageBandTolerance()) return Optional.empty();
 
         // ---- Scored factors -------------------------------------------------
@@ -97,10 +97,10 @@ public final class MatchingEngine {
         // Distance, format and availability used to exclude; they now only
         // rank. The travel radius still shapes the distance score, so a team
         // beyond it sits lower in the list rather than vanishing from it.
-        double miles = ourTeam.location().milesTo(theirTeam.location());
-        int radiusLimit = Math.min(ourTeam.travelRadiusMiles(), theirTeam.travelRadiusMiles());
+        double miles = ourTeam.getLocation().milesTo(theirTeam.getLocation());
+        int radiusLimit = Math.min(ourTeam.getTravelRadiusMiles(), theirTeam.getTravelRadiusMiles());
 
-        int requiredMinutes = ourTeam.ageGroup().defaultMatchMinutes();
+        int requiredMinutes = ourTeam.getAgeGroup().defaultMatchMinutes();
         List<MatchResult.SlotOverlap> overlaps =
                 findOverlaps(ourSlots, theirSlots, requiredMinutes);
 
@@ -117,7 +117,7 @@ public final class MatchingEngine {
         int score = (int) Math.round(points);
 
         return Optional.of(new MatchResult(
-                theirTeam.id(),
+                theirTeam.getId(),
                 score,
                 factors,
                 overlaps,
@@ -134,7 +134,7 @@ public final class MatchingEngine {
                 ? "Same age group"
                 : bandsApart + (bandsApart == 1 ? " age band apart" : " age bands apart");
         return new FactorResult(MatchFactor.AGE_GROUP, ratio, weights.age(),
-                ours.ageGroup().label(), theirs.ageGroup().label(), reason);
+                ours.getAgeGroup().label(), theirs.getAgeGroup().label(), reason);
     }
 
     /**
@@ -167,14 +167,14 @@ public final class MatchingEngine {
     private FactorResult scoreFormat(Team ours, Team theirs) {
         // One step apart is negotiable; further apart is shown but scores
         // nothing, so the teams can still talk if they want to.
-        int steps = ours.format().stepsApart(theirs.format());
+        int steps = ours.getFormat().stepsApart(theirs.getFormat());
         double ratio = steps == 0 ? 1.0 : steps == 1 ? 0.40 : 0.0;
         String reason = steps == 0
-                ? "Same format (" + ours.format().label() + ")"
-                : "Formats differ - " + ours.format().label()
-                        + " v " + theirs.format().label();
+                ? "Same format (" + ours.getFormat().label() + ")"
+                : "Formats differ - " + ours.getFormat().label()
+                        + " v " + theirs.getFormat().label();
         return new FactorResult(MatchFactor.FORMAT, ratio, weights.format(),
-                ours.format().label(), theirs.format().label(), reason);
+                ours.getFormat().label(), theirs.getFormat().label(), reason);
     }
 
     /**
@@ -202,8 +202,8 @@ public final class MatchingEngine {
     }
 
     private FactorResult scoreHomeAway(Team ours, Team theirs) {
-        HomeAwayPreference a = ours.homeAwayPreference();
-        HomeAwayPreference b = theirs.homeAwayPreference();
+        HomeAwayPreference a = ours.getHomeAwayPreference();
+        HomeAwayPreference b = theirs.getHomeAwayPreference();
         boolean compatible = a.isCompatibleWith(b);
 
         // Both insisting on the same thing scores zero but is not an exclusion:
@@ -220,7 +220,7 @@ public final class MatchingEngine {
     }
 
     private FactorResult scoreAbility(Team ours, Team theirs) {
-        int bands = ours.abilityLevel().bandsApart(theirs.abilityLevel());
+        int bands = ours.getAbilityLevel().bandsApart(theirs.getAbilityLevel());
         double ratio = switch (bands) {
             case 0 -> 1.0;
             case 1 -> 0.5;
@@ -232,7 +232,7 @@ public final class MatchingEngine {
             default -> "Ability levels differ";
         };
         return new FactorResult(MatchFactor.ABILITY, ratio, weights.ability(),
-                ours.abilityLevel().label(), theirs.abilityLevel().label(), reason);
+                ours.getAbilityLevel().label(), theirs.getAbilityLevel().label(), reason);
     }
 
     // ---- Helpers ------------------------------------------------------------
@@ -259,8 +259,8 @@ public final class MatchingEngine {
             }
         }
         overlaps.sort(Comparator
-                .comparing((MatchResult.SlotOverlap o) -> o.ours().date())
-                .thenComparing(o -> o.ours().startTime()));
+                .comparing((MatchResult.SlotOverlap o) -> o.ours().getDate())
+                .thenComparing(o -> o.ours().getStartTime()));
         return overlaps;
     }
 
@@ -270,15 +270,15 @@ public final class MatchingEngine {
      * produce a fixture.
      */
     private boolean hostingIsPossible(AvailabilitySlot ours, AvailabilitySlot theirs) {
-        boolean weCanHost = ours.homeAwayPreference() != HomeAwayPreference.AWAY
-                && ours.venueId() != null;
-        boolean theyCanHost = theirs.homeAwayPreference() != HomeAwayPreference.AWAY
-                && theirs.venueId() != null;
+        boolean weCanHost = ours.getHomeAwayPreference() != HomeAwayPreference.AWAY
+                && ours.getVenueId() != null;
+        boolean theyCanHost = theirs.getHomeAwayPreference() != HomeAwayPreference.AWAY
+                && theirs.getVenueId() != null;
         return weCanHost || theyCanHost;
     }
 
     private static String describeSlot(AvailabilitySlot slot) {
-        return slot.date() + " " + slot.startTime() + "-" + slot.endTime();
+        return slot.getDate() + " " + slot.getStartTime() + "-" + slot.getEndTime();
     }
 
     private static double round(double value) {

@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.Organisation;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,20 +17,28 @@ import java.util.List;
  * {@link Organisation} list. {@code linkedOrganisation} says which of those
  * fixed entries it corresponds to, if any, for when the two are joined up.
  */
-public record RegisteredOrganisation(
-        String id,
-        String name,
-        String shortName,
-        Organisation linkedOrganisation,
-        String contactName,
-        String contactEmail,
-        String website,
-        String notes,
-        List<League> leagues,
-        Instant createdAt,
-        String createdByEmail,
-        Instant updatedAt) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RegisteredOrganisation {
+
+    private String id;
+    private String name;
+    private String shortName;
+    private Organisation linkedOrganisation;
+    private String contactName;
+    private String contactEmail;
+    private String website;
+    private String notes;
+    private List<League> leagues;
+    private Instant createdAt;
+    private String createdByEmail;
+    private Instant updatedAt;
 
     /** A league the association runs, with its divisions in display order. */
-    public record League(String id, String name, List<String> divisions) {}
+    public record League(String id, String name, List<String> divisions) {
+        public League {
+            divisions = divisions == null ? List.of() : divisions;
+        }
+    }
 }

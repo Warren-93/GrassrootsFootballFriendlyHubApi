@@ -3,6 +3,9 @@ package com.gffh.api.model;
 import com.gffh.api.model.enums.CostShare;
 import com.gffh.api.model.enums.RefereeArrangement;
 import com.gffh.api.model.enums.RequestStatus;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,27 +21,31 @@ import java.time.LocalTime;
  * windows the proposal is built on, so the same window cannot be re-proposed to
  * a second team while this negotiation is open.
  */
-public record FriendlyRequest(
-        String id,
-        String senderTeamId,
-        String recipientTeamId,
-        String senderSlotId,
-        String recipientSlotId,
-        RequestStatus status,
-        LocalDate date,
-        LocalTime startTime,
-        LocalTime endTime,
-        String venueId,
-        String homeTeamId,
-        CostShare costShare,
-        RefereeArrangement refereeArrangement,
-        String message,
-        String createdByUserId,
-        Instant createdAt,
-        Instant updatedAt,
-        /** The reason given for the most recent status change (e.g. why changes were requested, or declined). */
-        String actionReason,
-        /**
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class FriendlyRequest {
+
+    private String id;
+    private String senderTeamId;
+    private String recipientTeamId;
+    private String senderSlotId;
+    private String recipientSlotId;
+    private RequestStatus status;
+    private LocalDate date;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String venueId;
+    private String homeTeamId;
+    private CostShare costShare;
+    private RefereeArrangement refereeArrangement;
+    private String message;
+    private String createdByUserId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    /** The reason given for the most recent status change (e.g. why changes were requested, or declined). */
+    private String actionReason;
+    /**
          * A pending counter-proposal from {@code suggestChanges} - date is
          * deliberately not proposable here, since {@code senderSlotId}/
          * {@code recipientSlotId} are reserved against the original date and
@@ -46,9 +53,9 @@ public record FriendlyRequest(
          * proposal exists; applied to the real fields and cleared the moment
          * {@code acceptChanges} is called.
          */
-        LocalTime proposedStartTime,
-        LocalTime proposedEndTime,
-        String proposedVenueId) {
+    private LocalTime proposedStartTime;
+    private LocalTime proposedEndTime;
+    private String proposedVenueId;
 
     public boolean involves(String teamId) {
         return senderTeamId.equals(teamId) || recipientTeamId.equals(teamId);

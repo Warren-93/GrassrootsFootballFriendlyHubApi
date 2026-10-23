@@ -39,7 +39,7 @@ public class MongoPlatformAdminRepository implements PlatformAdminRepository {
 
     @Override
     public PlatformAdmin save(PlatformAdmin admin) {
-        PlatformAdmin toSave = admin.id() != null ? admin : withGeneratedId(admin);
+        PlatformAdmin toSave = admin.getId() != null ? admin : withGeneratedId(admin);
         PlatformAdminDocument doc = PlatformAdminDocument.from(toSave);
         doc.email = doc.email.toLowerCase();
         mongoTemplate.save(doc, COLLECTION);
@@ -64,8 +64,8 @@ public class MongoPlatformAdminRepository implements PlatformAdminRepository {
     }
 
     private PlatformAdmin withGeneratedId(PlatformAdmin admin) {
-        return new PlatformAdmin(UUID.randomUUID().toString(), admin.email(), admin.passwordHash(),
-                admin.totpSecret(), admin.createdAt() != null ? admin.createdAt() : Instant.now(),
-                admin.lastLoginAt(), admin.role());
+        return new PlatformAdmin(UUID.randomUUID().toString(), admin.getEmail(), admin.getPasswordHash(),
+                admin.getTotpSecret(), admin.getCreatedAt() != null ? admin.getCreatedAt() : Instant.now(),
+                admin.getLastLoginAt(), admin.getRole());
     }
 }

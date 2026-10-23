@@ -27,16 +27,16 @@ public class AvailabilitySlotDocument {
 
     public static AvailabilitySlotDocument from(AvailabilitySlot s) {
         AvailabilitySlotDocument d = new AvailabilitySlotDocument();
-        d.id = s.id();
-        d.teamId = s.teamId();
-        d.date = s.date();
-        d.startTime = s.startTime();
-        d.endTime = s.endTime();
-        d.homeAwayPreference = s.homeAwayPreference().name();
-        d.venueId = s.venueId();
-        d.format = s.format() == null ? null : s.format().name();
-        d.notes = s.notes();
-        d.status = s.status().name();
+        d.id = s.getId();
+        d.teamId = s.getTeamId();
+        d.date = s.getDate();
+        d.startTime = s.getStartTime();
+        d.endTime = s.getEndTime();
+        d.homeAwayPreference = s.getHomeAwayPreference().name();
+        d.venueId = s.getVenueId();
+        d.format = s.getFormat() == null ? null : s.getFormat().name();
+        d.notes = s.getNotes();
+        d.status = s.getStatus().name();
         return d;
     }
 

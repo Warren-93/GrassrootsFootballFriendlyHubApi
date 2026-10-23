@@ -39,7 +39,7 @@ public class AdminAccountService {
 
     public AdminAccountDtos.MeView me(String adminId) {
         PlatformAdmin admin = find(adminId);
-        return new AdminAccountDtos.MeView(admin.id(), admin.email(), admin.effectiveRole().name(),
+        return new AdminAccountDtos.MeView(admin.getId(), admin.getEmail(), admin.effectiveRole().name(),
                 adminAuthService.totpRequired());
     }
 
@@ -57,12 +57,12 @@ public class AdminAccountService {
         String secret = totpService.generateSecret();
         PlatformAdmin created = admins.save(new PlatformAdmin(null, request.email(),
                 passwordEncoder.encode(request.password()), secret, Instant.now(), null, AdminRole.ADMIN));
-        auditLogService.record(actorId, "ADMIN_CREATED", "ADMIN", created.id(), created.email());
+        auditLogService.record(actorId, "ADMIN_CREATED", "ADMIN", created.getId(), created.getEmail());
         if (!adminAuthService.totpRequired()) {
             return new AdminAccountDtos.CreateAdminResponse(AdminAccountDtos.AdminAccountView.from(created), null, null);
         }
         return new AdminAccountDtos.CreateAdminResponse(AdminAccountDtos.AdminAccountView.from(created), secret,
-                totpService.provisioningUri(secret, created.email(), "Kickabout Admin"));
+                totpService.provisioningUri(secret, created.getEmail(), "Kickabout Admin"));
     }
 
     /**
@@ -78,7 +78,7 @@ public class AdminAccountService {
                     "The super admin account can't be removed.");
         }
         admins.delete(adminId);
-        auditLogService.record(actorId, "ADMIN_REMOVED", "ADMIN", adminId, target.email());
+        auditLogService.record(actorId, "ADMIN_REMOVED", "ADMIN", adminId, target.getEmail());
     }
 
     public boolean isSuperAdmin(String adminId) {

@@ -19,10 +19,10 @@ public class PushTokenDocument {
 
     public static PushTokenDocument from(PushToken t) {
         PushTokenDocument d = new PushTokenDocument();
-        d.token = t.token();
-        d.userId = t.userId();
-        d.platform = t.platform();
-        d.registeredAt = t.registeredAt();
+        d.token = t.getToken();
+        d.userId = t.getUserId();
+        d.platform = t.getPlatform();
+        d.registeredAt = t.getRegisteredAt();
         return d;
     }
 

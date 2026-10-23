@@ -39,7 +39,7 @@ public class MongoUserRepository implements UserRepository {
 
     @Override
     public User save(User user) {
-        User toSave = user.id() != null ? user : withGeneratedId(user);
+        User toSave = user.getId() != null ? user : withGeneratedId(user);
         UserDocument doc = UserDocument.from(toSave);
         doc.email = doc.email.toLowerCase();
         mongoTemplate.save(doc, COLLECTION);
@@ -47,9 +47,9 @@ public class MongoUserRepository implements UserRepository {
     }
 
     private User withGeneratedId(User user) {
-        return new User(UUID.randomUUID().toString(), user.email(), user.passwordHash(),
-                user.displayName(), user.emailVerified(),
-                user.createdAt() != null ? user.createdAt() : Instant.now(), user.suspended());
+        return new User(UUID.randomUUID().toString(), user.getEmail(), user.getPasswordHash(),
+                user.getDisplayName(), user.isEmailVerified(),
+                user.getCreatedAt() != null ? user.getCreatedAt() : Instant.now(), user.isSuspended());
     }
 
     @Override

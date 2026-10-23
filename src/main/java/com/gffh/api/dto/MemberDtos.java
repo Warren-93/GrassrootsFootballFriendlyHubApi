@@ -26,8 +26,8 @@ public final class MemberDtos {
                              Instant createdAt, Instant expiresAt) {
 
         public static InviteView from(MemberInvite invite, Team team) {
-            return new InviteView(invite.id(), invite.email(), invite.role().name(), invite.teamId(), team.name(),
-                    invite.createdAt(), invite.expiresAt());
+            return new InviteView(invite.getId(), invite.getEmail(), invite.getRole().name(), invite.getTeamId(), team.getName(),
+                    invite.getCreatedAt(), invite.getExpiresAt());
         }
     }
 
@@ -53,8 +53,8 @@ public final class MemberDtos {
 
         /** scope is "TEAM" for a membership on this exact team, "CLUB" for a club-admin membership that cascades to it. */
         public static MemberView from(Membership m, User user) {
-            return new MemberView(m.id(), user.id(), user.email(), user.displayName(),
-                    m.role().name(), m.isClubScoped() ? "CLUB" : "TEAM", m.createdAt());
+            return new MemberView(m.getId(), user.getId(), user.getEmail(), user.getDisplayName(),
+                    m.getRole().name(), m.isClubScoped() ? "CLUB" : "TEAM", m.getCreatedAt());
         }
     }
 }

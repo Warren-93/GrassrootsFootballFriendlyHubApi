@@ -29,19 +29,19 @@ public class ReportDocument {
 
     public static ReportDocument from(Report r) {
         ReportDocument d = new ReportDocument();
-        d.id = r.id();
-        d.reporterTeamId = r.reporterTeamId();
-        d.reportedTeamId = r.reportedTeamId();
-        d.relatedFixtureId = r.relatedFixtureId();
-        d.type = r.type().name();
-        d.severity = r.severity().name();
-        d.details = r.details();
-        d.status = r.status().name();
-        d.assignedAdminId = r.assignedAdminId();
-        d.internalNotes = r.internalNotes().stream()
+        d.id = r.getId();
+        d.reporterTeamId = r.getReporterTeamId();
+        d.reportedTeamId = r.getReportedTeamId();
+        d.relatedFixtureId = r.getRelatedFixtureId();
+        d.type = r.getType().name();
+        d.severity = r.getSeverity().name();
+        d.details = r.getDetails();
+        d.status = r.getStatus().name();
+        d.assignedAdminId = r.getAssignedAdminId();
+        d.internalNotes = r.getInternalNotes().stream()
                 .map(n -> new InternalNoteDoc(n.adminId(), n.note(), n.createdAt())).toList();
-        d.createdAt = r.createdAt();
-        d.updatedAt = r.updatedAt();
+        d.createdAt = r.getCreatedAt();
+        d.updatedAt = r.getUpdatedAt();
         return d;
     }
 

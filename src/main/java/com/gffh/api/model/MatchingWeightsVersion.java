@@ -1,6 +1,9 @@
 package com.gffh.api.model;
 
 import com.gffh.api.service.matching.MatchingWeights;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -10,11 +13,15 @@ import java.time.Instant;
  * active version stays in history with {@code active=false} - so publishing
  * is inherently reversible: republish an old version's weights to revert.
  */
-public record MatchingWeightsVersion(
-        String id,
-        MatchingWeights weights,
-        String versionNote,
-        String publishedByAdminId,
-        Instant publishedAt,
-        boolean active) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class MatchingWeightsVersion {
+
+    private String id;
+    private MatchingWeights weights;
+    private String versionNote;
+    private String publishedByAdminId;
+    private Instant publishedAt;
+    private boolean active;
 }

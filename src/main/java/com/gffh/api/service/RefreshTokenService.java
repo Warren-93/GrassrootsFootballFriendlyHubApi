@@ -45,7 +45,7 @@ public class RefreshTokenService {
         String rawToken = randomToken();
         RefreshToken saved = refreshTokens.save(new RefreshToken(null, userId, hash(rawToken),
                 Instant.now().plus(TTL_DAYS, ChronoUnit.DAYS), false, Instant.now(), null));
-        return new Issued(saved.id(), rawToken);
+        return new Issued(saved.getId(), rawToken);
     }
 
     /**
@@ -60,10 +60,10 @@ public class RefreshTokenService {
      */
     public Optional<Issued> rotate(String userId, String presentedToken) {
         Instant now = Instant.now();
-        Optional<RefreshToken> found = accepted(presentedToken, now).filter(t -> t.userId().equals(userId));
+        Optional<RefreshToken> found = accepted(presentedToken, now).filter(t -> t.getUserId().equals(userId));
         if (found.isEmpty()) return Optional.empty();
 
-        if (found.get().isUsable(now)) refreshTokens.markRotated(found.get().id(), now);
+        if (found.get().isUsable(now)) refreshTokens.markRotated(found.get().getId(), now);
         return Optional.of(issue(userId));
     }
 
@@ -74,7 +74,7 @@ public class RefreshTokenService {
 
     /** Sign-out: the presented token can't be used again. Unknown tokens are ignored. */
     public void revoke(String presentedToken) {
-        refreshTokens.findByTokenHash(hash(presentedToken)).ifPresent(t -> refreshTokens.revoke(t.id()));
+        refreshTokens.findByTokenHash(hash(presentedToken)).ifPresent(t -> refreshTokens.revoke(t.getId()));
     }
 
     /** Signs the user out everywhere: none of their refresh tokens can be used again. */
@@ -96,7 +96,7 @@ public class RefreshTokenService {
     }
 
     public Optional<String> userIdFor(String presentedToken) {
-        return accepted(presentedToken, Instant.now()).map(RefreshToken::userId);
+        return accepted(presentedToken, Instant.now()).map(RefreshToken::getUserId);
     }
 
     private static String randomToken() {

@@ -58,16 +58,16 @@ public class MongoAvailabilityRepository implements AvailabilityRepository {
 
     @Override
     public AvailabilitySlot save(AvailabilitySlot slot) {
-        AvailabilitySlot toSave = slot.id() != null ? slot : withGeneratedId(slot);
+        AvailabilitySlot toSave = slot.getId() != null ? slot : withGeneratedId(slot);
         AvailabilitySlotDocument doc = AvailabilitySlotDocument.from(toSave);
         mongoTemplate.save(doc, COLLECTION);
         return doc.toDomain();
     }
 
     private AvailabilitySlot withGeneratedId(AvailabilitySlot slot) {
-        return new AvailabilitySlot(UUID.randomUUID().toString(), slot.teamId(), slot.date(),
-                slot.startTime(), slot.endTime(), slot.homeAwayPreference(), slot.venueId(),
-                slot.format(), slot.notes(), slot.status());
+        return new AvailabilitySlot(UUID.randomUUID().toString(), slot.getTeamId(), slot.getDate(),
+                slot.getStartTime(), slot.getEndTime(), slot.getHomeAwayPreference(), slot.getVenueId(),
+                slot.getFormat(), slot.getNotes(), slot.getStatus());
     }
 
     @Override

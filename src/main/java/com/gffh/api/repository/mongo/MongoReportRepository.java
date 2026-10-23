@@ -41,13 +41,13 @@ public class MongoReportRepository implements ReportRepository {
                 .map(ReportDocument::toDomain).toList();
         // Safeguarding first, regardless of creation order.
         return reports.stream()
-                .sorted(Comparator.comparing((Report r) -> r.severity() != ReportSeverity.SAFEGUARDING))
+                .sorted(Comparator.comparing((Report r) -> r.getSeverity() != ReportSeverity.SAFEGUARDING))
                 .toList();
     }
 
     @Override
     public Report save(Report report) {
-        Report toSave = report.id() != null ? report : withGeneratedId(report);
+        Report toSave = report.getId() != null ? report : withGeneratedId(report);
         ReportDocument doc = ReportDocument.from(toSave);
         doc.updatedAt = Instant.now();
         mongoTemplate.save(doc, COLLECTION);
@@ -56,8 +56,8 @@ public class MongoReportRepository implements ReportRepository {
 
     private Report withGeneratedId(Report r) {
         Instant now = Instant.now();
-        return new Report(UUID.randomUUID().toString(), r.reporterTeamId(), r.reportedTeamId(),
-                r.relatedFixtureId(), r.type(), r.severity(), r.details(), r.status(), r.assignedAdminId(),
-                r.internalNotes(), now, now);
+        return new Report(UUID.randomUUID().toString(), r.getReporterTeamId(), r.getReportedTeamId(),
+                r.getRelatedFixtureId(), r.getType(), r.getSeverity(), r.getDetails(), r.getStatus(), r.getAssignedAdminId(),
+                r.getInternalNotes(), now, now);
     }
 }

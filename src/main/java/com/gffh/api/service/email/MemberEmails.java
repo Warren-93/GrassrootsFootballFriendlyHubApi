@@ -45,14 +45,14 @@ public class MemberEmails {
 
     /** Tells an existing account holder they now have a role on {@code team}. Never throws. */
     public void sendAdded(String to, String inviterName, Team team, Role role) {
-        queue("added-to-team", () -> email.send(to, oneLine("You've been added to " + team.name()),
+        queue("added-to-team", () -> email.send(to, oneLine("You've been added to " + team.getName()),
                 addedBody(inviterName, team, role)));
     }
 
     /** Invites {@code invite.email()} to register, after which the invite becomes a membership. Never throws. */
     public void sendInvite(MemberInvite invite, String inviterName, Team team) {
-        queue("member-invite", () -> email.send(invite.email(),
-                oneLine("%s invited you to join %s on Kickabout".formatted(inviterName, team.name())),
+        queue("member-invite", () -> email.send(invite.getEmail(),
+                oneLine("%s invited you to join %s on Kickabout".formatted(inviterName, team.getName())),
                 inviteBody(invite, inviterName, team)));
     }
 
@@ -87,7 +87,7 @@ public class MemberEmails {
                 %s
 
                 If you think this is a mistake, ask one of the team's managers to remove you.
-                """.formatted(inviterName, team.name(), describe(role), email.appLink("/team/" + team.id()));
+                """.formatted(inviterName, team.getName(), describe(role), email.appLink("/team/" + team.getId()));
     }
 
     String inviteBody(MemberInvite invite, String inviterName, Team team) {
@@ -101,8 +101,8 @@ public class MemberEmails {
                 Once you've confirmed your email address, you'll be added to %s automatically. The invitation expires on %s.
 
                 If you weren't expecting this, you can ignore this email.
-                """.formatted(inviterName, team.name(), describe(invite.role()), registerLink(invite.email()),
-                team.name(), DATE.format(invite.expiresAt()));
+                """.formatted(inviterName, team.getName(), describe(invite.getRole()), registerLink(invite.getEmail()),
+                team.getName(), DATE.format(invite.getExpiresAt()));
     }
 
     /** {@code ${APP_BASE_URL}/register?email=...}, which the clients use to prefill the email field. */
