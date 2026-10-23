@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -30,6 +31,7 @@ public class MemberInvite {
     private String teamId;
     private Role role;
     private String invitedByUserId;
+    @CreatedDate
     private Instant createdAt;
     private Instant expiresAt;
 

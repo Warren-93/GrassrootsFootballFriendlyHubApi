@@ -86,7 +86,7 @@ public class NotificationDelivery {
     void deliverNow(Notification n) {
         User user = users.findById(n.getUserId()).orElse(null);
         if (user == null || user.isSuspended()) return;
-        NotificationPreference preference = preferences.findByUserId(user.getId())
+        NotificationPreference preference = preferences.findById(user.getId())
                 .orElseGet(() -> NotificationPreference.defaultsFor(user.getId()));
         if (!preference.allows(n.getType().category())) return;
 

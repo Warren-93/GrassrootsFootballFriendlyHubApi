@@ -1,58 +1,27 @@
 package com.gffh.api.repository;
 
-import com.gffh.api.model.GeoPoint;
 import com.gffh.api.model.Team;
-import com.gffh.api.model.enums.AgeGroup;
-import com.gffh.api.model.enums.Gender;
+import com.gffh.api.repository.custom.TeamRepositoryCustom;
+import org.springframework.data.domain.Limit;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
- * Team persistence.
- *
- * <p>Deliberately an interface over a hand-written Mongo implementation rather
- * than a derived-query Spring Data repository: {@link #findCandidates} combines
- * a geospatial stage with several equality filters and a cap, which a derived
- * method name cannot express and which needs to stay aligned with the compound
- * indexes in section 10 of the Technical Specification.
+ * Team persistence. The candidate search for matching lives in
+ * {@link TeamRepositoryCustom#findCandidates}, written against
+ * {@code MongoTemplate} because it combines a geospatial stage with several
+ * equality filters and a cap, which a derived query cannot express.
  */
-public interface TeamRepository {
-
-    Optional<Team> findById(String id);
+public interface TeamRepository extends MongoRepository<Team, String>, TeamRepositoryCustom {
 
     List<Team> findByClubId(String clubId);
 
-    Team save(Team team);
-
-    /**
-     * Candidate opponents, narrowed in the database before scoring.
-     *
-     * <p>Results come back nearest first, so {@code limit} keeps the closest
-     * teams within {@code radiusMiles}.
-     *
-     * <p>Gender is filtered here rather than in the engine because it is a hard
-     * constraint with an index behind it; scoring 400 teams to discard 200 on a
-     * boolean would waste the index.
-     *
-     * @param ageGroups the age groups to admit - the searching team's own
-     *        group, widened by the matching engine's age band tolerance (see
-     *        {@link AgeGroup#withinBands}); exactly one group at the default
-     *        tolerance of 0
-     * @param excludeClubId the searching team's club - a club does not need the
-     *        platform to arrange a fixture between its own squads
-     */
-    List<Team> findCandidates(GeoPoint centre,
-                              int radiusMiles,
-                              Collection<AgeGroup> ageGroups,
-                              Gender gender,
-                              List<String> formats,
-                              List<String> abilityLevels,
-                              boolean verifiedOnly,
-                              String excludeClubId,
-                              int limit);
+    List<Team> findByNameRegex(Pattern name, Limit limit);
 
     /** Case-insensitive name search, for ADM-05's team search. */
-    List<Team> searchByName(String query, int limit);
+    default List<Team> searchByName(String query, int limit) {
+        return findByNameRegex(Pattern.compile(Pattern.quote(query), Pattern.CASE_INSENSITIVE), Limit.of(limit));
+    }
 }

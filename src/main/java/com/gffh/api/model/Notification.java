@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -31,5 +32,6 @@ public class Notification {
     private String relatedFixtureId;
     private String relatedConversationId;
     private boolean read;
+    @CreatedDate
     private Instant createdAt;
 }

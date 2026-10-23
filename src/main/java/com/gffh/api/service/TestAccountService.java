@@ -68,7 +68,7 @@ public class TestAccountService {
     }
 
     public List<AdminTestAccountDtos.TestAccountView> list() {
-        return testAccounts.findAll().stream().map(this::view).toList();
+        return testAccounts.findAllByOrderByCreatedAtDesc().stream().map(this::view).toList();
     }
 
     /**
@@ -82,10 +82,10 @@ public class TestAccountService {
 
         if (account.getTeamId() != null) teamService.archiveTestTeam(account.getTeamId());
         if (users.findById(account.getUserId()).isPresent()) {
-            memberships.findByUserId(account.getUserId()).forEach(m -> memberships.delete(m.getId()));
+            memberships.findByUserId(account.getUserId()).forEach(m -> memberships.deleteById(m.getId()));
             privacyService.deleteAccount(account.getUserId());
         }
-        testAccounts.delete(account.getId());
+        testAccounts.deleteById(account.getId());
         auditLogService.record(adminId, "TEST_ACCOUNT_DELETED", "USER", account.getUserId(),
                 "Test account removed (was " + account.getEmail() + ")");
     }

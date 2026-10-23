@@ -3,6 +3,7 @@ package com.gffh.api.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -25,5 +26,6 @@ public class JoinCode {
     private String teamId;
     private String code;
     private String createdByUserId;
+    @CreatedDate
     private Instant createdAt;
 }

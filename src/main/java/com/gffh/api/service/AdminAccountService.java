@@ -45,7 +45,7 @@ public class AdminAccountService {
 
     public List<AdminAccountDtos.AdminAccountView> list(String actorId) {
         requireSuperAdmin(actorId);
-        return admins.findAll().stream().map(AdminAccountDtos.AdminAccountView::from).toList();
+        return admins.findAllByOrderByCreatedAtAsc().stream().map(AdminAccountDtos.AdminAccountView::from).toList();
     }
 
     public AdminAccountDtos.CreateAdminResponse create(String actorId, AdminAccountDtos.CreateAdminRequest request) {
@@ -77,7 +77,7 @@ public class AdminAccountService {
             throw new BusinessRuleException("CANNOT_REMOVE_SUPER_ADMIN", HttpStatus.CONFLICT,
                     "The super admin account can't be removed.");
         }
-        admins.delete(adminId);
+        admins.deleteById(adminId);
         auditLogService.record(actorId, "ADMIN_REMOVED", "ADMIN", adminId, target.getEmail());
     }
 

@@ -34,7 +34,7 @@ public class MatchingConfigService {
     }
 
     public List<MatchingConfigDtos.VersionView> history() {
-        return versions.listAll().stream().map(MatchingConfigDtos.VersionView::from).toList();
+        return versions.findAllByOrderByPublishedAtDesc().stream().map(MatchingConfigDtos.VersionView::from).toList();
     }
 
     /** Scores a real search with the proposed weights, without touching the published configuration. */

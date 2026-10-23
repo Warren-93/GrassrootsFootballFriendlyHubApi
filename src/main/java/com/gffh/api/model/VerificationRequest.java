@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.VerificationRequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -34,6 +35,7 @@ public class VerificationRequest {
     private String firstRejectionReason;
     private String finalRejectionReason;
     private String reviewedByAdminId;
+    @CreatedDate
     private Instant submittedAt;
     private Instant reviewedAt;
 }

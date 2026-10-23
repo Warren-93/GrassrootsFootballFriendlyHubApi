@@ -113,7 +113,7 @@ public class MemberInviteService {
                 .filter(i -> i.getTeamId().equals(teamId))
                 .orElseThrow(() -> new BusinessRuleException("INVITE_NOT_FOUND", HttpStatus.NOT_FOUND,
                         "That invitation could not be found."));
-        invites.delete(invite.getId());
+        invites.deleteById(invite.getId());
     }
 
     /**
@@ -141,7 +141,7 @@ public class MemberInviteService {
                     if (team != null && !hasRoleOn(user.getId(), team)) {
                         created.add(memberships.save(MemberService.scoped(null, user.getId(), team, invite.getRole(), now)));
                     }
-                    invites.delete(invite.getId());
+                    invites.deleteById(invite.getId());
                 } catch (Exception e) {
                     log.warn("Could not accept invite {} for user {}", invite.getId(), user.getId(), e);
                 }
@@ -159,8 +159,8 @@ public class MemberInviteService {
     }
 
     private boolean hasRoleOn(String userId, Team team) {
-        return memberships.findTeamMembership(userId, team.getId()).isPresent()
-                || memberships.findClubMembership(userId, team.getClubId()).isPresent();
+        return memberships.findByUserIdAndTeamId(userId, team.getId()).isPresent()
+                || memberships.findByUserIdAndClubId(userId, team.getClubId()).isPresent();
     }
 
     static String inviterName(User inviter) {

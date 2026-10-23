@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.TestAccountKind;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -30,5 +31,6 @@ public class TestAccount {
     private String clubId;
     private String teamId;
     private String createdByAdminId;
+    @CreatedDate
     private Instant createdAt;
 }

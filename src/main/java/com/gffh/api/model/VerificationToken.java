@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.VerificationTokenPurpose;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -32,6 +33,7 @@ public class VerificationToken {
     private String email;
     private Instant expiresAt;
     private boolean used;
+    @CreatedDate
     private Instant createdAt;
 
     public boolean isUsable(Instant now) {

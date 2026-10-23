@@ -48,7 +48,7 @@ public class BlockService {
 
     public List<BlockDtos.BlockView> list(String userId, String teamId) {
         membershipService.requireCanManageTeam(userId, teamId);
-        return blocks.findByBlockingTeamId(teamId).stream()
+        return blocks.findByBlockingTeamIdOrderByCreatedAtDesc(teamId).stream()
                 .map(b -> BlockDtos.BlockView.from(b, blockedTeamName(b)))
                 .toList();
     }

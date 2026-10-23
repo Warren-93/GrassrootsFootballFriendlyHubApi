@@ -48,9 +48,10 @@ src/main/java/com/gffh/api/
 │   ├── matching/         Opponent matching: the scoring engine and its tunable weights.
 │   ├── moderation/       The chat language filter: masks blocked words, list edited on the Admin site.
 │   └── push/             Push notifications: FCM (Android) and APNs (iOS) senders.
-├── repository/           Persistence interfaces used by the services.
-│   └── mongo/            MongoDB implementations and their stored document classes.
-├── model/                Domain models (records). No framework dependencies.
+├── repository/           Spring Data MongoRepository interfaces used by the services.
+│   ├── custom/           Hand-written queries (MongoTemplate) that a repository method can't express.
+│   └── callback/         Save-time defaults: UUID ids, created/updated dates, lower-cased emails.
+├── model/                Lombok @Document classes stored in MongoDB (one collection each).
 │   └── enums/            Enumerations (status, format, age group and so on).
 ├── security/             JWT signing and checking, TOTP, OAuth token checks, rate limiting, refresh cookies.
 ├── scheduler/            Scheduled jobs (request expiry, fixture completion).
@@ -58,7 +59,7 @@ src/main/java/com/gffh/api/
 └── config/               Spring configuration: security, CORS, indexes, properties, request tracing.
 ```
 
-`model`, `service/matching`'s engine and `service/RequestStateMachine` are
+`service/matching`'s engine and `service/RequestStateMachine` are
 deliberately free of Spring. They hold the rules the specifications actually
 define, and they are unit-testable without a container, a database or a web
 layer. Tests mirror the same packages under `src/test/java`.

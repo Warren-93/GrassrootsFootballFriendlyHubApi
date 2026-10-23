@@ -6,7 +6,9 @@ import com.gffh.api.model.enums.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -45,7 +47,9 @@ public class FriendlyRequest {
     private RefereeArrangement refereeArrangement;
     private String message;
     private String createdByUserId;
+    @CreatedDate
     private Instant createdAt;
+    @LastModifiedDate
     private Instant updatedAt;
     /** The reason given for the most recent status change (e.g. why changes were requested, or declined). */
     private String actionReason;

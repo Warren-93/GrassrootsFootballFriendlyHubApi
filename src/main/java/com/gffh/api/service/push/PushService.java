@@ -46,10 +46,10 @@ public class PushService {
     /** Forgets the device for this user (on sign-out). A token that isn't theirs is left alone. */
     public void unregister(String userId, String rawToken) {
         if (rawToken == null || rawToken.isBlank()) return;
-        tokens.deleteForUser(userId, rawToken.trim());
+        tokens.deleteByTokenAndUserId(rawToken.trim(), userId);
         // An APNs token may have been registered in its normalised form.
         String apns = apnsForm(rawToken);
-        if (!apns.equals(rawToken.trim())) tokens.deleteForUser(userId, apns);
+        if (!apns.equals(rawToken.trim())) tokens.deleteByTokenAndUserId(apns, userId);
     }
 
     public void deleteAllFor(String userId) {
@@ -79,7 +79,7 @@ public class PushService {
             if (sender == null || !sender.isConfigured()) continue;
             try {
                 if (sender.send(device.getToken(), message) == PushSender.Result.INVALID_TOKEN) {
-                    tokens.delete(device.getToken());
+                    tokens.deleteById(device.getToken());
                     log.info("Forgot a push token ({}) the provider reported as invalid", device.getPlatform());
                 }
             } catch (Exception e) {

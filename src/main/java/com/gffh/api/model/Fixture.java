@@ -7,6 +7,7 @@ import com.gffh.api.model.enums.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -39,6 +40,7 @@ public class Fixture {
     private FixtureStatus status;
     private CostShare costShare;
     private RefereeArrangement refereeArrangement;
+    @CreatedDate
     private Instant createdAt;
 
     public boolean involves(String teamId) {

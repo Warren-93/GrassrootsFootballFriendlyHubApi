@@ -4,6 +4,7 @@ import com.gffh.api.service.matching.MatchingWeights;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Unwrapped;
@@ -29,6 +30,7 @@ public class MatchingWeightsVersion {
     private MatchingWeights weights;
     private String versionNote;
     private String publishedByAdminId;
+    @CreatedDate
     private Instant publishedAt;
     private boolean active;
 }

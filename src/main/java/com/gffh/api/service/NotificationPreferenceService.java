@@ -38,7 +38,7 @@ public class NotificationPreferenceService {
     }
 
     private NotificationPreference current(String userId) {
-        return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+        return preferences.findById(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
     }
 
     private static boolean orCurrent(Boolean requested, boolean current) {

@@ -5,6 +5,7 @@ import com.gffh.api.model.enums.DeletionTargetType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -32,6 +33,7 @@ public class DeletionRequest {
     private DeletionRequestStatus status;
     private String requestedByAdminId;
     private String requestedByEmail;
+    @CreatedDate
     private Instant requestedAt;
     private String decidedByAdminId;
     private String decidedByEmail;

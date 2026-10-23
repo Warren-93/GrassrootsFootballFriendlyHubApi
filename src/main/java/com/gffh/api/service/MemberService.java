@@ -97,8 +97,8 @@ public class MemberService {
             return new AddResult(null, invites.invite(userId, team, request.email(), role));
         }
 
-        if (memberships.findTeamMembership(target.getId(), teamId).isPresent()
-                || memberships.findClubMembership(target.getId(), team.getClubId()).isPresent()) {
+        if (memberships.findByUserIdAndTeamId(target.getId(), teamId).isPresent()
+                || memberships.findByUserIdAndClubId(target.getId(), team.getClubId()).isPresent()) {
             throw new BusinessRuleException("ALREADY_A_MEMBER", HttpStatus.CONFLICT,
                     "This person already has a role on this team.");
         }
@@ -140,7 +140,7 @@ public class MemberService {
             requireNotLastClubAdmin(team.getClubId(), membershipId);
         }
 
-        memberships.delete(membershipId);
+        memberships.deleteById(membershipId);
     }
 
     /**
@@ -196,8 +196,8 @@ public class MemberService {
         Team team = findTeam(joinCode.getTeamId());
         User target = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
 
-        Membership saved = memberships.findTeamMembership(userId, team.getId())
-                .or(() -> memberships.findClubMembership(userId, team.getClubId()))
+        Membership saved = memberships.findByUserIdAndTeamId(userId, team.getId())
+                .or(() -> memberships.findByUserIdAndClubId(userId, team.getClubId()))
                 .orElseGet(() -> memberships.save(scoped(null, userId, team, Role.USER, Instant.now())));
         return new MemberDtos.JoinResultView(team.getId(), team.getName(), team.getClubId(),
                 MemberDtos.MemberView.from(saved, target));

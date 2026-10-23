@@ -1,4 +1,4 @@
-package com.gffh.api.repository.mongo;
+package com.gffh.api.repository.custom;
 
 import com.gffh.api.repository.CascadeDeletionRepository;
 import org.bson.Document;

@@ -59,11 +59,11 @@ class FixtureConfirmationEmailsTest {
         when(users.findById("u-muted")).thenReturn(Optional.of(user("u-muted", "muted@example.com", true)));
         when(users.findById("u-unverified")).thenReturn(Optional.of(user("u-unverified", "new@example.com", false)));
         when(users.findById("u-no-email")).thenReturn(Optional.of(user("u-no-email", "quiet@example.com", true)));
-        when(preferences.findByUserId(anyString())).thenReturn(Optional.empty());
-        when(preferences.findByUserId("u-muted"))
+        when(preferences.findById(anyString())).thenReturn(Optional.empty());
+        when(preferences.findById("u-muted"))
                 .thenReturn(Optional.of(new NotificationPreference("u-muted", true, false, true, true, true, true)));
         // Wants fixture notifications in the app, but no emails at all.
-        when(preferences.findByUserId("u-no-email"))
+        when(preferences.findById("u-no-email"))
                 .thenReturn(Optional.of(new NotificationPreference("u-no-email", true, true, true, true, false, true)));
     }
 

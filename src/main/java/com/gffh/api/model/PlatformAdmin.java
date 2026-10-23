@@ -4,6 +4,7 @@ import com.gffh.api.model.enums.AdminRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -27,6 +28,7 @@ public class PlatformAdmin {
     private String email;
     private String passwordHash;
     private String totpSecret;
+    @CreatedDate
     private Instant createdAt;
     private Instant lastLoginAt;
     private AdminRole role;

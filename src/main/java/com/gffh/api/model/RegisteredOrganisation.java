@@ -4,7 +4,9 @@ import com.gffh.api.model.enums.Organisation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -35,8 +37,10 @@ public class RegisteredOrganisation {
     private String website;
     private String notes;
     private List<League> leagues = List.of();
+    @CreatedDate
     private Instant createdAt;
     private String createdByEmail;
+    @LastModifiedDate
     private Instant updatedAt;
 
     /** A league the association runs, with its divisions in display order. */

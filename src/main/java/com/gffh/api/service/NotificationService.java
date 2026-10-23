@@ -9,6 +9,7 @@ import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -65,13 +66,13 @@ public class NotificationService {
     }
 
     public List<NotificationDtos.NotificationView> list(String userId) {
-        return notifications.findByUserId(userId, MAX_LISTED).stream()
+        return notifications.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(MAX_LISTED)).stream()
                 .map(NotificationDtos.NotificationView::from)
                 .toList();
     }
 
     public long unreadCount(String userId) {
-        return notifications.countUnread(userId);
+        return notifications.countByUserIdAndReadFalse(userId);
     }
 
     public void markRead(String userId, String id) {
@@ -89,16 +90,16 @@ public class NotificationService {
     }
 
     public void markAllRead(String userId) {
-        notifications.findByUserId(userId, MAX_LISTED).stream()
+        notifications.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(MAX_LISTED)).stream()
                 .filter(n -> !n.isRead())
                 .forEach(n -> markRead(userId, n.getId()));
     }
 
     public void clearAll(String userId) {
-        notifications.deleteAllForUser(userId);
+        notifications.deleteByUserId(userId);
     }
 
     private NotificationPreference preferenceFor(String userId) {
-        return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+        return preferences.findById(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
     }
 }

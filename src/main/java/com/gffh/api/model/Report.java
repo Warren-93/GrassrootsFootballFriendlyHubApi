@@ -6,7 +6,9 @@ import com.gffh.api.model.enums.ReportType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -34,6 +36,8 @@ public class Report {
     private ReportStatus status;
     private String assignedAdminId;
     private List<InternalNote> internalNotes = List.of();
+    @CreatedDate
     private Instant createdAt;
+    @LastModifiedDate
     private Instant updatedAt;
 }

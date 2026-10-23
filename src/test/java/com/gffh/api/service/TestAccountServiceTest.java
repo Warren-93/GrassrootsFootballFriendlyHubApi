@@ -108,9 +108,9 @@ class TestAccountServiceTest {
 
         InOrder order = inOrder(teamService, memberships, privacyService, testAccounts);
         order.verify(teamService).archiveTestTeam("team-1");
-        order.verify(memberships).delete("m1");
+        order.verify(memberships).deleteById("m1");
         order.verify(privacyService).deleteAccount("u1");
-        order.verify(testAccounts).delete("t1");
+        order.verify(testAccounts).deleteById("t1");
     }
 
     @Test

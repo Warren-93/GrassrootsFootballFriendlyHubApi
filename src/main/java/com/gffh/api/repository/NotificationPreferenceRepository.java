@@ -1,12 +1,8 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.NotificationPreference;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.Optional;
-
-public interface NotificationPreferenceRepository {
-
-    Optional<NotificationPreference> findByUserId(String userId);
-
-    NotificationPreference save(NotificationPreference preference);
+/** Keyed by user id: one document per user. */
+public interface NotificationPreferenceRepository extends MongoRepository<NotificationPreference, String> {
 }

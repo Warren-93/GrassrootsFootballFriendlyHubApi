@@ -3,6 +3,7 @@ package com.gffh.api.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -27,5 +28,6 @@ public class AuditLogEntry {
     private String targetType;
     private String targetId;
     private String reason;
+    @CreatedDate
     private Instant timestamp;
 }

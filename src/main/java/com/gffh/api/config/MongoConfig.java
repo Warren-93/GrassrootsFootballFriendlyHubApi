@@ -24,6 +24,9 @@ import java.util.List;
  *       division stored under an old name (DEVELOPMENT, INTERMEDIATE,
  *       COMPETITIVE) still loads. It is written as its name, like every enum.</li>
  * </ul>
+ *
+ * <p>Ids and {@code @CreatedDate}/{@code @LastModifiedDate} timestamps are
+ * filled in on save by {@link com.gffh.api.repository.callback.SaveDefaultsCallback}.
  */
 @Configuration
 public class MongoConfig {

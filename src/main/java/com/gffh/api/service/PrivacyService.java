@@ -76,7 +76,7 @@ public class PrivacyService {
                 .map(this::toTeamExport)
                 .toList();
         return PrivacyDtos.AccountExport.of(user, views,
-                notificationPreferences.findByUserId(userId).orElse(null), teamExports);
+                notificationPreferences.findById(userId).orElse(null), teamExports);
     }
 
     private PrivacyDtos.TeamExport toTeamExport(Team team) {
@@ -88,7 +88,7 @@ public class PrivacyService {
                 availability.findBookableForTeamBetween(team.getId(), from, LocalDate.now().plusYears(2)),
                 requests.findByTeamId(team.getId()),
                 fixtures.findByTeamId(team.getId()),
-                blocks.findByBlockingTeamId(team.getId()));
+                blocks.findByBlockingTeamIdOrderByCreatedAtDesc(team.getId()));
     }
 
     /**
@@ -111,12 +111,12 @@ public class PrivacyService {
             }
         }
 
-        own.forEach(m -> memberships.delete(m.getId()));
+        own.forEach(m -> memberships.deleteById(m.getId()));
         // The account's devices stop getting pushes, and nobody can be added
         // to a team later by an invite to the address it used.
         pushService.deleteAllFor(userId);
         memberInvites.deleteInvitesFor(user.getEmail());
-        users.delete(userId);
+        users.deleteById(userId);
     }
 
     private PrivacyDtos.MembershipExport toMembershipExport(Membership m) {

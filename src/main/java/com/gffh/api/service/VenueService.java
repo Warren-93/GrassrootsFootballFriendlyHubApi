@@ -90,7 +90,7 @@ public class VenueService {
             throw new BusinessRuleException("VENUE_HAS_UPCOMING_FIXTURE", HttpStatus.CONFLICT,
                     "This venue has a confirmed fixture booked - it can't be removed until that's played or cancelled.");
         }
-        venues.delete(venueId);
+        venues.deleteById(venueId);
     }
 
     /**

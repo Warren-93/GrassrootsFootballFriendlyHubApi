@@ -62,7 +62,7 @@ public class VerificationService {
     /** The team's own manager checking where their most recent submission stands - null if never submitted. */
     public VerificationDtos.VerificationRequestView getForTeam(String userId, String teamId) {
         membershipService.requireCanManageTeam(userId, teamId);
-        return requests.findLatestByTeamId(teamId).map(this::view).orElse(null);
+        return requests.findFirstByTeamIdOrderBySubmittedAtDesc(teamId).map(this::view).orElse(null);
     }
 
     /**

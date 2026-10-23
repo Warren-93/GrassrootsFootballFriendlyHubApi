@@ -1,4 +1,4 @@
-package com.gffh.api.repository.mongo;
+package com.gffh.api.repository.custom;
 
 import com.gffh.api.model.Block;
 import com.gffh.api.model.MemberInvite;

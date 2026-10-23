@@ -29,7 +29,7 @@ public class SuperAdminMigration {
 
     @PostConstruct
     public void migrate() {
-        List<PlatformAdmin> all = admins.findAll();
+        List<PlatformAdmin> all = admins.findAllByOrderByCreatedAtAsc();
         if (all.isEmpty() || all.stream().anyMatch(PlatformAdmin::isSuperAdmin)) return;
         PlatformAdmin oldest = all.get(0);
         admins.save(oldest.withRole(AdminRole.SUPER_ADMIN));

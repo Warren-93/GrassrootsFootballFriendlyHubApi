@@ -36,8 +36,8 @@ class PushServiceTest {
 
         assertEquals(List.of("fcm-ok", "fcm-gone"), android.sentTo);
         assertEquals(List.of(APNS), ios.sentTo);
-        verify(tokens).delete("fcm-gone");
-        verify(tokens, never()).delete("fcm-ok");
+        verify(tokens).deleteById("fcm-gone");
+        verify(tokens, never()).deleteById("fcm-ok");
     }
 
     @Test

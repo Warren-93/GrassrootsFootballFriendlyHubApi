@@ -34,7 +34,7 @@ public class AdminAssociationService {
     }
 
     public List<AdminAssociationDtos.OrganisationView> list() {
-        return organisations.findAll().stream().map(AdminAssociationDtos.OrganisationView::from).toList();
+        return organisations.findAllByOrderByNameAsc().stream().map(AdminAssociationDtos.OrganisationView::from).toList();
     }
 
     public AdminAssociationDtos.OrganisationView create(String adminId, AdminAssociationDtos.OrganisationInput in) {
@@ -61,7 +61,7 @@ public class AdminAssociationService {
 
     public void delete(String adminId, String id) {
         RegisteredOrganisation o = find(id);
-        organisations.delete(id);
+        organisations.deleteById(id);
         auditLog.record(adminId, "ASSOCIATION_REMOVED", "ASSOCIATION", id,
                 o.getName() + " (" + o.getLeagues().size() + " league" + (o.getLeagues().size() == 1 ? "" : "s") + ")");
     }

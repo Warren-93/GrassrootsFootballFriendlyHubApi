@@ -106,7 +106,7 @@ class LegacyStoredDocumentsIntegrationTest extends AbstractIntegrationTest {
                 .append("verification", true)
                 .append("messages", true)
                 .append("_class", "com.gffh.api.repository.mongo.NotificationPreferenceDocument"));
-        NotificationPreference preference = preferences.findByUserId(userId).orElseThrow();
+        NotificationPreference preference = preferences.findById(userId).orElseThrow();
         assertThat(preference.isFixtures()).isFalse();
         assertThat(preference.isEmailEnabled()).isTrue();
         assertThat(preference.isPushEnabled()).isTrue();

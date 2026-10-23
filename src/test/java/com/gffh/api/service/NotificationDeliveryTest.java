@@ -40,7 +40,7 @@ class NotificationDeliveryTest {
         when(push.isConfigured()).thenReturn(true);
         when(users.findById("u1")).thenReturn(Optional.of(user(true, false)));
         when(teams.findById("team-1")).thenReturn(Optional.of(team()));
-        when(preferences.findByUserId(anyString())).thenReturn(Optional.empty());
+        when(preferences.findById(anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -73,7 +73,7 @@ class NotificationDeliveryTest {
 
     @Test
     void eachChannelFollowsItsOwnSwitch() {
-        when(preferences.findByUserId("u1"))
+        when(preferences.findById("u1"))
                 .thenReturn(Optional.of(new NotificationPreference("u1", true, true, true, true, false, true)));
         delivery("noreply@example.com").deliver(notification(NotificationType.REQUEST_DECLINED, "fr-1", null, null));
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
@@ -81,7 +81,7 @@ class NotificationDeliveryTest {
 
         reset(push);
         when(push.isConfigured()).thenReturn(true);
-        when(preferences.findByUserId("u1"))
+        when(preferences.findById("u1"))
                 .thenReturn(Optional.of(new NotificationPreference("u1", true, true, true, true, true, false)));
         delivery("noreply@example.com").deliver(notification(NotificationType.REQUEST_DECLINED, "fr-1", null, null));
         verify(mailSender).send(any(SimpleMailMessage.class));
@@ -90,7 +90,7 @@ class NotificationDeliveryTest {
 
     @Test
     void aMutedCategoryGoesNowhere() {
-        when(preferences.findByUserId("u1"))
+        when(preferences.findById("u1"))
                 .thenReturn(Optional.of(new NotificationPreference("u1", false, true, true, true, true, true)));
 
         delivery("noreply@example.com").deliver(notification(NotificationType.REQUEST_RECEIVED, "fr-1", null, null));

@@ -3,6 +3,7 @@ package com.gffh.api.model;
 import com.gffh.api.model.enums.Role;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -25,6 +26,7 @@ public class Membership {
     private String teamId;
     private String clubId;
     private Role role;
+    @CreatedDate
     private Instant createdAt;
 
     public Membership(String id, String userId, String teamId, String clubId, Role role, Instant createdAt) {

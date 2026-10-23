@@ -1,18 +1,11 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.TestAccount;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface TestAccountRepository {
+public interface TestAccountRepository extends MongoRepository<TestAccount, String> {
 
-    Optional<TestAccount> findById(String id);
-
-    /** Newest first. */
-    List<TestAccount> findAll();
-
-    TestAccount save(TestAccount account);
-
-    void delete(String id);
+    List<TestAccount> findAllByOrderByCreatedAtDesc();
 }

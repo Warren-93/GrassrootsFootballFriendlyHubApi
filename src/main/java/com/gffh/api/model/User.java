@@ -3,6 +3,7 @@ package com.gffh.api.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -25,6 +26,7 @@ public class User {
     private String passwordHash;
     private String displayName;
     private boolean emailVerified;
+    @CreatedDate
     private Instant createdAt;
     private boolean suspended;
 }

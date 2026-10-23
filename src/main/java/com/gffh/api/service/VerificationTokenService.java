@@ -70,7 +70,7 @@ public class VerificationTokenService {
 
     /** As {@link #consume}, but the whole token, so the caller can check which address it was sent to. */
     public Optional<VerificationToken> consumeToken(String rawToken, VerificationTokenPurpose purpose) {
-        Optional<VerificationToken> found = tokens.findByToken(rawToken, purpose)
+        Optional<VerificationToken> found = tokens.findByTokenAndPurpose(rawToken, purpose)
                 .filter(t -> t.isUsable(Instant.now()));
         found.ifPresent(t -> tokens.markUsed(t.getId()));
         return found;

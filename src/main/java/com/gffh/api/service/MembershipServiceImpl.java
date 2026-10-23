@@ -28,13 +28,13 @@ public class MembershipServiceImpl implements MembershipService {
 
     @Override
     public Role roleFor(String userId, String teamId) {
-        var direct = memberships.findTeamMembership(userId, teamId);
+        var direct = memberships.findByUserIdAndTeamId(userId, teamId);
         if (direct.isPresent()) return direct.get().getRole();
 
         Team team = teams.findById(teamId).orElse(null);
         if (team == null) return null;
 
-        return memberships.findClubMembership(userId, team.getClubId())
+        return memberships.findByUserIdAndClubId(userId, team.getClubId())
                 .map(Membership::getRole)
                 .filter(Role::canManageClub)
                 .orElse(null);
@@ -42,15 +42,15 @@ public class MembershipServiceImpl implements MembershipService {
 
     @Override
     public Role roleForClub(String userId, String clubId) {
-        return memberships.findClubMembership(userId, clubId).map(Membership::getRole).orElse(null);
+        return memberships.findByUserIdAndClubId(userId, clubId).map(Membership::getRole).orElse(null);
     }
 
     @Override
     public boolean canReadTeam(String userId, String teamId) {
-        if (memberships.findTeamMembership(userId, teamId).isPresent()) return true;
+        if (memberships.findByUserIdAndTeamId(userId, teamId).isPresent()) return true;
 
         Team team = teams.findById(teamId).orElse(null);
-        return team != null && memberships.findClubMembership(userId, team.getClubId()).isPresent();
+        return team != null && memberships.findByUserIdAndClubId(userId, team.getClubId()).isPresent();
     }
 
     @Override

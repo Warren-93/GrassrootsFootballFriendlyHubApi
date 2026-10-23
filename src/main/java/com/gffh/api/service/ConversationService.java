@@ -79,7 +79,7 @@ public class ConversationService {
             return List.of();
         }
         auditLogService.record(adminId, "CONVERSATION_VIEWED", "CONVERSATION", conversation.get().getId(), null);
-        return messages.findByConversationId(conversation.get().getId()).stream()
+        return messages.findByConversationIdOrderByCreatedAtAsc(conversation.get().getId()).stream()
                 .map(ConversationDtos.MessageView::from).toList();
     }
 
@@ -159,7 +159,7 @@ public class ConversationService {
     public List<ConversationDtos.MessageView> messages(String userId, String conversationId, Instant since) {
         Conversation conversation = requireVisible(userId, conversationId);
         List<Message> found = since == null
-                ? messages.findByConversationId(conversation.getId())
+                ? messages.findByConversationIdOrderByCreatedAtAsc(conversation.getId())
                 : messages.findByConversationIdSince(conversation.getId(), since);
         return found.stream()
                 .map(m -> ConversationDtos.MessageView.from(withMaskedBody(m))).toList();

@@ -126,7 +126,7 @@ public class FixtureConfirmationEmails {
     Set<String> contactsFor(Team team) {
         Set<String> out = new LinkedHashSet<>();
         for (String userId : memberships.managerUserIdsFor(team.getId())) {
-            NotificationPreference preference = preferences.findByUserId(userId)
+            NotificationPreference preference = preferences.findById(userId)
                     .orElseGet(() -> NotificationPreference.defaultsFor(userId));
             if (!preference.allows(NotificationCategory.FIXTURES) || !preference.isEmailEnabled()) continue;
             users.findById(userId)

@@ -5,6 +5,7 @@ import com.gffh.api.model.enums.VenueFacility;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -45,6 +46,7 @@ public class Venue {
     private String parkingNotes;
     private String pitchNumber;
     private boolean isDefault;
+    @CreatedDate
     private Instant createdAt;
 
     private static final String DIRECTIONS = "https://www.google.com/maps/dir/?api=1&destination=";
