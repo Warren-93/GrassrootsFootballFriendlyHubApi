@@ -61,13 +61,13 @@ public class AdminTeamService {
         Team primary = find(request.primaryTeamId());
         Team duplicate = find(request.duplicateTeamId());
 
-        for (Membership m : memberships.findByTeamId(duplicate.id())) {
-            memberships.save(new Membership(m.id(), m.userId(), primary.id(), null, m.role(), m.createdAt()));
+        for (Membership m : memberships.findByTeamId(duplicate.getId())) {
+            memberships.save(new Membership(m.getId(), m.getUserId(), primary.getId(), null, m.getRole(), m.getCreatedAt()));
         }
 
         teams.save(withSuspended(duplicate, true));
-        auditLogService.record(adminId, "TEAMS_MERGED", "TEAM", primary.id(),
-                "Merged duplicate " + duplicate.id() + " into " + primary.id());
+        auditLogService.record(adminId, "TEAMS_MERGED", "TEAM", primary.getId(),
+                "Merged duplicate " + duplicate.getId() + " into " + primary.getId());
     }
 
     private Team find(String teamId) {
@@ -76,11 +76,11 @@ public class AdminTeamService {
     }
 
     private static Team withSuspended(Team team, boolean suspended) {
-        return new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
-                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(), team.league(),
-                team.postcode(), team.location(), team.travelRadiusMiles(), team.homeAwayPreference(),
-                team.managerName(), team.contactPhone(), team.description(), team.verification(),
-                team.defaultVenueId(), team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(),
-                suspended, team.archived(), team.searchVisible(), team.shareContactDetails());
+        return new Team(team.getId(), team.getClubId(), team.getName(), team.getClubName(), team.getBadgeUrl(),
+                team.getAgeGroup(), team.getGender(), team.getFormat(), team.getAbilityLevel(), team.getOrganisation(), team.getLeague(),
+                team.getPostcode(), team.getLocation(), team.getTravelRadiusMiles(), team.getHomeAwayPreference(),
+                team.getManagerName(), team.getContactPhone(), team.getDescription(), team.getVerification(),
+                team.getDefaultVenueId(), team.getFirstFixtureConfirmedAt(), team.getCreatedAt(), team.getUpdatedAt(),
+                suspended, team.isArchived(), team.isSearchVisible(), team.isShareContactDetails());
     }
 }

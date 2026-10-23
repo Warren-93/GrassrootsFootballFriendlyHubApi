@@ -84,7 +84,7 @@ public class FixtureConfirmationEmails {
     /** Queues the confirmation for {@code fixture}. Never throws. */
     public void sendFor(Fixture fixture) {
         if (!email.isConfigured()) {
-            log.info("Email not configured; no confirmation email for fixture {}", fixture.id());
+            log.info("Email not configured; no confirmation email for fixture {}", fixture.getId());
             return;
         }
         try {
@@ -92,17 +92,17 @@ public class FixtureConfirmationEmails {
                 try {
                     send(fixture);
                 } catch (Exception e) {
-                    log.warn("Could not send confirmation emails for fixture {}", fixture.id(), e);
+                    log.warn("Could not send confirmation emails for fixture {}", fixture.getId(), e);
                 }
             });
         } catch (Exception e) {
-            log.warn("Could not queue confirmation emails for fixture {}", fixture.id(), e);
+            log.warn("Could not queue confirmation emails for fixture {}", fixture.getId(), e);
         }
     }
 
     void send(Fixture fixture) {
-        Team home = teams.findById(fixture.homeTeamId()).orElse(null);
-        Team away = teams.findById(fixture.awayTeamId()).orElse(null);
+        Team home = teams.findById(fixture.getHomeTeamId()).orElse(null);
+        Team away = teams.findById(fixture.getAwayTeamId()).orElse(null);
         if (home == null || away == null) return;
 
         Set<String> recipients = new LinkedHashSet<>();
@@ -112,7 +112,7 @@ public class FixtureConfirmationEmails {
         }
 
         String subject = "Fixture confirmed: %s v %s, %s".formatted(
-                displayName(home), displayName(away), fixture.date().format(SHORT_DATE));
+                displayName(home), displayName(away), fixture.getDate().format(SHORT_DATE));
         String body = body(fixture, home, away);
         for (String to : recipients) {
             email.send(to, subject, body);
@@ -125,27 +125,27 @@ public class FixtureConfirmationEmails {
      */
     Set<String> contactsFor(Team team) {
         Set<String> out = new LinkedHashSet<>();
-        for (String userId : memberships.managerUserIdsFor(team.id())) {
-            NotificationPreference preference = preferences.findByUserId(userId)
+        for (String userId : memberships.managerUserIdsFor(team.getId())) {
+            NotificationPreference preference = preferences.findById(userId)
                     .orElseGet(() -> NotificationPreference.defaultsFor(userId));
-            if (!preference.allows(NotificationCategory.FIXTURES) || !preference.emailEnabled()) continue;
+            if (!preference.allows(NotificationCategory.FIXTURES) || !preference.isEmailEnabled()) continue;
             users.findById(userId)
-                    .filter(u -> u.emailVerified() && !u.suspended())
-                    .map(User::email)
+                    .filter(u -> u.isEmailVerified() && !u.isSuspended())
+                    .map(User::getEmail)
                     .ifPresent(e -> addIfPresent(out, e));
         }
-        Optional.ofNullable(team.clubId()).flatMap(clubs::findById)
-                .map(Club::contactEmail)
+        Optional.ofNullable(team.getClubId()).flatMap(clubs::findById)
+                .map(Club::getContactEmail)
                 .ifPresent(e -> addIfPresent(out, e));
         return out;
     }
 
     String body(Fixture fixture, Team home, Team away) {
-        String venue = Optional.ofNullable(fixture.venueId()).flatMap(venues::findById)
+        String venue = Optional.ofNullable(fixture.getVenueId()).flatMap(venues::findById)
                 .map(FixtureConfirmationEmails::venueLines)
                 .orElse("Venue: To be arranged between the teams");
-        String time = fixture.startTime().format(TIME)
-                + (fixture.endTime() != null ? " to " + fixture.endTime().format(TIME) : "");
+        String time = fixture.getStartTime().format(TIME)
+                + (fixture.getEndTime() != null ? " to " + fixture.getEndTime().format(TIME) : "");
 
         return """
                 Your friendly is confirmed.
@@ -164,9 +164,9 @@ public class FixtureConfirmationEmails {
                 You're getting this because you're a contact for one of the teams. Team managers can turn off fixture emails in their notification settings.
                 """.formatted(
                 displayName(home), displayName(away),
-                fixture.date().format(DATE), time, venue,
-                orDash(home.managerName()), orDash(away.managerName()),
-                email.appLink("/fixtures/" + fixture.id()));
+                fixture.getDate().format(DATE), time, venue,
+                orDash(home.getManagerName()), orDash(away.getManagerName()),
+                email.appLink("/fixtures/" + fixture.getId()));
     }
 
     /**
@@ -174,10 +174,10 @@ public class FixtureConfirmationEmails {
      * doesn't already include it), then a Google Maps directions line.
      */
     static String venueLines(Venue v) {
-        StringBuilder line = new StringBuilder("Venue: ").append(v.name());
-        if (v.address() != null && !v.address().isBlank()) line.append(", ").append(v.address().strip());
+        StringBuilder line = new StringBuilder("Venue: ").append(v.getName());
+        if (v.getAddress() != null && !v.getAddress().isBlank()) line.append(", ").append(v.getAddress().strip());
         String postcode = v.displayPostcode();
-        if (postcode != null && !squashed(v.address()).contains(squashed(postcode))) {
+        if (postcode != null && !squashed(v.getAddress()).contains(squashed(postcode))) {
             line.append(", ").append(postcode);
         }
         String directions = v.directionsUrl();
@@ -190,7 +190,7 @@ public class FixtureConfirmationEmails {
     }
 
     private static String displayName(Team team) {
-        return team.name();
+        return team.getName();
     }
 
     private static String orDash(String s) {

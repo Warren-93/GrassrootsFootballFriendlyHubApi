@@ -7,6 +7,13 @@ import com.gffh.api.model.enums.Gender;
 import com.gffh.api.model.enums.HomeAwayPreference;
 import com.gffh.api.model.enums.Organisation;
 import com.gffh.api.model.enums.VerificationStatus;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,35 +26,44 @@ import java.util.List;
  * client except through a CONFIRMED fixture. See {@code TeamSummaryDto} and
  * {@code FixtureDetailDto} for the two projections that enforce this.
  */
-public record Team(
-        String id,
-        String clubId,
-        String name,
-        String clubName,
-        String badgeUrl,
-        AgeGroup ageGroup,
-        Gender gender,
-        Format format,
-        AbilityLevel abilityLevel,
-        /** Null for teams created before organisations were asked for. */
-        Organisation organisation,
-        String league,
-        String postcode,
-        GeoPoint location,
-        int travelRadiusMiles,
-        HomeAwayPreference homeAwayPreference,
-        String managerName,
-        String contactPhone,
-        String description,
-        VerificationStatus verification,
-        String defaultVenueId,
-        Instant firstFixtureConfirmedAt,
-        Instant createdAt,
-        Instant updatedAt,
-        boolean suspended,
-        boolean archived,
-        boolean searchVisible,
-        boolean shareContactDetails) {
+@Document("teams")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Team {
+
+    @Id
+    private String id;
+    private String clubId;
+    private String name;
+    private String clubName;
+    private String badgeUrl;
+    private AgeGroup ageGroup;
+    private Gender gender;
+    private Format format;
+    private AbilityLevel abilityLevel;
+    /** Null for teams created before organisations were asked for. */
+    private Organisation organisation;
+    private String league;
+    private String postcode;
+    private GeoPoint location;
+    private int travelRadiusMiles;
+    private HomeAwayPreference homeAwayPreference;
+    private String managerName;
+    private String contactPhone;
+    private String description;
+    private VerificationStatus verification;
+    private String defaultVenueId;
+    private Instant firstFixtureConfirmedAt;
+    @CreatedDate
+    private Instant createdAt;
+    @LastModifiedDate
+    private Instant updatedAt;
+    private boolean suspended;
+    private boolean archived;
+    /** Defaults to true so teams stored before this field existed stay visible and shared. */
+    private boolean searchVisible = true;
+    private boolean shareContactDetails = true;
 
     public boolean isVerified() { return verification == VerificationStatus.VERIFIED; }
 

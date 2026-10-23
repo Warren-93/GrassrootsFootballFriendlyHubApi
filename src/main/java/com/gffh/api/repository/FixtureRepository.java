@@ -1,32 +1,33 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.Fixture;
-
 import com.gffh.api.model.enums.FixtureStatus;
+import com.gffh.api.repository.custom.FixtureRepositoryCustom;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-public interface FixtureRepository {
+public interface FixtureRepository extends MongoRepository<Fixture, String>, FixtureRepositoryCustom {
 
-    Optional<Fixture> findById(String id);
-
+    /** Every fixture this team plays in, home or away. */
+    @Query("{ $or: [ { 'homeTeamId': ?0 }, { 'awayTeamId': ?0 } ] }")
     List<Fixture> findByTeamId(String teamId);
 
-    Fixture save(Fixture fixture);
+    boolean existsByVenueIdAndStatusAndDateGreaterThanEqual(String venueId, FixtureStatus status, LocalDate date);
 
-    /**
-     * The admin fixture list: newest date first. Every filter is optional -
-     * {@code teamIds} null means any team (an empty set matches nothing),
-     * {@code from}/{@code to} are inclusive, {@code status} null means any.
-     */
-    List<Fixture> search(Set<String> teamIds, LocalDate from, LocalDate to, FixtureStatus status, int limit);
+    @Query(value = "{ $or: [ { 'homeTeamId': ?0 }, { 'awayTeamId': ?0 } ], 'status': ?1, 'date': { $gte: ?2 } }",
+            exists = true)
+    boolean existsForTeamWithStatusOnOrAfter(String teamId, FixtureStatus status, LocalDate date);
 
     /** Whether a not-yet-completed CONFIRMED fixture is booked at this venue - blocks deleting it out from under it. */
-    boolean existsUpcomingConfirmedAtVenue(String venueId);
+    default boolean existsUpcomingConfirmedAtVenue(String venueId) {
+        return existsByVenueIdAndStatusAndDateGreaterThanEqual(venueId, FixtureStatus.CONFIRMED, LocalDate.now());
+    }
 
     /** Whether this team (home or away) has a not-yet-completed CONFIRMED fixture - blocks archiving it out from under it. */
-    boolean existsUpcomingConfirmedForTeam(String teamId);
+    default boolean existsUpcomingConfirmedForTeam(String teamId) {
+        return existsForTeamWithStatusOnOrAfter(teamId, FixtureStatus.CONFIRMED, LocalDate.now());
+    }
 }

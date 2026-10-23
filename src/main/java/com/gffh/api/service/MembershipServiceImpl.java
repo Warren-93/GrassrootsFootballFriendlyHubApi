@@ -28,29 +28,29 @@ public class MembershipServiceImpl implements MembershipService {
 
     @Override
     public Role roleFor(String userId, String teamId) {
-        var direct = memberships.findTeamMembership(userId, teamId);
-        if (direct.isPresent()) return direct.get().role();
+        var direct = memberships.findByUserIdAndTeamId(userId, teamId);
+        if (direct.isPresent()) return direct.get().getRole();
 
         Team team = teams.findById(teamId).orElse(null);
         if (team == null) return null;
 
-        return memberships.findClubMembership(userId, team.clubId())
-                .map(Membership::role)
+        return memberships.findByUserIdAndClubId(userId, team.getClubId())
+                .map(Membership::getRole)
                 .filter(Role::canManageClub)
                 .orElse(null);
     }
 
     @Override
     public Role roleForClub(String userId, String clubId) {
-        return memberships.findClubMembership(userId, clubId).map(Membership::role).orElse(null);
+        return memberships.findByUserIdAndClubId(userId, clubId).map(Membership::getRole).orElse(null);
     }
 
     @Override
     public boolean canReadTeam(String userId, String teamId) {
-        if (memberships.findTeamMembership(userId, teamId).isPresent()) return true;
+        if (memberships.findByUserIdAndTeamId(userId, teamId).isPresent()) return true;
 
         Team team = teams.findById(teamId).orElse(null);
-        return team != null && memberships.findClubMembership(userId, team.clubId()).isPresent();
+        return team != null && memberships.findByUserIdAndClubId(userId, team.getClubId()).isPresent();
     }
 
     @Override
@@ -59,9 +59,9 @@ public class MembershipServiceImpl implements MembershipService {
         if (clubRole != null && clubRole.canManageClub()) return true;
 
         return memberships.findByUserId(userId).stream()
-                .filter(m -> m.teamId() != null && m.role().canManageTeam())
-                .map(m -> teams.findById(m.teamId()).orElse(null))
-                .anyMatch(t -> t != null && clubId.equals(t.clubId()));
+                .filter(m -> m.getTeamId() != null && m.getRole().canManageTeam())
+                .map(m -> teams.findById(m.getTeamId()).orElse(null))
+                .anyMatch(t -> t != null && clubId.equals(t.getClubId()));
     }
 
     @Override
@@ -70,10 +70,10 @@ public class MembershipServiceImpl implements MembershipService {
         if (team == null) return List.of();
 
         Stream<Membership> teamScoped = memberships.findByTeamId(teamId).stream();
-        Stream<Membership> clubScoped = memberships.findByClubId(team.clubId()).stream();
+        Stream<Membership> clubScoped = memberships.findByClubId(team.getClubId()).stream();
         return Stream.concat(teamScoped, clubScoped)
-                .filter(m -> m.role().canManageTeam())
-                .map(Membership::userId)
+                .filter(m -> m.getRole().canManageTeam())
+                .map(Membership::getUserId)
                 .distinct()
                 .toList();
     }

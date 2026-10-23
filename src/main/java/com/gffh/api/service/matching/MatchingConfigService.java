@@ -34,7 +34,7 @@ public class MatchingConfigService {
     }
 
     public List<MatchingConfigDtos.VersionView> history() {
-        return versions.listAll().stream().map(MatchingConfigDtos.VersionView::from).toList();
+        return versions.findAllByOrderByPublishedAtDesc().stream().map(MatchingConfigDtos.VersionView::from).toList();
     }
 
     /** Scores a real search with the proposed weights, without touching the published configuration. */
@@ -53,7 +53,7 @@ public class MatchingConfigService {
                 request.versionNote(), adminId, Instant.now(), true));
 
         weightsProvider.publish(weights);
-        auditLogService.record(adminId, "MATCHING_CONFIG_PUBLISHED", "MATCHING_CONFIG", saved.id(), request.versionNote());
+        auditLogService.record(adminId, "MATCHING_CONFIG_PUBLISHED", "MATCHING_CONFIG", saved.getId(), request.versionNote());
         return MatchingConfigDtos.VersionView.from(saved);
     }
 

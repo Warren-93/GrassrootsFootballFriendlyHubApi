@@ -1,17 +1,16 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.Membership;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface MembershipRepository {
+public interface MembershipRepository extends MongoRepository<Membership, String> {
 
-    Optional<Membership> findById(String id);
+    Optional<Membership> findByUserIdAndTeamId(String userId, String teamId);
 
-    Optional<Membership> findTeamMembership(String userId, String teamId);
-
-    Optional<Membership> findClubMembership(String userId, String clubId);
+    Optional<Membership> findByUserIdAndClubId(String userId, String clubId);
 
     List<Membership> findByUserId(String userId);
 
@@ -20,8 +19,4 @@ public interface MembershipRepository {
 
     /** Every membership scoped to this club (SCR-PR-04's cascading club-admin rows, and the last-admin guard). */
     List<Membership> findByClubId(String clubId);
-
-    Membership save(Membership membership);
-
-    void delete(String id);
 }

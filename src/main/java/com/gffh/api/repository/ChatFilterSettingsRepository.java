@@ -1,16 +1,20 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.ChatFilterSettings;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
 
-public interface ChatFilterSettingsRepository {
+/** One stored document at most, under {@link ChatFilterSettings#SINGLETON_ID}. */
+public interface ChatFilterSettingsRepository extends MongoRepository<ChatFilterSettings, String> {
 
     /** Empty until an admin first saves a list. */
-    Optional<ChatFilterSettings> find();
-
-    ChatFilterSettings save(ChatFilterSettings settings);
+    default Optional<ChatFilterSettings> find() {
+        return findById(ChatFilterSettings.SINGLETON_ID);
+    }
 
     /** Removes the saved list, so the built-in starter list applies again. */
-    void delete();
+    default void delete() {
+        deleteById(ChatFilterSettings.SINGLETON_ID);
+    }
 }

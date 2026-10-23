@@ -50,9 +50,9 @@ public class ReportService {
 
     public ReportDtos.ReportView assign(String adminId, String id) {
         Report current = find(id);
-        Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), current.details(), current.status(),
-                adminId, current.internalNotes(), current.createdAt(), null);
+        Report updated = new Report(current.getId(), current.getReporterTeamId(), current.getReportedTeamId(),
+                current.getRelatedFixtureId(), current.getType(), current.getSeverity(), current.getDetails(), current.getStatus(),
+                adminId, current.getInternalNotes(), current.getCreatedAt(), null);
         reports.save(updated);
         auditLogService.record(adminId, "REPORT_ASSIGNED", "REPORT", id, null);
         return get(id);
@@ -60,11 +60,11 @@ public class ReportService {
 
     public ReportDtos.ReportView addNote(String adminId, String id, ReportDtos.NoteRequest request) {
         Report current = find(id);
-        List<InternalNote> notes = new ArrayList<>(current.internalNotes());
+        List<InternalNote> notes = new ArrayList<>(current.getInternalNotes());
         notes.add(new InternalNote(adminId, request.note(), Instant.now()));
-        Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), current.details(), current.status(),
-                current.assignedAdminId(), notes, current.createdAt(), null);
+        Report updated = new Report(current.getId(), current.getReporterTeamId(), current.getReportedTeamId(),
+                current.getRelatedFixtureId(), current.getType(), current.getSeverity(), current.getDetails(), current.getStatus(),
+                current.getAssignedAdminId(), notes, current.getCreatedAt(), null);
         reports.save(updated);
         return get(id);
     }
@@ -81,23 +81,23 @@ public class ReportService {
                     "Unknown action: " + action);
         };
 
-        List<InternalNote> notes = new ArrayList<>(current.internalNotes());
+        List<InternalNote> notes = new ArrayList<>(current.getInternalNotes());
         notes.add(new InternalNote(adminId, "[" + action + "] " + request.reason(), Instant.now()));
 
-        Report updated = new Report(current.id(), current.reporterTeamId(), current.reportedTeamId(),
-                current.relatedFixtureId(), current.type(), current.severity(), current.details(), newStatus,
-                current.assignedAdminId(), notes, current.createdAt(), null);
+        Report updated = new Report(current.getId(), current.getReporterTeamId(), current.getReportedTeamId(),
+                current.getRelatedFixtureId(), current.getType(), current.getSeverity(), current.getDetails(), newStatus,
+                current.getAssignedAdminId(), notes, current.getCreatedAt(), null);
         reports.save(updated);
         auditLogService.record(adminId, "REPORT_" + action.toUpperCase(), "REPORT", id, request.reason());
         return get(id);
     }
 
     private ReportDtos.ReportView view(Report r) {
-        return ReportDtos.ReportView.from(r, teamName(r.reporterTeamId()), teamName(r.reportedTeamId()));
+        return ReportDtos.ReportView.from(r, teamName(r.getReporterTeamId()), teamName(r.getReportedTeamId()));
     }
 
     private String teamName(String teamId) {
-        return teamId == null ? null : teams.findById(teamId).map(Team::name).orElse(null);
+        return teamId == null ? null : teams.findById(teamId).map(Team::getName).orElse(null);
     }
 
     private Report find(String id) {

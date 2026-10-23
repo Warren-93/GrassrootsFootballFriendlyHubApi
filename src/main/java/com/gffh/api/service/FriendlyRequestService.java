@@ -104,14 +104,14 @@ public class FriendlyRequestService {
         // Team verification is a trust badge, not a gate (spec SCR-PR-07) - the
         // real gate is the acting user's own email verification.
         User senderUser = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
-        if (!senderUser.emailVerified()) throw BusinessRuleException.emailNotVerified();
+        if (!senderUser.isEmailVerified()) throw BusinessRuleException.emailNotVerified();
 
-        if (sender.suspended() || sender.archived()) {
+        if (sender.isSuspended() || sender.isArchived()) {
             throw new BusinessRuleException("TEAM_NOT_ACTIVE", HttpStatus.FORBIDDEN,
                     "This team is suspended or archived, so it can't send friendly requests.");
         }
         // Indistinguishable from not found, as for a block.
-        if (recipient.suspended() || recipient.archived()) throw BusinessRuleException.blocked();
+        if (recipient.isSuspended() || recipient.isArchived()) throw BusinessRuleException.blocked();
 
         readiness.requireCanSend(sender);
 
@@ -130,13 +130,13 @@ public class FriendlyRequestService {
 
         AvailabilitySlot senderSlot = bookableSlot(req.senderSlotId(), req.senderTeamId());
         AvailabilitySlot recipientSlot = bookableSlot(req.recipientSlotId(), req.recipientTeamId());
-        if (!senderSlot.date().equals(recipientSlot.date())
+        if (!senderSlot.getDate().equals(recipientSlot.getDate())
                 || senderSlot.overlapMinutesWith(recipientSlot) <= 0) {
             throw BusinessRuleException.notAvailable();
         }
         // The match itself must be on the slots' day and inside both windows.
         if (!req.endTime().isAfter(req.startTime())) throw BusinessRuleException.invalidTimeRange();
-        if (!req.date().equals(senderSlot.date())
+        if (!req.date().equals(senderSlot.getDate())
                 || !senderSlot.accommodates(req.startTime(), req.endTime())
                 || !recipientSlot.accommodates(req.startTime(), req.endTime())) {
             throw BusinessRuleException.notAvailable();
@@ -149,7 +149,7 @@ public class FriendlyRequestService {
             throw BusinessRuleException.rateLimited();
         }
 
-        Team home = req.homeTeamId().equals(sender.id()) ? sender : recipient;
+        Team home = req.homeTeamId().equals(sender.getId()) ? sender : recipient;
         String venueId = req.venueId() != null && !req.venueId().isBlank() ? req.venueId() : homeVenueId(home);
 
         Instant now = Instant.now();
@@ -163,11 +163,11 @@ public class FriendlyRequestService {
         reserve(recipientSlot);
 
         if (idempotencyKey != null) {
-            idempotencyKeys.claim(idempotencyKey, saved.id());
+            idempotencyKeys.claim(idempotencyKey, saved.getId());
         }
 
         notificationService.notifyTeam(req.recipientTeamId(), NotificationType.REQUEST_RECEIVED,
-                "New friendly request", sender.name() + " sent you a friendly request.", saved.id(), null);
+                "New friendly request", sender.getName() + " sent you a friendly request.", saved.getId(), null);
 
         return saved;
     }
@@ -175,18 +175,18 @@ public class FriendlyRequestService {
     public FriendlyRequest act(String userId, String requestId, String action, FriendlyRequestDtos.ActionRequest request) {
         FriendlyRequest fr = requireVisible(userId, requestId);
         Actor actor = actorFor(userId, fr);
-        RequestStatus fromStatus = fr.status();
+        RequestStatus fromStatus = fr.getStatus();
         String reason = request != null ? request.reason() : null;
 
-        RequestStateMachine.Transition transition = RequestStateMachine.transitionsFrom(fr.status()).stream()
+        RequestStateMachine.Transition transition = RequestStateMachine.transitionsFrom(fr.getStatus()).stream()
                 .filter(t -> t.action().equals(action))
                 .findFirst()
                 .orElseThrow(() -> new RequestStateMachine.IllegalRequestTransition(
                         "REQUEST_TRANSITION_NOT_ALLOWED",
-                        "'" + action + "' is not a valid action from " + fr.status().name().toLowerCase() + "."));
+                        "'" + action + "' is not a valid action from " + fr.getStatus().name().toLowerCase() + "."));
 
-        RequestStateMachine.requirePermitted(fr.status(), transition.to(), actor);
-        if (DATE_BOUND_ACTIONS.contains(action) && fr.date().isBefore(LocalDate.now(FIXTURE_ZONE))) {
+        RequestStateMachine.requirePermitted(fr.getStatus(), transition.to(), actor);
+        if (DATE_BOUND_ACTIONS.contains(action) && fr.getDate().isBefore(LocalDate.now(FIXTURE_ZONE))) {
             throw new BusinessRuleException("REQUEST_DATE_PASSED", HttpStatus.CONFLICT,
                     "The date of this friendly has passed, so it can no longer be accepted or changed.");
         }
@@ -194,16 +194,16 @@ public class FriendlyRequestService {
         FriendlyRequest updated;
         if (action.equals("suggestChanges") && request != null
                 && (request.proposedStartTime() != null || request.proposedEndTime() != null || request.proposedVenueId() != null)) {
-            requireVenueOfEitherTeam(request.proposedVenueId(), fr.senderTeamId(), fr.recipientTeamId());
-            LocalTime proposedStart = request.proposedStartTime() != null ? request.proposedStartTime() : fr.startTime();
-            LocalTime proposedEnd = request.proposedEndTime() != null ? request.proposedEndTime() : fr.endTime();
+            requireVenueOfEitherTeam(request.proposedVenueId(), fr.getSenderTeamId(), fr.getRecipientTeamId());
+            LocalTime proposedStart = request.proposedStartTime() != null ? request.proposedStartTime() : fr.getStartTime();
+            LocalTime proposedEnd = request.proposedEndTime() != null ? request.proposedEndTime() : fr.getEndTime();
             if (!proposedEnd.isAfter(proposedStart)) throw BusinessRuleException.invalidTimeRange();
             updated = withStatus(fr, transition.to(), reason,
                     request.proposedStartTime(), request.proposedEndTime(), request.proposedVenueId());
         } else if (action.equals("acceptChanges")) {
-            LocalTime newStart = fr.proposedStartTime() != null ? fr.proposedStartTime() : fr.startTime();
-            LocalTime newEnd = fr.proposedEndTime() != null ? fr.proposedEndTime() : fr.endTime();
-            String newVenue = fr.proposedVenueId() != null ? fr.proposedVenueId() : fr.venueId();
+            LocalTime newStart = fr.getProposedStartTime() != null ? fr.getProposedStartTime() : fr.getStartTime();
+            LocalTime newEnd = fr.getProposedEndTime() != null ? fr.getProposedEndTime() : fr.getEndTime();
+            String newVenue = fr.getProposedVenueId() != null ? fr.getProposedVenueId() : fr.getVenueId();
             updated = withTerms(fr, transition.to(), reason, newStart, newEnd, newVenue);
         } else {
             updated = withStatus(fr, transition.to(), reason);
@@ -213,10 +213,10 @@ public class FriendlyRequestService {
 
         if (transition.to() == RequestStatus.ACCEPTED) {
             updated = confirmAndCreateFixture(updated);
-            String confirmedRequestId = updated.id();
-            fixtureId = fixtures.findByTeamId(updated.homeTeamId()).stream()
-                    .filter(f -> f.friendlyRequestId().equals(confirmedRequestId))
-                    .findFirst().map(Fixture::id).orElse(null);
+            String confirmedRequestId = updated.getId();
+            fixtureId = fixtures.findByTeamId(updated.getHomeTeamId()).stream()
+                    .filter(f -> f.getFriendlyRequestId().equals(confirmedRequestId))
+                    .findFirst().map(Fixture::getId).orElse(null);
         } else if (transition.to() == RequestStatus.DECLINED || transition.to() == RequestStatus.CANCELLED) {
             releaseSlots(updated);
             cancelFixtureIfAny(updated);
@@ -228,26 +228,26 @@ public class FriendlyRequestService {
     }
 
     private void notifyOtherParty(FriendlyRequest fr, Actor actor, RequestStatus toStatus, RequestStatus fromStatus, String fixtureId) {
-        String actingTeamId = actor == Actor.SENDER ? fr.senderTeamId() : fr.recipientTeamId();
-        String otherTeamId = actor == Actor.SENDER ? fr.recipientTeamId() : fr.senderTeamId();
-        String actingTeamName = teams.findById(actingTeamId).map(Team::name).orElse("The other team");
+        String actingTeamId = actor == Actor.SENDER ? fr.getSenderTeamId() : fr.getRecipientTeamId();
+        String otherTeamId = actor == Actor.SENDER ? fr.getRecipientTeamId() : fr.getSenderTeamId();
+        String actingTeamName = teams.findById(actingTeamId).map(Team::getName).orElse("The other team");
 
         switch (toStatus) {
             case ACCEPTED -> notificationService.notifyTeam(otherTeamId, NotificationType.FIXTURE_CONFIRMED,
-                    "Fixture confirmed", actingTeamName + " confirmed your friendly.", fr.id(), fixtureId);
+                    "Fixture confirmed", actingTeamName + " confirmed your friendly.", fr.getId(), fixtureId);
             case DECLINED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_DECLINED,
-                    "Friendly request declined", actingTeamName + " declined your friendly request.", fr.id(), null);
+                    "Friendly request declined", actingTeamName + " declined your friendly request.", fr.getId(), null);
             case CHANGES_REQUESTED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_CHANGES_REQUESTED,
-                    "Changes requested", actingTeamName + " suggested changes to your friendly request.", fr.id(), null);
+                    "Changes requested", actingTeamName + " suggested changes to your friendly request.", fr.getId(), null);
             case SENT, UPDATED -> notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_RECEIVED,
-                    "Friendly request updated", actingTeamName + " updated the friendly request - take a look.", fr.id(), null);
+                    "Friendly request updated", actingTeamName + " updated the friendly request - take a look.", fr.getId(), null);
             case CANCELLED -> {
                 if (fromStatus == RequestStatus.ACCEPTED || fromStatus == RequestStatus.CONFIRMED) {
                     notificationService.notifyTeam(otherTeamId, NotificationType.FIXTURE_CANCELLED,
-                            "Fixture cancelled", actingTeamName + " cancelled the confirmed fixture.", fr.id(), null);
+                            "Fixture cancelled", actingTeamName + " cancelled the confirmed fixture.", fr.getId(), null);
                 } else {
                     notificationService.notifyTeam(otherTeamId, NotificationType.REQUEST_WITHDRAWN,
-                            "Friendly request withdrawn", actingTeamName + " withdrew the friendly request.", fr.id(), null);
+                            "Friendly request withdrawn", actingTeamName + " withdrew the friendly request.", fr.getId(), null);
                 }
             }
             default -> { }
@@ -268,7 +268,7 @@ public class FriendlyRequestService {
      */
     public void cancelOpenBetween(String blockingTeamId, String otherTeamId) {
         requests.findByTeamId(blockingTeamId).stream()
-                .filter(fr -> !fr.status().isTerminal())
+                .filter(fr -> !fr.getStatus().isTerminal())
                 .filter(fr -> fr.involves(otherTeamId))
                 .forEach(fr -> cancelOnBehalfOf(fr, blockingTeamId));
     }
@@ -281,7 +281,7 @@ public class FriendlyRequestService {
      */
     public void cancelOpenForTeam(String teamId) {
         requests.findByTeamId(teamId).stream()
-                .filter(fr -> !fr.status().isTerminal())
+                .filter(fr -> !fr.getStatus().isTerminal())
                 .forEach(fr -> cancelOnBehalfOf(fr, teamId));
     }
 
@@ -295,8 +295,8 @@ public class FriendlyRequestService {
     public void cancelOpenForDeletedTeams(Set<String> teamIds) {
         for (String teamId : teamIds) {
             requests.findByTeamId(teamId).stream()
-                    .filter(fr -> !fr.status().isTerminal())
-                    .filter(fr -> !(teamIds.contains(fr.senderTeamId()) && teamIds.contains(fr.recipientTeamId())))
+                    .filter(fr -> !fr.getStatus().isTerminal())
+                    .filter(fr -> !(teamIds.contains(fr.getSenderTeamId()) && teamIds.contains(fr.getRecipientTeamId())))
                     .forEach(fr -> cancelOnBehalfOf(fr, teamId));
         }
     }
@@ -309,12 +309,12 @@ public class FriendlyRequestService {
      */
     private void cancelOnBehalfOf(FriendlyRequest fr, String cancellingTeamId) {
         Optional<FriendlyRequest> cancelled = requests.saveIfStatus(
-                withStatus(fr, RequestStatus.CANCELLED), fr.status());
+                withStatus(fr, RequestStatus.CANCELLED), fr.getStatus());
         if (cancelled.isEmpty()) return;
         releaseSlots(cancelled.get());
         cancelFixtureIfAny(cancelled.get());
-        Actor actor = fr.senderTeamId().equals(cancellingTeamId) ? Actor.SENDER : Actor.RECIPIENT;
-        notifyOtherParty(cancelled.get(), actor, RequestStatus.CANCELLED, fr.status(), null);
+        Actor actor = fr.getSenderTeamId().equals(cancellingTeamId) ? Actor.SENDER : Actor.RECIPIENT;
+        notifyOtherParty(cancelled.get(), actor, RequestStatus.CANCELLED, fr.getStatus(), null);
     }
 
     public FriendlyRequest get(String userId, String requestId) {
@@ -353,7 +353,7 @@ public class FriendlyRequestService {
         int expired = 0;
         for (FriendlyRequest fr : requests.findNegotiatingBefore(today)) {
             Optional<FriendlyRequest> cancelled = requests.saveIfStatus(withStatus(fr, RequestStatus.CANCELLED,
-                    "The date passed before the friendly was agreed."), fr.status());
+                    "The date passed before the friendly was agreed."), fr.getStatus());
             if (cancelled.isEmpty()) continue;
             releaseSlots(cancelled.get());
             expired++;
@@ -362,12 +362,12 @@ public class FriendlyRequestService {
     }
 
     private void completeFixtureIfAny(FriendlyRequest fr) {
-        fixtures.findByTeamId(fr.homeTeamId()).stream()
-                .filter(f -> f.friendlyRequestId().equals(fr.id()))
+        fixtures.findByTeamId(fr.getHomeTeamId()).stream()
+                .filter(f -> f.getFriendlyRequestId().equals(fr.getId()))
                 .findFirst()
-                .ifPresent(f -> fixtures.save(new Fixture(f.id(), f.friendlyRequestId(), f.homeTeamId(),
-                        f.awayTeamId(), f.date(), f.startTime(), f.endTime(), f.venueId(),
-                        FixtureStatus.COMPLETED, f.costShare(), f.refereeArrangement(), f.createdAt())));
+                .ifPresent(f -> fixtures.save(new Fixture(f.getId(), f.getFriendlyRequestId(), f.getHomeTeamId(),
+                        f.getAwayTeamId(), f.getDate(), f.getStartTime(), f.getEndTime(), f.getVenueId(),
+                        FixtureStatus.COMPLETED, f.getCostShare(), f.getRefereeArrangement(), f.getCreatedAt())));
     }
 
     // ---- Helpers --------------------------------------------------------
@@ -376,7 +376,7 @@ public class FriendlyRequestService {
         FriendlyRequest fr = requests.findById(requestId)
                 .orElseThrow(() -> new BusinessRuleException("FRIENDLY_REQUEST_NOT_FOUND",
                         HttpStatus.NOT_FOUND, "That friendly request could not be found."));
-        if (!canManage(userId, fr.senderTeamId()) && !canManage(userId, fr.recipientTeamId())) {
+        if (!canManage(userId, fr.getSenderTeamId()) && !canManage(userId, fr.getRecipientTeamId())) {
             throw new BusinessRuleException("FRIENDLY_REQUEST_NOT_FOUND",
                     HttpStatus.NOT_FOUND, "That friendly request could not be found.");
         }
@@ -384,7 +384,7 @@ public class FriendlyRequestService {
     }
 
     private Actor actorFor(String userId, FriendlyRequest fr) {
-        if (canManage(userId, fr.senderTeamId())) return Actor.SENDER;
+        if (canManage(userId, fr.getSenderTeamId())) return Actor.SENDER;
         return Actor.RECIPIENT;
     }
 
@@ -395,7 +395,7 @@ public class FriendlyRequestService {
 
     private AvailabilitySlot bookableSlot(String slotId, String teamId) {
         return availability.findById(slotId)
-                .filter(s -> s.teamId().equals(teamId) && s.isBookable())
+                .filter(s -> s.getTeamId().equals(teamId) && s.isBookable())
                 .orElseThrow(BusinessRuleException::notAvailable);
     }
 
@@ -404,25 +404,25 @@ public class FriendlyRequestService {
     }
 
     private void releaseSlots(FriendlyRequest fr) {
-        releaseSlot(fr.senderSlotId());
-        releaseSlot(fr.recipientSlotId());
+        releaseSlot(fr.getSenderSlotId());
+        releaseSlot(fr.getRecipientSlotId());
     }
 
     private void releaseSlot(String slotId) {
         availability.findById(slotId).ifPresent(slot -> {
-            if (slot.status() != AvailabilityStatus.WITHDRAWN) {
+            if (slot.getStatus() != AvailabilityStatus.WITHDRAWN) {
                 availability.save(withStatus(slot, AvailabilityStatus.AVAILABLE));
             }
         });
     }
 
     private AvailabilitySlot withStatus(AvailabilitySlot slot, AvailabilityStatus status) {
-        return new AvailabilitySlot(slot.id(), slot.teamId(), slot.date(), slot.startTime(), slot.endTime(),
-                slot.homeAwayPreference(), slot.venueId(), slot.format(), slot.notes(), status);
+        return new AvailabilitySlot(slot.getId(), slot.getTeamId(), slot.getDate(), slot.getStartTime(), slot.getEndTime(),
+                slot.getHomeAwayPreference(), slot.getVenueId(), slot.getFormat(), slot.getNotes(), status);
     }
 
     private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status) {
-        return withStatus(fr, status, fr.actionReason());
+        return withStatus(fr, status, fr.getActionReason());
     }
 
     /** Clears any pending proposal - every transition except suggestChanges/acceptChanges resolves or moots it. */
@@ -432,20 +432,20 @@ public class FriendlyRequestService {
 
     private FriendlyRequest withStatus(FriendlyRequest fr, RequestStatus status, String reason,
                                         LocalTime proposedStartTime, LocalTime proposedEndTime, String proposedVenueId) {
-        return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(),
-                fr.senderSlotId(), fr.recipientSlotId(), status, fr.date(), fr.startTime(), fr.endTime(),
-                fr.venueId(), fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(),
-                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason,
+        return new FriendlyRequest(fr.getId(), fr.getSenderTeamId(), fr.getRecipientTeamId(),
+                fr.getSenderSlotId(), fr.getRecipientSlotId(), status, fr.getDate(), fr.getStartTime(), fr.getEndTime(),
+                fr.getVenueId(), fr.getHomeTeamId(), fr.getCostShare(), fr.getRefereeArrangement(), fr.getMessage(),
+                fr.getCreatedByUserId(), fr.getCreatedAt(), Instant.now(), reason,
                 proposedStartTime, proposedEndTime, proposedVenueId);
     }
 
     /** Bakes a proposal into the real terms (acceptChanges) - proposed fields always clear here. */
     private FriendlyRequest withTerms(FriendlyRequest fr, RequestStatus status, String reason,
                                        LocalTime startTime, LocalTime endTime, String venueId) {
-        return new FriendlyRequest(fr.id(), fr.senderTeamId(), fr.recipientTeamId(),
-                fr.senderSlotId(), fr.recipientSlotId(), status, fr.date(), startTime, endTime,
-                venueId, fr.homeTeamId(), fr.costShare(), fr.refereeArrangement(), fr.message(),
-                fr.createdByUserId(), fr.createdAt(), Instant.now(), reason, null, null, null);
+        return new FriendlyRequest(fr.getId(), fr.getSenderTeamId(), fr.getRecipientTeamId(),
+                fr.getSenderSlotId(), fr.getRecipientSlotId(), status, fr.getDate(), startTime, endTime,
+                venueId, fr.getHomeTeamId(), fr.getCostShare(), fr.getRefereeArrangement(), fr.getMessage(),
+                fr.getCreatedByUserId(), fr.getCreatedAt(), Instant.now(), reason, null, null, null);
     }
 
     /**
@@ -457,16 +457,16 @@ public class FriendlyRequestService {
         // Confirmed before anything is booked, so a cancel that got in first leaves no fixture behind.
         FriendlyRequest confirmed = transition(withStatus(fr, RequestStatus.CONFIRMED), RequestStatus.ACCEPTED);
 
-        availability.findById(fr.senderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
-        availability.findById(fr.recipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
+        availability.findById(fr.getSenderSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
+        availability.findById(fr.getRecipientSlotId()).ifPresent(s -> availability.save(withStatus(s, AvailabilityStatus.BOOKED)));
 
         // Requests sent before venues were filled in on send may still have none.
-        String venueId = fr.venueId() != null
-                ? fr.venueId()
-                : teams.findById(fr.homeTeamId()).map(this::homeVenueId).orElse(null);
-        Fixture fixture = fixtures.save(new Fixture(null, fr.id(), fr.homeTeamId(), fr.awayTeamId(), fr.date(),
-                fr.startTime(), fr.endTime(), venueId, FixtureStatus.CONFIRMED,
-                fr.costShare(), fr.refereeArrangement(), Instant.now()));
+        String venueId = fr.getVenueId() != null
+                ? fr.getVenueId()
+                : teams.findById(fr.getHomeTeamId()).map(this::homeVenueId).orElse(null);
+        Fixture fixture = fixtures.save(new Fixture(null, fr.getId(), fr.getHomeTeamId(), fr.awayTeamId(), fr.getDate(),
+                fr.getStartTime(), fr.getEndTime(), venueId, FixtureStatus.CONFIRMED,
+                fr.getCostShare(), fr.getRefereeArrangement(), Instant.now()));
 
         confirmationEmails.sendFor(fixture);
         return confirmed;
@@ -484,12 +484,12 @@ public class FriendlyRequestService {
     }
 
     private void cancelFixtureIfAny(FriendlyRequest fr) {
-        fixtures.findByTeamId(fr.homeTeamId()).stream()
-                .filter(f -> f.friendlyRequestId().equals(fr.id()))
+        fixtures.findByTeamId(fr.getHomeTeamId()).stream()
+                .filter(f -> f.getFriendlyRequestId().equals(fr.getId()))
                 .findFirst()
-                .ifPresent(f -> fixtures.save(new Fixture(f.id(), f.friendlyRequestId(), f.homeTeamId(),
-                        f.awayTeamId(), f.date(), f.startTime(), f.endTime(), f.venueId(),
-                        FixtureStatus.CANCELLED, f.costShare(), f.refereeArrangement(), f.createdAt())));
+                .ifPresent(f -> fixtures.save(new Fixture(f.getId(), f.getFriendlyRequestId(), f.getHomeTeamId(),
+                        f.getAwayTeamId(), f.getDate(), f.getStartTime(), f.getEndTime(), f.getVenueId(),
+                        FixtureStatus.CANCELLED, f.getCostShare(), f.getRefereeArrangement(), f.getCreatedAt())));
     }
 
     public Optional<Team> team(String teamId) {
@@ -502,7 +502,7 @@ public class FriendlyRequestService {
     }
 
     private String homeVenueId(Team home) {
-        return venues.homeVenueFor(home).map(Venue::id).orElse(null);
+        return venues.homeVenueFor(home).map(Venue::getId).orElse(null);
     }
 
     /**
@@ -512,11 +512,11 @@ public class FriendlyRequestService {
      */
     private void requireVenueOfEitherTeam(String venueId, String teamAId, String teamBId) {
         if (venueId == null || venueId.isBlank()) return;
-        String clubId = venues.findById(venueId).map(Venue::clubId).orElse(null);
+        String clubId = venues.findById(venueId).map(Venue::getClubId).orElse(null);
         boolean ours = clubId != null && Stream.of(teamAId, teamBId)
                 .map(teams::findById)
                 .flatMap(Optional::stream)
-                .anyMatch(t -> clubId.equals(t.clubId()));
+                .anyMatch(t -> clubId.equals(t.getClubId()));
         if (!ours) {
             throw new BusinessRuleException("INVALID_VENUE", HttpStatus.BAD_REQUEST,
                     "Choose a venue that belongs to one of the two teams.");

@@ -72,15 +72,15 @@ public final class MatchDtos {
                     result.summaryReasons(),
                     result.factors().stream().map(FactorView::from).toList(),
                     result.overlappingSlots().stream()
-                            .map(overlap -> overlap.ours().date().toString())
+                            .map(overlap -> overlap.ours().getDate().toString())
                             .distinct()
                             .toList(),
                     first == null ? null : new OverlapView(
-                            first.ours().date().toString(),
+                            first.ours().getDate().toString(),
                             first.ours().overlapStartWith(first.theirs()).toString(),
                             first.overlapMinutes(),
-                            first.ours().id(),
-                            first.theirs().id()),
+                            first.ours().getId(),
+                            first.theirs().getId()),
                     canReceiveRequests);
         }
     }
@@ -106,18 +106,18 @@ public final class MatchDtos {
 
         public static TeamSummary from(Team team) {
             return new TeamSummary(
-                    team.id(),
-                    team.name(),
-                    team.clubName(),
-                    team.badgeUrl(),
-                    team.ageGroup().label(),
-                    team.gender().label(),
-                    team.format().label(),
-                    team.abilityLevel().label(),
-                    team.organisation() == null ? null : team.organisation().label(),
-                    team.league(),
-                    team.description(),
-                    outwardCode(team.postcode()),
+                    team.getId(),
+                    team.getName(),
+                    team.getClubName(),
+                    team.getBadgeUrl(),
+                    team.getAgeGroup().label(),
+                    team.getGender().label(),
+                    team.getFormat().label(),
+                    team.getAbilityLevel().label(),
+                    team.getOrganisation() == null ? null : team.getOrganisation().label(),
+                    team.getLeague(),
+                    team.getDescription(),
+                    outwardCode(team.getPostcode()),
                     team.isVerified());
         }
 

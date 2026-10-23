@@ -38,10 +38,10 @@ public final class ReportDtos {
             String reporterTeamName, String reportedTeamName) {
 
         public static ReportView from(Report r, String reporterTeamName, String reportedTeamName) {
-            return new ReportView(r.id(), r.reporterTeamId(), r.reportedTeamId(), r.relatedFixtureId(),
-                    r.type().name(), r.severity().name(), r.details(), r.status().name(), r.assignedAdminId(),
-                    r.internalNotes().stream().map(InternalNoteView::from).toList(),
-                    r.createdAt(), r.updatedAt(), reporterTeamName, reportedTeamName);
+            return new ReportView(r.getId(), r.getReporterTeamId(), r.getReportedTeamId(), r.getRelatedFixtureId(),
+                    r.getType().name(), r.getSeverity().name(), r.getDetails(), r.getStatus().name(), r.getAssignedAdminId(),
+                    r.getInternalNotes().stream().map(InternalNoteView::from).toList(),
+                    r.getCreatedAt(), r.getUpdatedAt(), reporterTeamName, reportedTeamName);
         }
     }
 }

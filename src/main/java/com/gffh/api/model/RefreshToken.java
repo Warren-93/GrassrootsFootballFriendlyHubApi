@@ -1,5 +1,12 @@
 package com.gffh.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -8,14 +15,21 @@ import java.time.Instant;
  * access token plus refresh token strategy"). {@code tokenHash} is a SHA-256 digest,
  * never the raw token - a database compromise must not hand out usable credentials.
  */
-public record RefreshToken(
-        String id,
-        String userId,
-        String tokenHash,
-        Instant expiresAt,
-        boolean revoked,
-        Instant createdAt,
-        Instant rotatedAt) {
+@Document("refreshTokens")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RefreshToken {
+
+    @Id
+    private String id;
+    private String userId;
+    private String tokenHash;
+    private Instant expiresAt;
+    private boolean revoked;
+    @CreatedDate
+    private Instant createdAt;
+    private Instant rotatedAt;
 
     public boolean isUsable(Instant now) {
         return !revoked && now.isBefore(expiresAt);

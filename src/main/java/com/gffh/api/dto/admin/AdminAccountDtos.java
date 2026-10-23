@@ -13,7 +13,7 @@ public final class AdminAccountDtos {
 
     public record AdminAccountView(String id, String email, String role, Instant createdAt, Instant lastLoginAt) {
         public static AdminAccountView from(PlatformAdmin a) {
-            return new AdminAccountView(a.id(), a.email(), a.effectiveRole().name(), a.createdAt(), a.lastLoginAt());
+            return new AdminAccountView(a.getId(), a.getEmail(), a.effectiveRole().name(), a.getCreatedAt(), a.getLastLoginAt());
         }
     }
 

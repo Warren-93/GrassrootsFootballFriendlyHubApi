@@ -61,7 +61,7 @@ public class AdminDeletionService {
 
         AdminDeletionDtos.DeletionPreview preview = cascadeDeletion.preview(body.targetType(), body.targetId());
         DeletionRequest saved = deletionRequests.save(new DeletionRequest(null, body.targetType(), body.targetId(),
-                preview.targetLabel(), body.reason().trim(), DeletionRequestStatus.PENDING, admin.id(), admin.email(),
+                preview.targetLabel(), body.reason().trim(), DeletionRequestStatus.PENDING, admin.getId(), admin.getEmail(),
                 Instant.now(), null, null, null, null, summarise(preview), null));
         auditLogService.record(adminId, "DELETION_REQUESTED", body.targetType().name(), body.targetId(),
                 body.reason().trim());
@@ -80,11 +80,11 @@ public class AdminDeletionService {
         PlatformAdmin approver = adminAuth.confirmIdentity(adminId, body.password(), body.code());
         DeletionRequest request = pending(requestId);
 
-        if (cascadeDeletion.labelFor(request.targetType(), request.targetId()).isEmpty()) {
+        if (cascadeDeletion.labelFor(request.getTargetType(), request.getTargetId()).isEmpty()) {
             deletionRequests.saveIfStatus(request.decided(DeletionRequestStatus.CANCELLED, approver,
                     "It had already been deleted.", null), DeletionRequestStatus.PENDING);
             throw new BusinessRuleException("DELETION_TARGET_GONE", HttpStatus.CONFLICT,
-                    "That " + request.targetType().name().toLowerCase() + " has already been deleted.");
+                    "That " + request.getTargetType().name().toLowerCase() + " has already been deleted.");
         }
 
         DeletionRequest claimed = deletionRequests.saveIfStatus(
@@ -93,21 +93,21 @@ public class AdminDeletionService {
 
         Map<String, Long> removed;
         try {
-            removed = cascadeDeletion.delete(request.targetType(), request.targetId());
+            removed = cascadeDeletion.delete(request.getTargetType(), request.getTargetId());
         } catch (RuntimeException e) {
             deletionRequests.save(request);
             throw e;
         }
         String result = describe(removed);
-        DeletionRequest done = deletionRequests.save(new DeletionRequest(claimed.id(), claimed.targetType(),
-                claimed.targetId(), claimed.targetLabel(), claimed.reason(), claimed.status(),
-                claimed.requestedByAdminId(), claimed.requestedByEmail(), claimed.requestedAt(),
-                claimed.decidedByAdminId(), claimed.decidedByEmail(), claimed.decidedAt(), claimed.decisionNote(),
-                claimed.summary(), result));
+        DeletionRequest done = deletionRequests.save(new DeletionRequest(claimed.getId(), claimed.getTargetType(),
+                claimed.getTargetId(), claimed.getTargetLabel(), claimed.getReason(), claimed.getStatus(),
+                claimed.getRequestedByAdminId(), claimed.getRequestedByEmail(), claimed.getRequestedAt(),
+                claimed.getDecidedByAdminId(), claimed.getDecidedByEmail(), claimed.getDecidedAt(), claimed.getDecisionNote(),
+                claimed.getSummary(), result));
 
-        auditLogService.record(adminId, request.targetType().name() + "_DELETED", request.targetType().name(),
-                request.targetId(), request.targetLabel() + " - requested by " + request.requestedByEmail()
-                        + ": " + request.reason() + ". Removed: " + result);
+        auditLogService.record(adminId, request.getTargetType().name() + "_DELETED", request.getTargetType().name(),
+                request.getTargetId(), request.getTargetLabel() + " - requested by " + request.getRequestedByEmail()
+                        + ": " + request.getReason() + ". Removed: " + result);
         return AdminDeletionDtos.DeletionRequestView.from(done);
     }
 
@@ -118,29 +118,29 @@ public class AdminDeletionService {
         DeletionRequest rejected = deletionRequests.saveIfStatus(
                 request.decided(DeletionRequestStatus.REJECTED, admin(adminId), note(body == null ? null : body.note()), null),
                 DeletionRequestStatus.PENDING).orElseThrow(AdminDeletionService::alreadyDecided);
-        auditLogService.record(adminId, "DELETION_REJECTED", request.targetType().name(), request.targetId(),
-                rejected.decisionNote());
+        auditLogService.record(adminId, "DELETION_REJECTED", request.getTargetType().name(), request.getTargetId(),
+                rejected.getDecisionNote());
         return AdminDeletionDtos.DeletionRequestView.from(rejected);
     }
 
     /** The admin who asked, or the super admin, can withdraw a request that hasn't been decided. */
     public AdminDeletionDtos.DeletionRequestView cancel(String adminId, String requestId) {
         DeletionRequest request = pending(requestId);
-        if (!request.requestedByAdminId().equals(adminId) && !adminAccounts.isSuperAdmin(adminId)) {
+        if (!request.getRequestedByAdminId().equals(adminId) && !adminAccounts.isSuperAdmin(adminId)) {
             throw new BusinessRuleException("SUPER_ADMIN_ONLY", HttpStatus.FORBIDDEN,
                     "Only the admin who asked, or the super admin, can withdraw this request.");
         }
         DeletionRequest cancelled = deletionRequests.saveIfStatus(
                 request.decided(DeletionRequestStatus.CANCELLED, admin(adminId), "Withdrawn.", null),
                 DeletionRequestStatus.PENDING).orElseThrow(AdminDeletionService::alreadyDecided);
-        auditLogService.record(adminId, "DELETION_WITHDRAWN", request.targetType().name(), request.targetId(), null);
+        auditLogService.record(adminId, "DELETION_WITHDRAWN", request.getTargetType().name(), request.getTargetId(), null);
         return AdminDeletionDtos.DeletionRequestView.from(cancelled);
     }
 
     private DeletionRequest pending(String requestId) {
         DeletionRequest request = deletionRequests.findById(requestId).orElseThrow(() -> new BusinessRuleException(
                 "DELETION_REQUEST_NOT_FOUND", HttpStatus.NOT_FOUND, "That delete request could not be found."));
-        if (request.status() != DeletionRequestStatus.PENDING) throw alreadyDecided();
+        if (request.getStatus() != DeletionRequestStatus.PENDING) throw alreadyDecided();
         return request;
     }
 

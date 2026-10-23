@@ -91,14 +91,14 @@ public final class TeamDtos {
          * only for the team's own managers.
          */
         public static TeamView from(Team t, boolean includeContact, boolean hasVenue) {
-            return new TeamView(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
-                    t.ageGroup().name(), t.gender().name(), t.format().name(), t.abilityLevel().name(),
-                    t.organisation() == null ? null : t.organisation().name(), t.league(), t.postcode(), t.location().longitude(), t.location().latitude(),
-                    t.travelRadiusMiles(), t.homeAwayPreference().name(),
-                    includeContact ? t.managerName() : null,
-                    includeContact ? t.contactPhone() : null,
-                    t.description(), t.verification().name(), t.defaultVenueId(),
-                    t.completenessPercent(hasVenue), t.archived(), t.createdAt(), null, null,
+            return new TeamView(t.getId(), t.getClubId(), t.getName(), t.getClubName(), t.getBadgeUrl(),
+                    t.getAgeGroup().name(), t.getGender().name(), t.getFormat().name(), t.getAbilityLevel().name(),
+                    t.getOrganisation() == null ? null : t.getOrganisation().name(), t.getLeague(), t.getPostcode(), t.getLocation().longitude(), t.getLocation().latitude(),
+                    t.getTravelRadiusMiles(), t.getHomeAwayPreference().name(),
+                    includeContact ? t.getManagerName() : null,
+                    includeContact ? t.getContactPhone() : null,
+                    t.getDescription(), t.getVerification().name(), t.getDefaultVenueId(),
+                    t.completenessPercent(hasVenue), t.isArchived(), t.getCreatedAt(), null, null,
                     t.readyForRequests(hasVenue),
                     includeContact ? t.profileChecklist(hasVenue) : List.of());
         }
@@ -128,7 +128,7 @@ public final class TeamDtos {
      */
     public record PrivacyPreferences(boolean searchVisible, boolean shareContactDetails) {
         public static PrivacyPreferences from(Team t) {
-            return new PrivacyPreferences(t.searchVisible(), t.shareContactDetails());
+            return new PrivacyPreferences(t.isSearchVisible(), t.isShareContactDetails());
         }
     }
 }

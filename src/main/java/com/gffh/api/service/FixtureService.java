@@ -49,8 +49,8 @@ public class FixtureService {
 
     public Fixture get(String userId, String fixtureId) {
         Fixture fixture = find(fixtureId);
-        boolean visible = memberships.canReadTeam(userId, fixture.homeTeamId())
-                || memberships.canReadTeam(userId, fixture.awayTeamId());
+        boolean visible = memberships.canReadTeam(userId, fixture.getHomeTeamId())
+                || memberships.canReadTeam(userId, fixture.getAwayTeamId());
         if (!visible) throw fixtureNotFound();
         return fixture;
     }
@@ -66,7 +66,7 @@ public class FixtureService {
         Fixture fixture = find(fixtureId);
         // A member who can open the fixture still gets the answer a stranger does.
         if (!managesEitherTeam(userId, fixture)) throw fixtureNotFound();
-        friendlyRequestService.act(userId, fixture.friendlyRequestId(), "cancel",
+        friendlyRequestService.act(userId, fixture.getFriendlyRequestId(), "cancel",
                 new FriendlyRequestDtos.ActionRequest(reason, null, null, null));
         return fixtures.findById(fixtureId).orElseThrow(BusinessRuleException::blocked);
     }
@@ -81,8 +81,8 @@ public class FixtureService {
      * filled in on creation have none of their own). Null when neither exists.
      */
     public Venue venueFor(Fixture fixture) {
-        if (fixture.venueId() != null) return venues.findById(fixture.venueId()).orElse(null);
-        return teams.findById(fixture.homeTeamId()).flatMap(venues::homeVenueFor).orElse(null);
+        if (fixture.getVenueId() != null) return venues.findById(fixture.getVenueId()).orElse(null);
+        return teams.findById(fixture.getHomeTeamId()).flatMap(venues::homeVenueFor).orElse(null);
     }
 
     /** ADM-07's read-only fixture inspector: no team-management check, already gated by PLATFORM_ADMIN at the controller. */
@@ -97,26 +97,26 @@ public class FixtureService {
     public List<AdminFixtureInspectorDtos.FixtureListItem> searchForAdmin(String teamQuery, LocalDate from, LocalDate to,
                                                                           FixtureStatus status, int limit) {
         Set<String> teamIds = teamQuery == null || teamQuery.isBlank() ? null
-                : teams.searchByName(teamQuery.trim(), 500).stream().map(Team::id).collect(Collectors.toSet());
+                : teams.searchByName(teamQuery.trim(), 500).stream().map(Team::getId).collect(Collectors.toSet());
         Map<String, String> names = new HashMap<>();
         Map<String, String> venueNames = new HashMap<>();
         return fixtures.search(teamIds, from, to, status, Math.min(Math.max(limit, 1), 500)).stream()
-                .map(f -> new AdminFixtureInspectorDtos.FixtureListItem(f.id(), f.date(), f.startTime(), f.endTime(),
-                        f.status().name(), f.homeTeamId(), teamName(names, f.homeTeamId()), f.awayTeamId(),
-                        teamName(names, f.awayTeamId()),
-                        f.venueId() == null ? null : venueNames.computeIfAbsent(f.venueId(),
-                                id -> venues.findById(id).map(Venue::name).orElse(null)),
-                        f.createdAt()))
+                .map(f -> new AdminFixtureInspectorDtos.FixtureListItem(f.getId(), f.getDate(), f.getStartTime(), f.getEndTime(),
+                        f.getStatus().name(), f.getHomeTeamId(), teamName(names, f.getHomeTeamId()), f.getAwayTeamId(),
+                        teamName(names, f.getAwayTeamId()),
+                        f.getVenueId() == null ? null : venueNames.computeIfAbsent(f.getVenueId(),
+                                id -> venues.findById(id).map(Venue::getName).orElse(null)),
+                        f.getCreatedAt()))
                 .toList();
     }
 
     private String teamName(Map<String, String> cache, String teamId) {
-        return cache.computeIfAbsent(teamId, id -> teams.findById(id).map(Team::name).orElse("(deleted team)"));
+        return cache.computeIfAbsent(teamId, id -> teams.findById(id).map(Team::getName).orElse("(deleted team)"));
     }
 
     /** Whether the caller manages either side - the reach that discloses contact details and allows cancelling. */
     public boolean managesEitherTeam(String userId, Fixture fixture) {
-        return canManage(userId, fixture.homeTeamId()) || canManage(userId, fixture.awayTeamId());
+        return canManage(userId, fixture.getHomeTeamId()) || canManage(userId, fixture.getAwayTeamId());
     }
 
     private Fixture find(String fixtureId) {

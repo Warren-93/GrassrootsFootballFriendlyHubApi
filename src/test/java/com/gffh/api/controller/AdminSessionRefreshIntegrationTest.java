@@ -37,14 +37,14 @@ class AdminSessionRefreshIntegrationTest extends AbstractIntegrationTest {
     void refreshIssuesNewToken() throws Exception {
         PlatformAdmin admin = newAdmin();
         Instant start = Instant.now().minus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
-        String old = adminJwtService.issueSessionToken(admin.id(), admin.email(), start);
+        String old = adminJwtService.issueSessionToken(admin.getId(), admin.getEmail(), start);
 
         JsonNode body = objectMapper.readTree(mockMvc.perform(post("/api/v1/admin/auth/refresh")
                         .header("Authorization", "Bearer " + old))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
 
         String fresh = body.get("accessToken").asText();
-        assertEquals(admin.email(), body.get("email").asText());
+        assertEquals(admin.getEmail(), body.get("email").asText());
         assertEquals(1800, body.get("expiresIn").asLong());
         Jwt decoded = jwtDecoder.decode(fresh);
         assertEquals(start, adminJwtService.sessionStart(decoded));
@@ -58,7 +58,7 @@ class AdminSessionRefreshIntegrationTest extends AbstractIntegrationTest {
         PlatformAdmin admin = newAdmin();
         // 12-hour cap, signed in 11h50m ago: only ten minutes are left.
         Instant start = Instant.now().minus(11 * 60 + 50, ChronoUnit.MINUTES);
-        String old = adminJwtService.issueSessionToken(admin.id(), admin.email(), start);
+        String old = adminJwtService.issueSessionToken(admin.getId(), admin.getEmail(), start);
 
         JsonNode body = objectMapper.readTree(mockMvc.perform(post("/api/v1/admin/auth/refresh")
                         .header("Authorization", "Bearer " + old))

@@ -1,22 +1,21 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.PlatformAdmin;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
-public interface PlatformAdminRepository {
+public interface PlatformAdminRepository extends MongoRepository<PlatformAdmin, String> {
 
-    Optional<PlatformAdmin> findById(String id);
+    Optional<PlatformAdmin> findOneByEmail(String lowerCaseEmail);
 
-    Optional<PlatformAdmin> findByEmail(String email);
+    /** Admin emails are stored lower-cased, so the lookup is case-insensitive. */
+    default Optional<PlatformAdmin> findByEmail(String email) {
+        return findOneByEmail(email.toLowerCase(Locale.ROOT));
+    }
 
-    PlatformAdmin save(PlatformAdmin admin);
-
-    /** Oldest first. */
-    List<PlatformAdmin> findAll();
-
-    void delete(String id);
-
-    long count();
+    /** Oldest first - the oldest admin is the super admin. */
+    List<PlatformAdmin> findAllByOrderByCreatedAtAsc();
 }

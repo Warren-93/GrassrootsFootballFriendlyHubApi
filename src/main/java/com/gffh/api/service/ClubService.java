@@ -36,7 +36,7 @@ public class ClubService {
         Club club = clubs.save(new Club(null, request.name(), request.badgeUrl(), request.postcode(),
                 new GeoPoint(request.longitude(), request.latitude()),
                 request.website(), request.contactEmail(), Instant.now()));
-        memberships.save(new Membership(null, userId, null, club.id(), Role.CLUB_ADMIN, Instant.now()));
+        memberships.save(new Membership(null, userId, null, club.getId(), Role.CLUB_ADMIN, Instant.now()));
         return club;
     }
 
@@ -58,16 +58,16 @@ public class ClubService {
 
         GeoPoint location = (request.longitude() != null && request.latitude() != null)
                 ? new GeoPoint(request.longitude(), request.latitude())
-                : current.location();
+                : current.getLocation();
 
-        Club updated = new Club(current.id(),
-                orDefault(request.name(), current.name()),
-                orDefault(request.badgeUrl(), current.badgeUrl()),
-                orDefault(request.postcode(), current.postcode()),
+        Club updated = new Club(current.getId(),
+                orDefault(request.name(), current.getName()),
+                orDefault(request.badgeUrl(), current.getBadgeUrl()),
+                orDefault(request.postcode(), current.getPostcode()),
                 location,
-                orDefault(request.website(), current.website()),
-                orDefault(request.contactEmail(), current.contactEmail()),
-                current.createdAt());
+                orDefault(request.website(), current.getWebsite()),
+                orDefault(request.contactEmail(), current.getContactEmail()),
+                current.getCreatedAt());
 
         return clubs.save(updated);
     }

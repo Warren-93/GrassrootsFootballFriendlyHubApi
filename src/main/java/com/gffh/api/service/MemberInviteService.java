@@ -72,8 +72,8 @@ public class MemberInviteService {
      */
     MemberDtos.InviteView invite(String inviterUserId, Team team, String email, Role role) {
         User inviter = users.findById(inviterUserId).orElseThrow(BusinessRuleException::blocked);
-        if (!inviter.emailVerified()) throw BusinessRuleException.emailNotVerified();
-        if (!rateLimiter.tryConsume("member-invite:" + team.id(), rateLimits.getInvitationsPerHour())) {
+        if (!inviter.isEmailVerified()) throw BusinessRuleException.emailNotVerified();
+        if (!rateLimiter.tryConsume("member-invite:" + team.getId(), rateLimits.getInvitationsPerHour())) {
             throw BusinessRuleException.rateLimited();
         }
 
@@ -92,8 +92,8 @@ public class MemberInviteService {
 
     private MemberInvite saveInvite(Team team, String address, Role role, User inviter) {
         Instant now = Instant.now();
-        String existingId = invites.findByTeamIdAndEmail(team.id(), address).map(MemberInvite::id).orElse(null);
-        return invites.save(new MemberInvite(existingId, address, team.id(), role, inviter.id(),
+        String existingId = invites.findByTeamIdAndEmail(team.getId(), address).map(MemberInvite::getId).orElse(null);
+        return invites.save(new MemberInvite(existingId, address, team.getId(), role, inviter.getId(),
                 now, now.plus(MemberInvite.VALIDITY)));
     }
 
@@ -110,10 +110,10 @@ public class MemberInviteService {
     public void cancel(String userId, String teamId, String inviteId) {
         membershipService.requireCanManageTeam(userId, teamId);
         MemberInvite invite = invites.findById(inviteId)
-                .filter(i -> i.teamId().equals(teamId))
+                .filter(i -> i.getTeamId().equals(teamId))
                 .orElseThrow(() -> new BusinessRuleException("INVITE_NOT_FOUND", HttpStatus.NOT_FOUND,
                         "That invitation could not be found."));
-        invites.delete(invite.id());
+        invites.deleteById(invite.getId());
     }
 
     /**
@@ -132,23 +132,23 @@ public class MemberInviteService {
      */
     public List<Membership> acceptPendingInvites(User user) {
         List<Membership> created = new ArrayList<>();
-        if (user == null || !user.emailVerified() || user.email() == null) return created;
+        if (user == null || !user.isEmailVerified() || user.getEmail() == null) return created;
         try {
             Instant now = Instant.now();
-            for (MemberInvite invite : invites.findPendingByEmail(user.email(), now)) {
+            for (MemberInvite invite : invites.findPendingByEmail(user.getEmail(), now)) {
                 try {
-                    Team team = teams.findById(invite.teamId()).orElse(null);
-                    if (team != null && !hasRoleOn(user.id(), team)) {
-                        created.add(memberships.save(MemberService.scoped(null, user.id(), team, invite.role(), now)));
+                    Team team = teams.findById(invite.getTeamId()).orElse(null);
+                    if (team != null && !hasRoleOn(user.getId(), team)) {
+                        created.add(memberships.save(MemberService.scoped(null, user.getId(), team, invite.getRole(), now)));
                     }
-                    invites.delete(invite.id());
+                    invites.deleteById(invite.getId());
                 } catch (Exception e) {
-                    log.warn("Could not accept invite {} for user {}", invite.id(), user.id(), e);
+                    log.warn("Could not accept invite {} for user {}", invite.getId(), user.getId(), e);
                 }
             }
-            if (!created.isEmpty()) log.info("Accepted {} team invite(s) for user {}", created.size(), user.id());
+            if (!created.isEmpty()) log.info("Accepted {} team invite(s) for user {}", created.size(), user.getId());
         } catch (Exception e) {
-            log.warn("Could not accept pending invites for user {}", user.id(), e);
+            log.warn("Could not accept pending invites for user {}", user.getId(), e);
         }
         return created;
     }
@@ -159,12 +159,12 @@ public class MemberInviteService {
     }
 
     private boolean hasRoleOn(String userId, Team team) {
-        return memberships.findTeamMembership(userId, team.id()).isPresent()
-                || memberships.findClubMembership(userId, team.clubId()).isPresent();
+        return memberships.findByUserIdAndTeamId(userId, team.getId()).isPresent()
+                || memberships.findByUserIdAndClubId(userId, team.getClubId()).isPresent();
     }
 
     static String inviterName(User inviter) {
-        return inviter.displayName() == null || inviter.displayName().isBlank()
-                ? "A Kickabout user" : inviter.displayName().trim();
+        return inviter.getDisplayName() == null || inviter.getDisplayName().isBlank()
+                ? "A Kickabout user" : inviter.getDisplayName().trim();
     }
 }

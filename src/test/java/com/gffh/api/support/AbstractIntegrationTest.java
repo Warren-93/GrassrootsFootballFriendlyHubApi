@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gffh.api.model.Team;
 import com.gffh.api.model.enums.VerificationStatus;
 import com.gffh.api.repository.TeamRepository;
+import org.junit.jupiter.api.AfterAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +48,11 @@ public abstract class AbstractIntegrationTest {
     static void mongoProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", MONGO::getConnectionString);
         registry.add("spring.data.mongodb.database", () -> "gffh-test");
+    }
+
+    @AfterAll
+    static void reportMongoShape() {
+        MongoShapeReport.writeIfEnabled();
     }
 
     @Autowired
@@ -167,12 +173,12 @@ public abstract class AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         Team team = teamRepository.findById(teamId).orElseThrow();
-        teamRepository.save(new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
-                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(), team.league(), team.postcode(),
-                team.location(), team.travelRadiusMiles(), team.homeAwayPreference(), team.managerName(),
-                team.contactPhone(), team.description(), VerificationStatus.VERIFIED, team.defaultVenueId(),
-                team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(),
-                team.archived(), team.searchVisible(), team.shareContactDetails()));
+        teamRepository.save(new Team(team.getId(), team.getClubId(), team.getName(), team.getClubName(), team.getBadgeUrl(),
+                team.getAgeGroup(), team.getGender(), team.getFormat(), team.getAbilityLevel(), team.getOrganisation(), team.getLeague(), team.getPostcode(),
+                team.getLocation(), team.getTravelRadiusMiles(), team.getHomeAwayPreference(), team.getManagerName(),
+                team.getContactPhone(), team.getDescription(), VerificationStatus.VERIFIED, team.getDefaultVenueId(),
+                team.getFirstFixtureConfirmedAt(), team.getCreatedAt(), team.getUpdatedAt(), team.isSuspended(),
+                team.isArchived(), team.isSearchVisible(), team.isShareContactDetails()));
     }
 
     /**

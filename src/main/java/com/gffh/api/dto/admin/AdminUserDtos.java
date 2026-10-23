@@ -12,7 +12,7 @@ public final class AdminUserDtos {
 
     public record MembershipView(String teamId, String clubId, String role) {
         public static MembershipView from(Membership m) {
-            return new MembershipView(m.teamId(), m.clubId(), m.role().name());
+            return new MembershipView(m.getTeamId(), m.getClubId(), m.getRole().name());
         }
     }
 
@@ -22,8 +22,8 @@ public final class AdminUserDtos {
             List<MembershipView> memberships, Instant createdAt, Instant lastActiveAt) {
 
         public static AdminUserView from(User u, List<Membership> memberships, Instant lastActiveAt) {
-            return new AdminUserView(u.id(), u.email(), u.displayName(), u.emailVerified(), u.suspended(),
-                    memberships.stream().map(MembershipView::from).toList(), u.createdAt(), lastActiveAt);
+            return new AdminUserView(u.getId(), u.getEmail(), u.getDisplayName(), u.isEmailVerified(), u.isSuspended(),
+                    memberships.stream().map(MembershipView::from).toList(), u.getCreatedAt(), lastActiveAt);
         }
     }
 }

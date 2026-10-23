@@ -62,9 +62,9 @@ public final class AdminDeletionDtos {
             String result) {
 
         public static DeletionRequestView from(DeletionRequest r) {
-            return new DeletionRequestView(r.id(), r.targetType().name(), r.targetId(), r.targetLabel(), r.reason(),
-                    r.status().name(), r.requestedByAdminId(), r.requestedByEmail(), r.requestedAt(),
-                    r.decidedByAdminId(), r.decidedByEmail(), r.decidedAt(), r.decisionNote(), r.summary(), r.result());
+            return new DeletionRequestView(r.getId(), r.getTargetType().name(), r.getTargetId(), r.getTargetLabel(), r.getReason(),
+                    r.getStatus().name(), r.getRequestedByAdminId(), r.getRequestedByEmail(), r.getRequestedAt(),
+                    r.getDecidedByAdminId(), r.getDecidedByEmail(), r.getDecidedAt(), r.getDecisionNote(), r.getSummary(), r.getResult());
         }
     }
 }

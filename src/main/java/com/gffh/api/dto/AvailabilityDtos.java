@@ -40,9 +40,9 @@ public final class AvailabilityDtos {
             String homeAwayPreference, String venueId, String format, String notes, String status) {
 
         public static SlotView from(AvailabilitySlot s) {
-            return new SlotView(s.id(), s.teamId(), s.date(), s.startTime(), s.endTime(),
-                    s.homeAwayPreference().name(), s.venueId(),
-                    s.format() == null ? null : s.format().name(), s.notes(), s.status().name());
+            return new SlotView(s.getId(), s.getTeamId(), s.getDate(), s.getStartTime(), s.getEndTime(),
+                    s.getHomeAwayPreference().name(), s.getVenueId(),
+                    s.getFormat() == null ? null : s.getFormat().name(), s.getNotes(), s.getStatus().name());
         }
     }
 }

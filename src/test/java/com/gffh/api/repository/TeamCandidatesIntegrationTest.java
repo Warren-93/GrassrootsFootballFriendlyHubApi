@@ -34,18 +34,18 @@ class TeamCandidatesIntegrationTest extends AbstractIntegrationTest {
         Team u13 = save(run, AgeGroup.U13, Gender.MIXED);
         Team u12Girls = save(run, AgeGroup.U12, Gender.GIRLS);
 
-        assertEquals(Set.of(u12.id()), candidateIds(run, AgeGroup.U12.withinBands(0), Gender.MIXED));
-        assertEquals(Set.of(u11.id(), u12.id(), u13.id()),
+        assertEquals(Set.of(u12.getId()), candidateIds(run, AgeGroup.U12.withinBands(0), Gender.MIXED));
+        assertEquals(Set.of(u11.getId(), u12.getId(), u13.getId()),
                 candidateIds(run, AgeGroup.U12.withinBands(1), Gender.MIXED));
-        assertEquals(Set.of(u10.id(), u11.id(), u12.id(), u13.id()),
+        assertEquals(Set.of(u10.getId(), u11.getId(), u12.getId(), u13.getId()),
                 candidateIds(run, AgeGroup.U11.withinBands(2), Gender.MIXED));
-        assertEquals(Set.of(u12Girls.id()), candidateIds(run, AgeGroup.U12.withinBands(1), Gender.GIRLS));
+        assertEquals(Set.of(u12Girls.getId()), candidateIds(run, AgeGroup.U12.withinBands(1), Gender.GIRLS));
     }
 
     private Set<String> candidateIds(String run, Set<AgeGroup> ageGroups, Gender gender) {
         List<Team> found = teamRepository.findCandidates(HERE, 5, ageGroups, gender, null, null, false,
                 "searching-club-" + run, 500);
-        return found.stream().filter(t -> t.name().startsWith(run)).map(Team::id)
+        return found.stream().filter(t -> t.getName().startsWith(run)).map(Team::getId)
                 .collect(Collectors.toSet());
     }
 

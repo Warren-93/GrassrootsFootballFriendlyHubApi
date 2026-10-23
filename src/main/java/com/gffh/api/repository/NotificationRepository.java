@@ -1,19 +1,16 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.Notification;
+import org.springframework.data.domain.Limit;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface NotificationRepository {
+public interface NotificationRepository extends MongoRepository<Notification, String> {
 
-    Notification save(Notification notification);
+    List<Notification> findByUserIdOrderByCreatedAtDesc(String userId, Limit limit);
 
-    Optional<Notification> findById(String id);
+    long countByUserIdAndReadFalse(String userId);
 
-    List<Notification> findByUserId(String userId, int limit);
-
-    long countUnread(String userId);
-
-    void deleteAllForUser(String userId);
+    void deleteByUserId(String userId);
 }

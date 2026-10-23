@@ -1,6 +1,12 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.Role;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,14 +19,21 @@ import java.time.Instant;
  *
  * <p>One invite per team and address; inviting again refreshes it.
  */
-public record MemberInvite(
-        String id,
-        String email,
-        String teamId,
-        Role role,
-        String invitedByUserId,
-        Instant createdAt,
-        Instant expiresAt) {
+@Document("memberInvites")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class MemberInvite {
+
+    @Id
+    private String id;
+    private String email;
+    private String teamId;
+    private Role role;
+    private String invitedByUserId;
+    @CreatedDate
+    private Instant createdAt;
+    private Instant expiresAt;
 
     public static final Duration VALIDITY = Duration.ofDays(30);
 

@@ -33,9 +33,9 @@ public final class FixtureDtos {
          * managers' details.
          */
         public static FixtureTeamView from(Team t, boolean includeContact) {
-            boolean share = includeContact && t.shareContactDetails();
-            return new FixtureTeamView(t.id(), t.name(), t.clubName(), share ? t.managerName() : null,
-                    share ? t.contactPhone() : null, t.defaultVenueId(), t.badgeUrl());
+            boolean share = includeContact && t.isShareContactDetails();
+            return new FixtureTeamView(t.getId(), t.getName(), t.getClubName(), share ? t.getManagerName() : null,
+                    share ? t.getContactPhone() : null, t.getDefaultVenueId(), t.getBadgeUrl());
         }
     }
 
@@ -50,10 +50,10 @@ public final class FixtureDtos {
             String status, String costShare, String refereeArrangement, VenueDtos.VenueSummary venue) {
 
         public static FixtureView from(Fixture f, Team home, Team away, Venue venue, boolean includeContact) {
-            return new FixtureView(f.id(), f.friendlyRequestId(),
+            return new FixtureView(f.getId(), f.getFriendlyRequestId(),
                     FixtureTeamView.from(home, includeContact), FixtureTeamView.from(away, includeContact),
-                    f.date(), f.startTime(), f.endTime(), f.venueId(),
-                    f.status().name(), f.costShare().name(), f.refereeArrangement().name(),
+                    f.getDate(), f.getStartTime(), f.getEndTime(), f.getVenueId(),
+                    f.getStatus().name(), f.getCostShare().name(), f.getRefereeArrangement().name(),
                     VenueDtos.VenueSummary.from(venue));
         }
     }

@@ -53,44 +53,44 @@ public class VenueService {
 
     public Venue update(String userId, String venueId, com.gffh.api.dto.VenueDtos.UpdateVenueRequest request) {
         Venue current = find(venueId);
-        membershipService.requireCanManageClub(userId, current.clubId());
+        membershipService.requireCanManageClub(userId, current.getClubId());
 
         GeoPoint location = (request.longitude() != null && request.latitude() != null)
                 ? new GeoPoint(request.longitude(), request.latitude())
-                : current.location();
+                : current.getLocation();
 
-        Venue updated = new Venue(current.id(), current.clubId(),
-                orDefault(request.name(), current.name()),
-                orDefault(request.address(), current.address()),
-                request.postcode() != null ? blankToNull(request.postcode()) : current.postcode(),
+        Venue updated = new Venue(current.getId(), current.getClubId(),
+                orDefault(request.name(), current.getName()),
+                orDefault(request.address(), current.getAddress()),
+                request.postcode() != null ? blankToNull(request.postcode()) : current.getPostcode(),
                 location,
-                request.pitchSurface() != null ? request.pitchSurface() : current.pitchSurface(),
-                request.facilities() != null ? request.facilities() : current.facilities(),
-                orDefault(request.accessNotes(), current.accessNotes()),
-                orDefault(request.parkingNotes(), current.parkingNotes()),
-                orDefault(request.pitchNumber(), current.pitchNumber()),
-                current.isDefault(), current.createdAt());
+                request.pitchSurface() != null ? request.pitchSurface() : current.getPitchSurface(),
+                request.facilities() != null ? request.facilities() : current.getFacilities(),
+                orDefault(request.accessNotes(), current.getAccessNotes()),
+                orDefault(request.parkingNotes(), current.getParkingNotes()),
+                orDefault(request.pitchNumber(), current.getPitchNumber()),
+                current.isDefault(), current.getCreatedAt());
 
         return venues.save(updated);
     }
 
     public Venue setDefault(String userId, String venueId) {
         Venue current = find(venueId);
-        membershipService.requireCanManageClub(userId, current.clubId());
-        venues.clearDefaultForClub(current.clubId());
-        return venues.save(new Venue(current.id(), current.clubId(), current.name(), current.address(),
-                current.postcode(), current.location(), current.pitchSurface(), current.facilities(),
-                current.accessNotes(), current.parkingNotes(), current.pitchNumber(), true, current.createdAt()));
+        membershipService.requireCanManageClub(userId, current.getClubId());
+        venues.clearDefaultForClub(current.getClubId());
+        return venues.save(new Venue(current.getId(), current.getClubId(), current.getName(), current.getAddress(),
+                current.getPostcode(), current.getLocation(), current.getPitchSurface(), current.getFacilities(),
+                current.getAccessNotes(), current.getParkingNotes(), current.getPitchNumber(), true, current.getCreatedAt()));
     }
 
     public void delete(String userId, String venueId) {
         Venue current = find(venueId);
-        membershipService.requireCanManageClub(userId, current.clubId());
+        membershipService.requireCanManageClub(userId, current.getClubId());
         if (fixtures.existsUpcomingConfirmedAtVenue(venueId)) {
             throw new BusinessRuleException("VENUE_HAS_UPCOMING_FIXTURE", HttpStatus.CONFLICT,
                     "This venue has a confirmed fixture booked - it can't be removed until that's played or cancelled.");
         }
-        venues.delete(venueId);
+        venues.deleteById(venueId);
     }
 
     /**
@@ -101,12 +101,12 @@ public class VenueService {
      * or fixture the caller is already part of.
      */
     public Optional<Venue> homeVenueFor(Team team) {
-        if (team.defaultVenueId() != null) {
-            Optional<Venue> own = venues.findById(team.defaultVenueId());
+        if (team.getDefaultVenueId() != null) {
+            Optional<Venue> own = venues.findById(team.getDefaultVenueId());
             if (own.isPresent()) return own;
         }
-        if (team.clubId() == null) return Optional.empty();
-        return venues.findByClubId(team.clubId()).stream().filter(Venue::isDefault).findFirst();
+        if (team.getClubId() == null) return Optional.empty();
+        return venues.findByClubId(team.getClubId()).stream().filter(Venue::isDefault).findFirst();
     }
 
     /** A venue by id, with no permission check - for the same read-only uses as {@link #homeVenueFor}. */

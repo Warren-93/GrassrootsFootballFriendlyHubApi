@@ -28,17 +28,17 @@ public class NotificationPreferenceService {
     public NotificationDtos.PreferenceView update(String userId, NotificationDtos.UpdatePreferenceRequest request) {
         NotificationPreference current = current(userId);
         NotificationPreference saved = preferences.save(new NotificationPreference(userId,
-                orCurrent(request.friendlyRequests(), current.friendlyRequests()),
-                orCurrent(request.fixtures(), current.fixtures()),
-                orCurrent(request.verification(), current.verification()),
-                orCurrent(request.messages(), current.messages()),
-                orCurrent(request.emailEnabled(), current.emailEnabled()),
-                orCurrent(request.pushEnabled(), current.pushEnabled())));
+                orCurrent(request.friendlyRequests(), current.isFriendlyRequests()),
+                orCurrent(request.fixtures(), current.isFixtures()),
+                orCurrent(request.verification(), current.isVerification()),
+                orCurrent(request.messages(), current.isMessages()),
+                orCurrent(request.emailEnabled(), current.isEmailEnabled()),
+                orCurrent(request.pushEnabled(), current.isPushEnabled())));
         return toView(saved);
     }
 
     private NotificationPreference current(String userId) {
-        return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+        return preferences.findById(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
     }
 
     private static boolean orCurrent(Boolean requested, boolean current) {
@@ -46,7 +46,7 @@ public class NotificationPreferenceService {
     }
 
     private NotificationDtos.PreferenceView toView(NotificationPreference p) {
-        return new NotificationDtos.PreferenceView(p.friendlyRequests(), p.fixtures(), p.verification(), p.messages(),
-                p.emailEnabled(), p.pushEnabled());
+        return new NotificationDtos.PreferenceView(p.isFriendlyRequests(), p.isFixtures(), p.isVerification(), p.isMessages(),
+                p.isEmailEnabled(), p.isPushEnabled());
     }
 }

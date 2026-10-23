@@ -1,5 +1,12 @@
 package com.gffh.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.Instant;
 
 /**
@@ -8,4 +15,17 @@ import java.time.Instant;
  * an existing manager needing to look up their account. One active code per
  * team - regenerating replaces it, immediately invalidating the old one.
  */
-public record JoinCode(String id, String teamId, String code, String createdByUserId, Instant createdAt) {}
+@Document("joinCodes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JoinCode {
+
+    @Id
+    private String id;
+    private String teamId;
+    private String code;
+    private String createdByUserId;
+    @CreatedDate
+    private Instant createdAt;
+}

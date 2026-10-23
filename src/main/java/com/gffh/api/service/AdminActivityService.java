@@ -97,37 +97,37 @@ public class AdminActivityService {
         Instant now = Instant.now();
 
         List<AdminDetailDtos.ActivityEvent> events = new ArrayList<>();
-        add(events, user.createdAt(), "ACCOUNT_CREATED", "Account created");
-        sessions.stream().map(RefreshToken::createdAt).filter(Objects::nonNull).max(Comparator.naturalOrder())
+        add(events, user.getCreatedAt(), "ACCOUNT_CREATED", "Account created");
+        sessions.stream().map(RefreshToken::getCreatedAt).filter(Objects::nonNull).max(Comparator.naturalOrder())
                 .ifPresent(at -> add(events, at, "LAST_ACTIVE", "Last active (signed in or reopened the app)"));
         for (Membership m : own) {
-            add(events, m.createdAt(), "JOINED", "Joined " + names.membershipPlace(m) + " as " + roleLabel(m.role().name()));
+            add(events, m.getCreatedAt(), "JOINED", "Joined " + names.membershipPlace(m) + " as " + roleLabel(m.getRole().name()));
         }
         for (PushToken d : devices) {
-            add(events, d.registeredAt(), "DEVICE", "Turned on notifications on " + d.platform() + " device");
+            add(events, d.getRegisteredAt(), "DEVICE", "Turned on notifications on " + d.getPlatform() + " device");
         }
         for (VerificationToken t : activity.emailLinksFor(userId, 50)) {
-            String what = t.purpose() == VerificationTokenPurpose.PASSWORD_RESET
+            String what = t.getPurpose() == VerificationTokenPurpose.PASSWORD_RESET
                     ? "Password reset link sent" : "Email verification link sent";
-            add(events, t.createdAt(), "EMAIL_LINK", what + (t.used() ? " (used)" : ""));
+            add(events, t.getCreatedAt(), "EMAIL_LINK", what + (t.isUsed() ? " (used)" : ""));
         }
         for (String requestId : activity.requestIdsCreatedBy(userId, 50)) {
-            requests.findById(requestId).ifPresent(fr -> add(events, fr.createdAt(), "REQUEST_SENT",
-                    "Sent a friendly request from " + names.team(fr.senderTeamId()) + " to "
-                            + names.team(fr.recipientTeamId()) + " for " + fr.date() + " (now " + fr.status() + ")"));
+            requests.findById(requestId).ifPresent(fr -> add(events, fr.getCreatedAt(), "REQUEST_SENT",
+                    "Sent a friendly request from " + names.team(fr.getSenderTeamId()) + " to "
+                            + names.team(fr.getRecipientTeamId()) + " for " + fr.getDate() + " (now " + fr.getStatus() + ")"));
         }
         for (Message msg : messages) {
-            String to = conversations.findById(msg.conversationId())
-                    .map(c -> names.team(c.otherTeam(msg.senderTeamId()))).orElse("another team");
-            add(events, msg.createdAt(), "MESSAGE", "Sent a chat message as " + names.team(msg.senderTeamId()) + " to " + to);
+            String to = conversations.findById(msg.getConversationId())
+                    .map(c -> names.team(c.otherTeam(msg.getSenderTeamId()))).orElse("another team");
+            add(events, msg.getCreatedAt(), "MESSAGE", "Sent a chat message as " + names.team(msg.getSenderTeamId()) + " to " + to);
         }
         for (VerificationRequest v : activity.verificationRequestsSubmittedBy(userId)) {
-            add(events, v.submittedAt(), "VERIFICATION", "Asked for " + names.team(v.teamId())
-                    + " to be verified (" + v.status() + ")");
+            add(events, v.getSubmittedAt(), "VERIFICATION", "Asked for " + names.team(v.getTeamId())
+                    + " to be verified (" + v.getStatus() + ")");
         }
         for (MemberInvite i : activity.invitesSentBy(userId, 50)) {
-            add(events, i.createdAt(), "INVITE", "Invited " + i.email() + " to " + names.team(i.teamId())
-                    + " as " + roleLabel(i.role().name()));
+            add(events, i.getCreatedAt(), "INVITE", "Invited " + i.getEmail() + " to " + names.team(i.getTeamId())
+                    + " as " + roleLabel(i.getRole().name()));
         }
         adminActions(events, "USER", userId);
 
@@ -142,89 +142,89 @@ public class AdminActivityService {
         Team team = teams.findById(teamId).orElseThrow(() -> new BusinessRuleException(
                 "TEAM_NOT_FOUND", HttpStatus.NOT_FOUND, "That team could not be found."));
         Names names = new Names();
-        names.teams.put(team.id(), team.name());
+        names.teams.put(team.getId(), team.getName());
         List<FriendlyRequest> teamRequests = requests.findByTeamId(teamId);
         List<Fixture> teamFixtures = fixtures.findByTeamId(teamId);
         List<Conversation> chats = conversations.findByTeamId(teamId);
         List<Membership> members = new ArrayList<>(memberships.findByTeamId(teamId));
-        Optional<Club> club = clubs.findById(team.clubId());
+        Optional<Club> club = clubs.findById(team.getClubId());
 
         List<AdminDetailDtos.ActivityEvent> events = new ArrayList<>();
-        add(events, team.createdAt(), "TEAM_CREATED", "Team created");
-        if (team.updatedAt() != null && !team.updatedAt().equals(team.createdAt())) {
-            add(events, team.updatedAt(), "PROFILE_UPDATED", "Profile last updated");
+        add(events, team.getCreatedAt(), "TEAM_CREATED", "Team created");
+        if (team.getUpdatedAt() != null && !team.getUpdatedAt().equals(team.getCreatedAt())) {
+            add(events, team.getUpdatedAt(), "PROFILE_UPDATED", "Profile last updated");
         }
-        add(events, team.firstFixtureConfirmedAt(), "FIRST_FIXTURE", "First fixture confirmed");
+        add(events, team.getFirstFixtureConfirmedAt(), "FIRST_FIXTURE", "First fixture confirmed");
         for (Membership m : members) {
-            add(events, m.createdAt(), "MEMBER_JOINED", names.user(m.userId()) + " joined as " + roleLabel(m.role().name()));
+            add(events, m.getCreatedAt(), "MEMBER_JOINED", names.user(m.getUserId()) + " joined as " + roleLabel(m.getRole().name()));
         }
         for (FriendlyRequest fr : teamRequests) {
-            boolean sent = fr.senderTeamId().equals(teamId);
-            String other = names.team(sent ? fr.recipientTeamId() : fr.senderTeamId());
-            add(events, fr.createdAt(), sent ? "REQUEST_SENT" : "REQUEST_RECEIVED",
-                    (sent ? "Sent a friendly request to " : "Received a friendly request from ") + other + " for " + fr.date()
-                            + (fr.createdByUserId() != null && sent ? " (by " + names.user(fr.createdByUserId()) + ")" : ""));
-            if (fr.updatedAt() != null && !fr.updatedAt().equals(fr.createdAt())) {
-                add(events, fr.updatedAt(), "REQUEST_UPDATED", "Request with " + other + " for " + fr.date() + " moved to " + fr.status()
-                        + (fr.actionReason() != null && !fr.actionReason().isBlank() ? ": " + fr.actionReason() : ""));
+            boolean sent = fr.getSenderTeamId().equals(teamId);
+            String other = names.team(sent ? fr.getRecipientTeamId() : fr.getSenderTeamId());
+            add(events, fr.getCreatedAt(), sent ? "REQUEST_SENT" : "REQUEST_RECEIVED",
+                    (sent ? "Sent a friendly request to " : "Received a friendly request from ") + other + " for " + fr.getDate()
+                            + (fr.getCreatedByUserId() != null && sent ? " (by " + names.user(fr.getCreatedByUserId()) + ")" : ""));
+            if (fr.getUpdatedAt() != null && !fr.getUpdatedAt().equals(fr.getCreatedAt())) {
+                add(events, fr.getUpdatedAt(), "REQUEST_UPDATED", "Request with " + other + " for " + fr.getDate() + " moved to " + fr.getStatus()
+                        + (fr.getActionReason() != null && !fr.getActionReason().isBlank() ? ": " + fr.getActionReason() : ""));
             }
         }
         for (Fixture f : teamFixtures) {
-            String other = names.team(f.homeTeamId().equals(teamId) ? f.awayTeamId() : f.homeTeamId());
-            add(events, f.createdAt(), "FIXTURE", "Fixture against " + other + " on " + f.date() + " confirmed (now " + f.status() + ")");
+            String other = names.team(f.getHomeTeamId().equals(teamId) ? f.getAwayTeamId() : f.getHomeTeamId());
+            add(events, f.getCreatedAt(), "FIXTURE", "Fixture against " + other + " on " + f.getDate() + " confirmed (now " + f.getStatus() + ")");
         }
         for (Conversation c : chats) {
-            add(events, c.createdAt(), "CHAT_STARTED", "Chat started with " + names.team(c.otherTeam(teamId)));
-            add(events, c.lastMessageAt(), "CHAT_LAST_MESSAGE", "Latest chat message with " + names.team(c.otherTeam(teamId)));
+            add(events, c.getCreatedAt(), "CHAT_STARTED", "Chat started with " + names.team(c.otherTeam(teamId)));
+            add(events, c.getLastMessageAt(), "CHAT_LAST_MESSAGE", "Latest chat message with " + names.team(c.otherTeam(teamId)));
         }
         for (VerificationRequest v : activity.verificationRequestsFor(teamId)) {
-            add(events, v.submittedAt(), "VERIFICATION", "Verification asked for by " + names.user(v.submittedByUserId()));
-            add(events, v.reviewedAt(), "VERIFICATION_REVIEWED", "Verification " + v.status());
+            add(events, v.getSubmittedAt(), "VERIFICATION", "Verification asked for by " + names.user(v.getSubmittedByUserId()));
+            add(events, v.getReviewedAt(), "VERIFICATION_REVIEWED", "Verification " + v.getStatus());
         }
         List<Report> reports = activity.reportsInvolving(teamId);
         for (Report r : reports) {
-            boolean made = teamId.equals(r.reporterTeamId());
-            add(events, r.createdAt(), made ? "REPORT_MADE" : "REPORT_RECEIVED",
-                    (made ? "Reported " + names.team(r.reportedTeamId()) : "Reported by " + names.team(r.reporterTeamId()))
-                            + " (" + r.type() + ", " + r.status() + ")");
+            boolean made = teamId.equals(r.getReporterTeamId());
+            add(events, r.getCreatedAt(), made ? "REPORT_MADE" : "REPORT_RECEIVED",
+                    (made ? "Reported " + names.team(r.getReportedTeamId()) : "Reported by " + names.team(r.getReporterTeamId()))
+                            + " (" + r.getType() + ", " + r.getStatus() + ")");
         }
         List<Block> blocks = activity.blocksInvolving(teamId);
         for (Block b : blocks) {
-            boolean made = teamId.equals(b.blockingTeamId());
-            add(events, b.createdAt(), made ? "BLOCKED" : "BLOCKED_BY",
-                    made ? "Blocked " + names.team(b.blockedTeamId()) : "Blocked by " + names.team(b.blockingTeamId()));
+            boolean made = teamId.equals(b.getBlockingTeamId());
+            add(events, b.getCreatedAt(), made ? "BLOCKED" : "BLOCKED_BY",
+                    made ? "Blocked " + names.team(b.getBlockedTeamId()) : "Blocked by " + names.team(b.getBlockingTeamId()));
         }
         adminActions(events, "TEAM", teamId);
 
         Map<String, Long> counts = new LinkedHashMap<>();
         counts.put("Availability slots", activity.availabilitySlotsFor(teamId));
-        teamRequests.forEach(fr -> counts.merge("Requests: " + fr.status(), 1L, Long::sum));
-        teamFixtures.forEach(f -> counts.merge("Fixtures: " + f.status(), 1L, Long::sum));
+        teamRequests.forEach(fr -> counts.merge("Requests: " + fr.getStatus(), 1L, Long::sum));
+        teamFixtures.forEach(f -> counts.merge("Fixtures: " + f.getStatus(), 1L, Long::sum));
         counts.put("Chats", (long) chats.size());
-        counts.put("Chat messages", activity.messagesIn(chats.stream().map(Conversation::id).toList()));
+        counts.put("Chat messages", activity.messagesIn(chats.stream().map(Conversation::getId).toList()));
         counts.put("Blocks", (long) blocks.size());
         counts.put("Reports", (long) reports.size());
 
         List<AdminDetailDtos.MemberView> memberViews = new ArrayList<>();
         members.forEach(m -> memberViews.add(names.member(m, null)));
-        memberships.findByClubId(team.clubId()).forEach(m -> memberViews.add(names.member(m, null)));
+        memberships.findByClubId(team.getClubId()).forEach(m -> memberViews.add(names.member(m, null)));
 
-        AdminDetailDtos.ClubSummary clubSummary = club.map(c -> new AdminDetailDtos.ClubSummary(c.id(), c.name(),
-                c.contactEmail(), c.website(), c.postcode(), c.createdAt(),
-                teams.findByClubId(c.id()).stream().map(Team::name).toList(),
-                venues.findByClubId(c.id()).size())).orElse(null);
+        AdminDetailDtos.ClubSummary clubSummary = club.map(c -> new AdminDetailDtos.ClubSummary(c.getId(), c.getName(),
+                c.getContactEmail(), c.getWebsite(), c.getPostcode(), c.getCreatedAt(),
+                teams.findByClubId(c.getId()).stream().map(Team::getName).toList(),
+                venues.findByClubId(c.getId()).size())).orElse(null);
 
-        return new AdminDetailDtos.AdminTeamDetail(AdminTeamDtos.AdminTeamView.from(team), team.managerName(),
-                team.contactPhone(), team.description(), team.travelRadiusMiles(),
-                team.homeAwayPreference() == null ? null : team.homeAwayPreference().name(),
-                team.searchVisible(), team.shareContactDetails(), team.firstFixtureConfirmedAt(), clubSummary,
+        return new AdminDetailDtos.AdminTeamDetail(AdminTeamDtos.AdminTeamView.from(team), team.getManagerName(),
+                team.getContactPhone(), team.getDescription(), team.getTravelRadiusMiles(),
+                team.getHomeAwayPreference() == null ? null : team.getHomeAwayPreference().name(),
+                team.isSearchVisible(), team.isShareContactDetails(), team.getFirstFixtureConfirmedAt(), clubSummary,
                 memberViews, counts, newestFirst(events));
     }
 
     private void adminActions(List<AdminDetailDtos.ActivityEvent> events, String targetType, String targetId) {
         for (AuditLogEntry e : auditLog.list(targetType, targetId, 100)) {
-            add(events, e.timestamp(), "ADMIN", "Admin " + e.actorEmail() + ": " + e.action()
-                    + (e.reason() != null && !e.reason().isBlank() ? " - " + e.reason() : ""));
+            add(events, e.getTimestamp(), "ADMIN", "Admin " + e.getActorEmail() + ": " + e.getAction()
+                    + (e.getReason() != null && !e.getReason().isBlank() ? " - " + e.getReason() : ""));
         }
     }
 
@@ -256,13 +256,13 @@ public class AdminActivityService {
         String team(String id) {
             if (id == null) return "a deleted team";
             return teams.computeIfAbsent(id, k -> AdminActivityService.this.teams.findById(k)
-                    .map(Team::name).orElse("a deleted team"));
+                    .map(Team::getName).orElse("a deleted team"));
         }
 
         String club(String id) {
             if (id == null) return "a deleted club";
             return clubs.computeIfAbsent(id, k -> AdminActivityService.this.clubs.findById(k)
-                    .map(Club::name).orElse("a deleted club"));
+                    .map(Club::getName).orElse("a deleted club"));
         }
 
         Optional<User> userRecord(String id) {
@@ -271,21 +271,21 @@ public class AdminActivityService {
         }
 
         String user(String id) {
-            return userRecord(id).map(User::displayName).orElse("A deleted user");
+            return userRecord(id).map(User::getDisplayName).orElse("A deleted user");
         }
 
         String membershipPlace(Membership m) {
-            return m.isClubScoped() ? club(m.clubId()) + " (club)" : team(m.teamId());
+            return m.isClubScoped() ? club(m.getClubId()) + " (club)" : team(m.getTeamId());
         }
 
         AdminDetailDtos.MemberView member(Membership m, User known) {
-            Optional<User> u = known != null ? Optional.of(known) : userRecord(m.userId());
-            String clubId = m.isClubScoped() ? m.clubId()
-                    : AdminActivityService.this.teams.findById(m.teamId()).map(Team::clubId).orElse(null);
-            return new AdminDetailDtos.MemberView(m.id(), m.userId(), u.map(User::displayName).orElse(null),
-                    u.map(User::email).orElse(null), m.role().name(), m.teamId(),
-                    m.isClubScoped() ? null : team(m.teamId()), clubId, clubId == null ? null : club(clubId),
-                    m.createdAt());
+            Optional<User> u = known != null ? Optional.of(known) : userRecord(m.getUserId());
+            String clubId = m.isClubScoped() ? m.getClubId()
+                    : AdminActivityService.this.teams.findById(m.getTeamId()).map(Team::getClubId).orElse(null);
+            return new AdminDetailDtos.MemberView(m.getId(), m.getUserId(), u.map(User::getDisplayName).orElse(null),
+                    u.map(User::getEmail).orElse(null), m.getRole().name(), m.getTeamId(),
+                    m.isClubScoped() ? null : team(m.getTeamId()), clubId, clubId == null ? null : club(clubId),
+                    m.getCreatedAt());
         }
     }
 }

@@ -57,7 +57,7 @@ public class ChatFilterService {
     /** The list in effect, and whether it is still the built-in one. */
     public View current() {
         return settings.find()
-                .map(s -> new View(sorted(s.blockedWords()), false, s.updatedByAdminId(), s.updatedAt()))
+                .map(s -> new View(sorted(s.getBlockedWords()), false, s.getUpdatedByAdminId(), s.getUpdatedAt()))
                 .orElseGet(() -> new View(sorted(defaultWords), true, null, null));
     }
 
@@ -94,7 +94,7 @@ public class ChatFilterService {
     }
 
     private synchronized LanguageFilter reload() {
-        List<String> words = settings.find().map(ChatFilterSettings::blockedWords).orElse(defaultWords);
+        List<String> words = settings.find().map(ChatFilterSettings::getBlockedWords).orElse(defaultWords);
         LanguageFilter f = new LanguageFilter(words);
         filter = f;
         loadedAt = Instant.now();

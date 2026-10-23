@@ -330,12 +330,12 @@ class MatchingEngineTest {
     }
 
     private static Team withGender(Team t, Gender gender) {
-        return new Team(t.id(), t.clubId(), t.name(), t.clubName(), t.badgeUrl(),
-                t.ageGroup(), gender, t.format(), t.abilityLevel(), t.organisation(), t.league(),
-                t.postcode(), t.location(), t.travelRadiusMiles(), t.homeAwayPreference(),
-                t.managerName(), t.contactPhone(), t.description(), t.verification(),
-                t.defaultVenueId(), t.firstFixtureConfirmedAt(), t.createdAt(), t.updatedAt(),
-                t.suspended(), t.archived(), t.searchVisible(), t.shareContactDetails());
+        return new Team(t.getId(), t.getClubId(), t.getName(), t.getClubName(), t.getBadgeUrl(),
+                t.getAgeGroup(), gender, t.getFormat(), t.getAbilityLevel(), t.getOrganisation(), t.getLeague(),
+                t.getPostcode(), t.getLocation(), t.getTravelRadiusMiles(), t.getHomeAwayPreference(),
+                t.getManagerName(), t.getContactPhone(), t.getDescription(), t.getVerification(),
+                t.getDefaultVenueId(), t.getFirstFixtureConfirmedAt(), t.getCreatedAt(), t.getUpdatedAt(),
+                t.isSuspended(), t.isArchived(), t.isSearchVisible(), t.isShareContactDetails());
     }
 
     private static AvailabilitySlot slot(String id, String teamId, String date,

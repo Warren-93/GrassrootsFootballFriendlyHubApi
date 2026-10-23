@@ -61,12 +61,12 @@ public class FriendlyRequestController {
     }
 
     private FriendlyRequestDtos.FriendlyRequestView view(FriendlyRequest fr, String userId) {
-        boolean isSender = friendlyRequestService.canManage(userId, fr.senderTeamId());
+        boolean isSender = friendlyRequestService.canManage(userId, fr.getSenderTeamId());
 
         return FriendlyRequestDtos.FriendlyRequestView.from(fr, isSender,
-                friendlyRequestService.team(fr.senderTeamId()).orElse(null),
-                friendlyRequestService.team(fr.recipientTeamId()).orElse(null),
-                friendlyRequestService.venue(fr.venueId()).orElse(null),
-                friendlyRequestService.venue(fr.proposedVenueId()).orElse(null));
+                friendlyRequestService.team(fr.getSenderTeamId()).orElse(null),
+                friendlyRequestService.team(fr.getRecipientTeamId()).orElse(null),
+                friendlyRequestService.venue(fr.getVenueId()).orElse(null),
+                friendlyRequestService.venue(fr.getProposedVenueId()).orElse(null));
     }
 }

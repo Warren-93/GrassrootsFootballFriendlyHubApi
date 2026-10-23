@@ -124,7 +124,7 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
                 CostShare.SPLIT, RefereeArrangement.NONE, null, p.sender().userId(), now, now,
                 null, null, null, null));
 
-        mockMvc.perform(post("/api/v1/friendly-requests/" + legacy.id() + "/actions/accept")
+        mockMvc.perform(post("/api/v1/friendly-requests/" + legacy.getId() + "/actions/accept")
                         .header("Authorization", "Bearer " + p.recipient().accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
@@ -144,10 +144,10 @@ class RequestVenueIntegrationTest extends AbstractIntegrationTest {
                 date, LocalTime.of(14, 0), null, null, p.recipientTeam(),
                 CostShare.SPLIT, RefereeArrangement.NONE, null, p.sender().userId(), now, now,
                 null, null, null, null));
-        Fixture bare = fixtureRepository.save(new Fixture(null, bareRequest.id(), p.recipientTeam(), p.senderTeam(),
+        Fixture bare = fixtureRepository.save(new Fixture(null, bareRequest.getId(), p.recipientTeam(), p.senderTeam(),
                 date, LocalTime.of(14, 0), null, null, FixtureStatus.CONFIRMED, CostShare.SPLIT,
                 RefereeArrangement.NONE, now));
-        mockMvc.perform(get("/api/v1/fixtures/" + bare.id())
+        mockMvc.perform(get("/api/v1/fixtures/" + bare.getId())
                         .header("Authorization", "Bearer " + p.sender().accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.venueId").doesNotExist())

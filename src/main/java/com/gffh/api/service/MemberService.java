@@ -66,15 +66,15 @@ public class MemberService {
         membershipService.requireCanManageTeam(userId, teamId);
         Team team = findTeam(teamId);
 
-        List<Membership> clubScoped = memberships.findByClubId(team.clubId());
+        List<Membership> clubScoped = memberships.findByClubId(team.getClubId());
         // A club admin who also created the team holds both memberships; list them once, by the club role.
-        java.util.Set<String> clubUserIds = clubScoped.stream().map(Membership::userId)
+        java.util.Set<String> clubUserIds = clubScoped.stream().map(Membership::getUserId)
                 .collect(java.util.stream.Collectors.toSet());
         Stream<Membership> teamScoped = memberships.findByTeamId(teamId).stream()
-                .filter(m -> !clubUserIds.contains(m.userId()));
+                .filter(m -> !clubUserIds.contains(m.getUserId()));
 
         return Stream.concat(clubScoped.stream(), teamScoped)
-                .map(m -> users.findById(m.userId()).map(user -> MemberDtos.MemberView.from(m, user)).orElse(null))
+                .map(m -> users.findById(m.getUserId()).map(user -> MemberDtos.MemberView.from(m, user)).orElse(null))
                 .filter(v -> v != null)
                 .toList();
     }
@@ -90,22 +90,22 @@ public class MemberService {
         membershipService.requireCanManageTeam(userId, teamId);
         Team team = findTeam(teamId);
         Role role = parseRole(request.role());
-        if (role == Role.CLUB_ADMIN) membershipService.requireCanManageClubAdmins(userId, team.clubId());
+        if (role == Role.CLUB_ADMIN) membershipService.requireCanManageClubAdmins(userId, team.getClubId());
 
         User target = users.findByEmail(request.email().trim()).orElse(null);
         if (target == null) {
             return new AddResult(null, invites.invite(userId, team, request.email(), role));
         }
 
-        if (memberships.findTeamMembership(target.id(), teamId).isPresent()
-                || memberships.findClubMembership(target.id(), team.clubId()).isPresent()) {
+        if (memberships.findByUserIdAndTeamId(target.getId(), teamId).isPresent()
+                || memberships.findByUserIdAndClubId(target.getId(), team.getClubId()).isPresent()) {
             throw new BusinessRuleException("ALREADY_A_MEMBER", HttpStatus.CONFLICT,
                     "This person already has a role on this team.");
         }
 
-        Membership saved = memberships.save(scoped(null, target.id(), team, role, Instant.now()));
+        Membership saved = memberships.save(scoped(null, target.getId(), team, role, Instant.now()));
         String inviterName = users.findById(userId).map(MemberInviteService::inviterName).orElse("A team manager");
-        emails.sendAdded(target.email(), inviterName, team, role);
+        emails.sendAdded(target.getEmail(), inviterName, team, role);
         return new AddResult(MemberDtos.MemberView.from(saved, target), null);
     }
 
@@ -117,16 +117,16 @@ public class MemberService {
         Membership current = findMembershipForTeam(teamId, membershipId);
         Role newRole = parseRole(request.role());
 
-        if (current.role() == Role.CLUB_ADMIN || newRole == Role.CLUB_ADMIN) {
-            membershipService.requireCanManageClubAdmins(userId, team.clubId());
+        if (current.getRole() == Role.CLUB_ADMIN || newRole == Role.CLUB_ADMIN) {
+            membershipService.requireCanManageClubAdmins(userId, team.getClubId());
         }
-        if (current.role() == Role.CLUB_ADMIN && newRole != Role.CLUB_ADMIN) {
-            requireNotLastClubAdmin(team.clubId(), membershipId);
+        if (current.getRole() == Role.CLUB_ADMIN && newRole != Role.CLUB_ADMIN) {
+            requireNotLastClubAdmin(team.getClubId(), membershipId);
         }
 
-        Membership updated = scoped(current.id(), current.userId(), team, newRole, current.createdAt());
+        Membership updated = scoped(current.getId(), current.getUserId(), team, newRole, current.getCreatedAt());
         Membership saved = memberships.save(updated);
-        User user = users.findById(saved.userId()).orElseThrow(BusinessRuleException::blocked);
+        User user = users.findById(saved.getUserId()).orElseThrow(BusinessRuleException::blocked);
         return MemberDtos.MemberView.from(saved, user);
     }
 
@@ -135,12 +135,12 @@ public class MemberService {
         Team team = findTeam(teamId);
         Membership current = findMembershipForTeam(teamId, membershipId);
 
-        if (current.role() == Role.CLUB_ADMIN) {
-            membershipService.requireCanManageClubAdmins(userId, team.clubId());
-            requireNotLastClubAdmin(team.clubId(), membershipId);
+        if (current.getRole() == Role.CLUB_ADMIN) {
+            membershipService.requireCanManageClubAdmins(userId, team.getClubId());
+            requireNotLastClubAdmin(team.getClubId(), membershipId);
         }
 
-        memberships.delete(membershipId);
+        memberships.deleteById(membershipId);
     }
 
     /**
@@ -150,7 +150,7 @@ public class MemberService {
      */
     public String getOrCreateJoinCode(String userId, String teamId) {
         membershipService.requireCanManageTeam(userId, teamId);
-        return joinCodes.findByTeamId(teamId).map(JoinCode::code)
+        return joinCodes.findByTeamId(teamId).map(JoinCode::getCode)
                 .orElseGet(() -> regenerateJoinCodeUnchecked(userId, teamId));
     }
 
@@ -164,7 +164,7 @@ public class MemberService {
         joinCodes.deleteByTeamId(teamId);
         for (int attempt = 0; attempt < 5; attempt++) {
             try {
-                return joinCodes.save(new JoinCode(null, teamId, generateCode(), userId, Instant.now())).code();
+                return joinCodes.save(new JoinCode(null, teamId, generateCode(), userId, Instant.now())).getCode();
             } catch (DuplicateKeyException e) {
                 // Codes collide with negligible probability (32^6 combinations) - retry with a fresh one.
             }
@@ -193,26 +193,26 @@ public class MemberService {
         String code = rawCode.trim().toUpperCase();
         JoinCode joinCode = joinCodes.findByCode(code).orElseThrow(() -> new BusinessRuleException(
                 "JOIN_CODE_NOT_FOUND", HttpStatus.NOT_FOUND, "That code is not valid."));
-        Team team = findTeam(joinCode.teamId());
+        Team team = findTeam(joinCode.getTeamId());
         User target = users.findById(userId).orElseThrow(BusinessRuleException::blocked);
 
-        Membership saved = memberships.findTeamMembership(userId, team.id())
-                .or(() -> memberships.findClubMembership(userId, team.clubId()))
+        Membership saved = memberships.findByUserIdAndTeamId(userId, team.getId())
+                .or(() -> memberships.findByUserIdAndClubId(userId, team.getClubId()))
                 .orElseGet(() -> memberships.save(scoped(null, userId, team, Role.USER, Instant.now())));
-        return new MemberDtos.JoinResultView(team.id(), team.name(), team.clubId(),
+        return new MemberDtos.JoinResultView(team.getId(), team.getName(), team.getClubId(),
                 MemberDtos.MemberView.from(saved, target));
     }
 
     /** CLUB_ADMIN always cascades club-wide, so it is club-scoped; every other role is scoped to this exact team. */
     static Membership scoped(String id, String userId, Team team, Role role, Instant createdAt) {
         return role == Role.CLUB_ADMIN
-                ? new Membership(id, userId, null, team.clubId(), role, createdAt)
-                : new Membership(id, userId, team.id(), null, role, createdAt);
+                ? new Membership(id, userId, null, team.getClubId(), role, createdAt)
+                : new Membership(id, userId, team.getId(), null, role, createdAt);
     }
 
     private void requireNotLastClubAdmin(String clubId, String excludingMembershipId) {
         boolean anotherAdminExists = memberships.findByClubId(clubId).stream()
-                .anyMatch(m -> m.role() == Role.CLUB_ADMIN && !m.id().equals(excludingMembershipId));
+                .anyMatch(m -> m.getRole() == Role.CLUB_ADMIN && !m.getId().equals(excludingMembershipId));
         if (!anotherAdminExists) {
             throw new BusinessRuleException("LAST_CLUB_ADMIN", HttpStatus.CONFLICT,
                     "This is the club's only admin - promote someone else first.");
@@ -223,7 +223,7 @@ public class MemberService {
         Membership m = memberships.findById(membershipId).orElseThrow(() -> new BusinessRuleException(
                 "MEMBER_NOT_FOUND", HttpStatus.NOT_FOUND, "That member could not be found."));
         Team team = findTeam(teamId);
-        boolean belongsHere = teamId.equals(m.teamId()) || team.clubId().equals(m.clubId());
+        boolean belongsHere = teamId.equals(m.getTeamId()) || team.getClubId().equals(m.getClubId());
         if (!belongsHere) {
             throw new BusinessRuleException("MEMBER_NOT_FOUND", HttpStatus.NOT_FOUND,
                     "That member could not be found.");

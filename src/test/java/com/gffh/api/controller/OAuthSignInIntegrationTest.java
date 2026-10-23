@@ -269,8 +269,8 @@ class OAuthSignInIntegrationTest extends AbstractIntegrationTest {
     void suspendedAccountsAreRefused() throws Exception {
         TestAccount account = registerAccount("Suspended Player");
         User user = userRepository.findById(account.userId()).orElseThrow();
-        userRepository.save(new User(user.id(), user.email(), user.passwordHash(), user.displayName(),
-                user.emailVerified(), user.createdAt(), true));
+        userRepository.save(new User(user.getId(), user.getEmail(), user.getPasswordHash(), user.getDisplayName(),
+                user.isEmailVerified(), user.getCreatedAt(), true));
 
         signIn("google", TestIdTokens.google(account.email()).sign(), null)
                 .andExpect(status().isForbidden())

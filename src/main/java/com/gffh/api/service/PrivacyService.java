@@ -72,23 +72,23 @@ public class PrivacyService {
                 .map(this::toMembershipExport)
                 .toList();
         List<PrivacyDtos.TeamExport> teamExports = teamService.listMine(userId).stream()
-                .filter(t -> teamService.canManage(userId, t.id()))
+                .filter(t -> teamService.canManage(userId, t.getId()))
                 .map(this::toTeamExport)
                 .toList();
         return PrivacyDtos.AccountExport.of(user, views,
-                notificationPreferences.findByUserId(userId).orElse(null), teamExports);
+                notificationPreferences.findById(userId).orElse(null), teamExports);
     }
 
     private PrivacyDtos.TeamExport toTeamExport(Team team) {
         LocalDate from = LocalDate.now().minusYears(5);
-        List<Venue> clubVenues = venues.findByClubId(team.clubId());
+        List<Venue> clubVenues = venues.findByClubId(team.getClubId());
         return new PrivacyDtos.TeamExport(
-                TeamDtos.TeamView.from(team, true, team.defaultVenueId() != null || !clubVenues.isEmpty()),
+                TeamDtos.TeamView.from(team, true, team.getDefaultVenueId() != null || !clubVenues.isEmpty()),
                 clubVenues.stream().map(VenueDtos.VenueView::from).toList(),
-                availability.findBookableForTeamBetween(team.id(), from, LocalDate.now().plusYears(2)),
-                requests.findByTeamId(team.id()),
-                fixtures.findByTeamId(team.id()),
-                blocks.findByBlockingTeamId(team.id()));
+                availability.findBookableForTeamBetween(team.getId(), from, LocalDate.now().plusYears(2)),
+                requests.findByTeamId(team.getId()),
+                fixtures.findByTeamId(team.getId()),
+                blocks.findByBlockingTeamIdOrderByCreatedAtDesc(team.getId()));
     }
 
     /**
@@ -101,9 +101,9 @@ public class PrivacyService {
         List<Membership> own = memberships.findByUserId(userId);
 
         for (Membership m : own) {
-            if (m.role() == Role.CLUB_ADMIN) {
-                boolean anotherAdminExists = memberships.findByClubId(m.clubId()).stream()
-                        .anyMatch(other -> other.role() == Role.CLUB_ADMIN && !other.userId().equals(userId));
+            if (m.getRole() == Role.CLUB_ADMIN) {
+                boolean anotherAdminExists = memberships.findByClubId(m.getClubId()).stream()
+                        .anyMatch(other -> other.getRole() == Role.CLUB_ADMIN && !other.getUserId().equals(userId));
                 if (!anotherAdminExists) {
                     throw new BusinessRuleException("LAST_CLUB_ADMIN", HttpStatus.CONFLICT,
                             "You're the only admin for at least one club - promote someone else there before deleting your account.");
@@ -111,24 +111,24 @@ public class PrivacyService {
             }
         }
 
-        own.forEach(m -> memberships.delete(m.id()));
+        own.forEach(m -> memberships.deleteById(m.getId()));
         // The account's devices stop getting pushes, and nobody can be added
         // to a team later by an invite to the address it used.
         pushService.deleteAllFor(userId);
-        memberInvites.deleteInvitesFor(user.email());
-        users.delete(userId);
+        memberInvites.deleteInvitesFor(user.getEmail());
+        users.deleteById(userId);
     }
 
     private PrivacyDtos.MembershipExport toMembershipExport(Membership m) {
         if (m.isClubScoped()) {
-            String clubName = clubs.findById(m.clubId()).map(Club::name).orElse(null);
-            return new PrivacyDtos.MembershipExport(m.id(), m.role().name(), "CLUB", null, null,
-                    m.clubId(), clubName, m.createdAt());
+            String clubName = clubs.findById(m.getClubId()).map(Club::getName).orElse(null);
+            return new PrivacyDtos.MembershipExport(m.getId(), m.getRole().name(), "CLUB", null, null,
+                    m.getClubId(), clubName, m.getCreatedAt());
         }
-        Team team = teams.findById(m.teamId()).orElse(null);
-        return new PrivacyDtos.MembershipExport(m.id(), m.role().name(), "TEAM", m.teamId(),
-                team != null ? team.name() : null, team != null ? team.clubId() : null,
-                team != null ? team.clubName() : null, m.createdAt());
+        Team team = teams.findById(m.getTeamId()).orElse(null);
+        return new PrivacyDtos.MembershipExport(m.getId(), m.getRole().name(), "TEAM", m.getTeamId(),
+                team != null ? team.getName() : null, team != null ? team.getClubId() : null,
+                team != null ? team.getClubName() : null, m.getCreatedAt());
     }
 
     private User findUser(String userId) {

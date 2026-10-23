@@ -62,7 +62,7 @@ public class VerificationService {
     /** The team's own manager checking where their most recent submission stands - null if never submitted. */
     public VerificationDtos.VerificationRequestView getForTeam(String userId, String teamId) {
         membershipService.requireCanManageTeam(userId, teamId);
-        return requests.findLatestByTeamId(teamId).map(this::view).orElse(null);
+        return requests.findFirstByTeamIdOrderBySubmittedAtDesc(teamId).map(this::view).orElse(null);
     }
 
     /**
@@ -74,7 +74,7 @@ public class VerificationService {
         return Stream.concat(
                         requests.findByStatus(VerificationRequestStatus.PENDING).stream(),
                         requests.findByStatus(VerificationRequestStatus.AWAITING_SECOND_REJECTION).stream())
-                .sorted(Comparator.comparing(VerificationRequest::submittedAt,
+                .sorted(Comparator.comparing(VerificationRequest::getSubmittedAt,
                         Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(this::view).toList();
     }
@@ -85,20 +85,20 @@ public class VerificationService {
 
     public VerificationDtos.VerificationRequestView approve(String adminId, String id) {
         VerificationRequest current = find(id);
-        if (current.status() != VerificationRequestStatus.PENDING) {
+        if (current.getStatus() != VerificationRequestStatus.PENDING) {
             throw new BusinessRuleException("VERIFICATION_NOT_PENDING", HttpStatus.CONFLICT,
                     "This request has already been reviewed.");
         }
-        Team team = teams.findById(current.teamId()).orElseThrow(BusinessRuleException::blocked);
+        Team team = teams.findById(current.getTeamId()).orElseThrow(BusinessRuleException::blocked);
         teams.save(withVerification(team, VerificationStatus.VERIFIED));
 
-        VerificationRequest updated = new VerificationRequest(current.id(), current.teamId(),
-                current.submittedByUserId(), current.affiliationNumber(), current.contactDetails(),
-                current.evidenceUrls(), VerificationRequestStatus.APPROVED, null, null, null,
-                adminId, current.submittedAt(), Instant.now());
+        VerificationRequest updated = new VerificationRequest(current.getId(), current.getTeamId(),
+                current.getSubmittedByUserId(), current.getAffiliationNumber(), current.getContactDetails(),
+                current.getEvidenceUrls(), VerificationRequestStatus.APPROVED, null, null, null,
+                adminId, current.getSubmittedAt(), Instant.now());
         requests.save(updated);
-        auditLogService.record(adminId, "VERIFICATION_APPROVED", "TEAM", current.teamId(), null);
-        notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_APPROVED,
+        auditLogService.record(adminId, "VERIFICATION_APPROVED", "TEAM", current.getTeamId(), null);
+        notificationService.notifyTeam(current.getTeamId(), NotificationType.VERIFICATION_APPROVED,
                 "Verification approved", "Your team is now verified. " + nextStep(team), null, null);
         return VerificationDtos.VerificationRequestView.from(updated, team);
     }
@@ -135,32 +135,32 @@ public class VerificationService {
                                                             VerificationDtos.RejectRequest request) {
         VerificationRequest current = find(id);
 
-        if (current.status() == VerificationRequestStatus.PENDING) {
-            VerificationRequest updated = new VerificationRequest(current.id(), current.teamId(),
-                    current.submittedByUserId(), current.affiliationNumber(), current.contactDetails(),
-                    current.evidenceUrls(), VerificationRequestStatus.AWAITING_SECOND_REJECTION,
-                    adminId, request.reason(), null, null, current.submittedAt(), null);
+        if (current.getStatus() == VerificationRequestStatus.PENDING) {
+            VerificationRequest updated = new VerificationRequest(current.getId(), current.getTeamId(),
+                    current.getSubmittedByUserId(), current.getAffiliationNumber(), current.getContactDetails(),
+                    current.getEvidenceUrls(), VerificationRequestStatus.AWAITING_SECOND_REJECTION,
+                    adminId, request.reason(), null, null, current.getSubmittedAt(), null);
             requests.save(updated);
-            auditLogService.record(adminId, "VERIFICATION_REJECT_FIRST_REVIEW", "TEAM", current.teamId(), request.reason());
+            auditLogService.record(adminId, "VERIFICATION_REJECT_FIRST_REVIEW", "TEAM", current.getTeamId(), request.reason());
             return view(updated);
         }
 
-        if (current.status() == VerificationRequestStatus.AWAITING_SECOND_REJECTION) {
-            if (adminId.equals(current.firstRejectionAdminId())) {
+        if (current.getStatus() == VerificationRequestStatus.AWAITING_SECOND_REJECTION) {
+            if (adminId.equals(current.getFirstRejectionAdminId())) {
                 throw new BusinessRuleException("SAME_ADMIN_SECOND_REVIEW", HttpStatus.CONFLICT,
                         "A different administrator must confirm this rejection.");
             }
-            Team team = teams.findById(current.teamId()).orElseThrow(BusinessRuleException::blocked);
+            Team team = teams.findById(current.getTeamId()).orElseThrow(BusinessRuleException::blocked);
             teams.save(withVerification(team, VerificationStatus.REJECTED));
 
-            VerificationRequest updated = new VerificationRequest(current.id(), current.teamId(),
-                    current.submittedByUserId(), current.affiliationNumber(), current.contactDetails(),
-                    current.evidenceUrls(), VerificationRequestStatus.REJECTED,
-                    current.firstRejectionAdminId(), current.firstRejectionReason(), request.reason(),
-                    adminId, current.submittedAt(), Instant.now());
+            VerificationRequest updated = new VerificationRequest(current.getId(), current.getTeamId(),
+                    current.getSubmittedByUserId(), current.getAffiliationNumber(), current.getContactDetails(),
+                    current.getEvidenceUrls(), VerificationRequestStatus.REJECTED,
+                    current.getFirstRejectionAdminId(), current.getFirstRejectionReason(), request.reason(),
+                    adminId, current.getSubmittedAt(), Instant.now());
             requests.save(updated);
-            auditLogService.record(adminId, "VERIFICATION_REJECTED", "TEAM", current.teamId(), request.reason());
-            notificationService.notifyTeam(current.teamId(), NotificationType.VERIFICATION_REJECTED,
+            auditLogService.record(adminId, "VERIFICATION_REJECTED", "TEAM", current.getTeamId(), request.reason());
+            notificationService.notifyTeam(current.getTeamId(), NotificationType.VERIFICATION_REJECTED,
                     "Verification rejected", request.reason(), null, null);
             return VerificationDtos.VerificationRequestView.from(updated, team);
         }
@@ -170,7 +170,7 @@ public class VerificationService {
     }
 
     private VerificationDtos.VerificationRequestView view(VerificationRequest r) {
-        return VerificationDtos.VerificationRequestView.from(r, teams.findById(r.teamId()).orElse(null));
+        return VerificationDtos.VerificationRequestView.from(r, teams.findById(r.getTeamId()).orElse(null));
     }
 
     private VerificationRequest find(String id) {
@@ -179,11 +179,11 @@ public class VerificationService {
     }
 
     private static Team withVerification(Team team, VerificationStatus status) {
-        return new Team(team.id(), team.clubId(), team.name(), team.clubName(), team.badgeUrl(),
-                team.ageGroup(), team.gender(), team.format(), team.abilityLevel(), team.organisation(), team.league(),
-                team.postcode(), team.location(), team.travelRadiusMiles(), team.homeAwayPreference(),
-                team.managerName(), team.contactPhone(), team.description(), status, team.defaultVenueId(),
-                team.firstFixtureConfirmedAt(), team.createdAt(), team.updatedAt(), team.suspended(), team.archived(),
-                team.searchVisible(), team.shareContactDetails());
+        return new Team(team.getId(), team.getClubId(), team.getName(), team.getClubName(), team.getBadgeUrl(),
+                team.getAgeGroup(), team.getGender(), team.getFormat(), team.getAbilityLevel(), team.getOrganisation(), team.getLeague(),
+                team.getPostcode(), team.getLocation(), team.getTravelRadiusMiles(), team.getHomeAwayPreference(),
+                team.getManagerName(), team.getContactPhone(), team.getDescription(), status, team.getDefaultVenueId(),
+                team.getFirstFixtureConfirmedAt(), team.getCreatedAt(), team.getUpdatedAt(), team.isSuspended(), team.isArchived(),
+                team.isSearchVisible(), team.isShareContactDetails());
     }
 }

@@ -45,11 +45,11 @@ public final class VenueDtos {
             String pitchNumber, boolean isDefault, Instant createdAt) {
 
         public static VenueView from(Venue v) {
-            return new VenueView(v.id(), v.clubId(), v.name(), v.address(), v.displayPostcode(),
-                    v.location().longitude(), v.location().latitude(),
-                    v.pitchSurface() == null ? null : v.pitchSurface().name(),
-                    v.facilities().stream().map(Enum::name).toList(),
-                    v.accessNotes(), v.parkingNotes(), v.pitchNumber(), v.isDefault(), v.createdAt());
+            return new VenueView(v.getId(), v.getClubId(), v.getName(), v.getAddress(), v.displayPostcode(),
+                    v.getLocation().longitude(), v.getLocation().latitude(),
+                    v.getPitchSurface() == null ? null : v.getPitchSurface().name(),
+                    v.getFacilities().stream().map(Enum::name).toList(),
+                    v.getAccessNotes(), v.getParkingNotes(), v.getPitchNumber(), v.isDefault(), v.getCreatedAt());
         }
     }
 
@@ -65,11 +65,11 @@ public final class VenueDtos {
         /** Null in, null out - a request or fixture may have no venue yet. */
         public static VenueSummary from(Venue v) {
             if (v == null) return null;
-            return new VenueSummary(v.id(), v.name(), v.address(), v.displayPostcode(),
-                    v.pitchSurface() == null ? null : v.pitchSurface().name(),
-                    v.accessNotes(), v.parkingNotes(),
-                    v.location() == null ? null : v.location().latitude(),
-                    v.location() == null ? null : v.location().longitude());
+            return new VenueSummary(v.getId(), v.getName(), v.getAddress(), v.displayPostcode(),
+                    v.getPitchSurface() == null ? null : v.getPitchSurface().name(),
+                    v.getAccessNotes(), v.getParkingNotes(),
+                    v.getLocation() == null ? null : v.getLocation().latitude(),
+                    v.getLocation() == null ? null : v.getLocation().longitude());
         }
     }
 }

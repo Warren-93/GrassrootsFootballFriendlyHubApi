@@ -43,13 +43,13 @@ public class TeamService {
             Club club = clubs.findById(clubId)
                     .orElseThrow(() -> new BusinessRuleException("CLUB_NOT_FOUND", HttpStatus.NOT_FOUND,
                             "That club could not be found."));
-            membershipService.requireCanManageClub(userId, club.id());
-            clubName = club.name();
+            membershipService.requireCanManageClub(userId, club.getId());
+            clubName = club.getName();
         } else {
             Club club = clubs.save(new Club(null, clubName != null ? clubName : request.name(),
                     null, null, null, null, null, Instant.now()));
-            clubId = club.id();
-            clubName = club.name();
+            clubId = club.getId();
+            clubName = club.getName();
             memberships.save(new Membership(null, userId, null, clubId, Role.CLUB_ADMIN, Instant.now()));
         }
 
@@ -65,7 +65,7 @@ public class TeamService {
                 request.managerName(), request.contactPhone(), request.description(),
                 VerificationStatus.NOT_STARTED, request.defaultVenueId(), null, null, null, false, false, true, true));
 
-        memberships.save(new Membership(null, userId, team.id(), null, Role.TEAM_MANAGER, Instant.now()));
+        memberships.save(new Membership(null, userId, team.getId(), null, Role.TEAM_MANAGER, Instant.now()));
         return team;
     }
 
@@ -106,16 +106,16 @@ public class TeamService {
     public java.util.List<Team> listMine(String userId) {
         var teamIds = new java.util.LinkedHashSet<String>();
         for (Membership m : memberships.findByUserId(userId)) {
-            if (m.teamId() != null) {
-                teamIds.add(m.teamId());
-            } else if (m.clubId() != null && m.role().canManageClub()) {
-                teams.findByClubId(m.clubId()).forEach(t -> teamIds.add(t.id()));
+            if (m.getTeamId() != null) {
+                teamIds.add(m.getTeamId());
+            } else if (m.getClubId() != null && m.getRole().canManageClub()) {
+                teams.findByClubId(m.getClubId()).forEach(t -> teamIds.add(t.getId()));
             }
         }
         return teamIds.stream()
                 .map(teams::findById)
                 .flatMap(java.util.Optional::stream)
-                .filter(t -> !t.archived())
+                .filter(t -> !t.isArchived())
                 .toList();
     }
 
@@ -124,45 +124,45 @@ public class TeamService {
         Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
 
         boolean changesMatchingFields =
-                (request.ageGroup() != null && request.ageGroup() != current.ageGroup())
-                        || (request.format() != null && request.format() != current.format());
+                (request.ageGroup() != null && request.ageGroup() != current.getAgeGroup())
+                        || (request.format() != null && request.format() != current.getFormat());
         if (changesMatchingFields && current.matchingFieldsLocked()) {
             throw BusinessRuleException.matchingFieldsLocked();
         }
         // Checked whenever any side changes, so a new age group or gender can't strand an organisation that no longer fits.
         if (request.organisation() != null || request.ageGroup() != null || request.gender() != null) {
             requireOrganisationFits(
-                    request.organisation() != null ? request.organisation() : current.organisation(),
-                    request.ageGroup() != null ? request.ageGroup() : current.ageGroup(),
-                    request.gender() != null ? request.gender() : current.gender());
+                    request.organisation() != null ? request.organisation() : current.getOrganisation(),
+                    request.ageGroup() != null ? request.ageGroup() : current.getAgeGroup(),
+                    request.gender() != null ? request.gender() : current.getGender());
         }
 
         GeoPoint location = (request.longitude() != null && request.latitude() != null)
                 ? new GeoPoint(request.longitude(), request.latitude())
-                : current.location();
+                : current.getLocation();
 
         Team updated = new Team(
-                current.id(), current.clubId(),
-                orDefault(request.name(), current.name()),
-                current.clubName(),
-                orDefault(request.badgeUrl(), current.badgeUrl()),
-                request.ageGroup() != null ? request.ageGroup() : current.ageGroup(),
-                request.gender() != null ? request.gender() : current.gender(),
-                request.format() != null ? request.format() : current.format(),
-                request.abilityLevel() != null ? request.abilityLevel() : current.abilityLevel(),
-                request.organisation() != null ? request.organisation() : current.organisation(),
-                orDefault(request.league(), current.league()),
-                orDefault(request.postcode(), current.postcode()),
+                current.getId(), current.getClubId(),
+                orDefault(request.name(), current.getName()),
+                current.getClubName(),
+                orDefault(request.badgeUrl(), current.getBadgeUrl()),
+                request.ageGroup() != null ? request.ageGroup() : current.getAgeGroup(),
+                request.gender() != null ? request.gender() : current.getGender(),
+                request.format() != null ? request.format() : current.getFormat(),
+                request.abilityLevel() != null ? request.abilityLevel() : current.getAbilityLevel(),
+                request.organisation() != null ? request.organisation() : current.getOrganisation(),
+                orDefault(request.league(), current.getLeague()),
+                orDefault(request.postcode(), current.getPostcode()),
                 location,
-                request.travelRadiusMiles() != null ? request.travelRadiusMiles() : current.travelRadiusMiles(),
-                request.homeAwayPreference() != null ? request.homeAwayPreference() : current.homeAwayPreference(),
-                orDefault(request.managerName(), current.managerName()),
-                orDefault(request.contactPhone(), current.contactPhone()),
-                orDefault(request.description(), current.description()),
-                current.verification(),
-                orDefault(request.defaultVenueId(), current.defaultVenueId()),
-                current.firstFixtureConfirmedAt(), current.createdAt(), current.updatedAt(), current.suspended(),
-                current.archived(), current.searchVisible(), current.shareContactDetails());
+                request.travelRadiusMiles() != null ? request.travelRadiusMiles() : current.getTravelRadiusMiles(),
+                request.homeAwayPreference() != null ? request.homeAwayPreference() : current.getHomeAwayPreference(),
+                orDefault(request.managerName(), current.getManagerName()),
+                orDefault(request.contactPhone(), current.getContactPhone()),
+                orDefault(request.description(), current.getDescription()),
+                current.getVerification(),
+                orDefault(request.defaultVenueId(), current.getDefaultVenueId()),
+                current.getFirstFixtureConfirmedAt(), current.getCreatedAt(), current.getUpdatedAt(), current.isSuspended(),
+                current.isArchived(), current.isSearchVisible(), current.isShareContactDetails());
 
         return teams.save(updated);
     }
@@ -187,12 +187,12 @@ public class TeamService {
         membershipService.requireCanManageTeam(userId, teamId);
         Team current = teams.findById(teamId).orElseThrow(BusinessRuleException::blocked);
 
-        Team updated = new Team(current.id(), current.clubId(), current.name(), current.clubName(),
-                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(), current.organisation(),
-                current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
-                current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
-                current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
-                current.createdAt(), current.updatedAt(), current.suspended(), current.archived(),
+        Team updated = new Team(current.getId(), current.getClubId(), current.getName(), current.getClubName(),
+                current.getBadgeUrl(), current.getAgeGroup(), current.getGender(), current.getFormat(), current.getAbilityLevel(), current.getOrganisation(),
+                current.getLeague(), current.getPostcode(), current.getLocation(), current.getTravelRadiusMiles(),
+                current.getHomeAwayPreference(), current.getManagerName(), current.getContactPhone(), current.getDescription(),
+                current.getVerification(), current.getDefaultVenueId(), current.getFirstFixtureConfirmedAt(),
+                current.getCreatedAt(), current.getUpdatedAt(), current.isSuspended(), current.isArchived(),
                 request.searchVisible(), request.shareContactDetails());
 
         return TeamDtos.PrivacyPreferences.from(teams.save(updated));
@@ -228,17 +228,17 @@ public class TeamService {
      * readable for the real teams on the other side.
      */
     public void archiveTestTeam(String teamId) {
-        teams.findById(teamId).filter(t -> !t.archived()).ifPresent(t -> teams.save(archived(t)));
+        teams.findById(teamId).filter(t -> !t.isArchived()).ifPresent(t -> teams.save(archived(t)));
     }
 
     private static Team archived(Team current) {
-        return new Team(current.id(), current.clubId(), current.name(), current.clubName(),
-                current.badgeUrl(), current.ageGroup(), current.gender(), current.format(), current.abilityLevel(), current.organisation(),
-                current.league(), current.postcode(), current.location(), current.travelRadiusMiles(),
-                current.homeAwayPreference(), current.managerName(), current.contactPhone(), current.description(),
-                current.verification(), current.defaultVenueId(), current.firstFixtureConfirmedAt(),
-                current.createdAt(), current.updatedAt(), current.suspended(), true,
-                current.searchVisible(), current.shareContactDetails());
+        return new Team(current.getId(), current.getClubId(), current.getName(), current.getClubName(),
+                current.getBadgeUrl(), current.getAgeGroup(), current.getGender(), current.getFormat(), current.getAbilityLevel(), current.getOrganisation(),
+                current.getLeague(), current.getPostcode(), current.getLocation(), current.getTravelRadiusMiles(),
+                current.getHomeAwayPreference(), current.getManagerName(), current.getContactPhone(), current.getDescription(),
+                current.getVerification(), current.getDefaultVenueId(), current.getFirstFixtureConfirmedAt(),
+                current.getCreatedAt(), current.getUpdatedAt(), current.isSuspended(), true,
+                current.isSearchVisible(), current.isShareContactDetails());
     }
 
     private static String orDefault(String value, String fallback) {

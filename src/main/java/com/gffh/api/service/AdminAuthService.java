@@ -54,9 +54,9 @@ public class AdminAuthService {
         String secret = totpService.generateSecret();
         PlatformAdmin admin = admins.save(new PlatformAdmin(null, request.email(),
                 passwordEncoder.encode(request.password()), secret, Instant.now(), null, AdminRole.SUPER_ADMIN));
-        if (!totpRequired) return new AdminAuthDtos.BootstrapResponse(admin.id(), null, null);
-        String uri = totpService.provisioningUri(secret, admin.email(), "Kickabout Admin");
-        return new AdminAuthDtos.BootstrapResponse(admin.id(), secret, uri);
+        if (!totpRequired) return new AdminAuthDtos.BootstrapResponse(admin.getId(), null, null);
+        String uri = totpService.provisioningUri(secret, admin.getEmail(), "Kickabout Admin");
+        return new AdminAuthDtos.BootstrapResponse(admin.getId(), secret, uri);
     }
 
     /** Failed attempts are capped per email each hour, at the same limit as user sign-in. */
@@ -66,13 +66,13 @@ public class AdminAuthService {
             throw BusinessRuleException.rateLimited();
         }
         PlatformAdmin admin = admins.findByEmail(request.email())
-                .filter(a -> passwordEncoder.matches(request.password(), a.passwordHash()))
+                .filter(a -> passwordEncoder.matches(request.password(), a.getPasswordHash()))
                 .orElseThrow(() -> {
                     rateLimiter.record(limitKey);
                     return new BusinessRuleException("INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED,
                             "Email or password is incorrect.");
                 });
-        String pendingToken = adminJwtService.issuePending2faToken(admin.id());
+        String pendingToken = adminJwtService.issuePending2faToken(admin.getId());
         if (totpRequired) return new AdminAuthDtos.LoginStep1Response(pendingToken, null, null, null, null);
         AdminAuthDtos.SessionResponse session = startSession(admin);
         return new AdminAuthDtos.LoginStep1Response(pendingToken, session.accessToken(), session.tokenType(),
@@ -89,7 +89,7 @@ public class AdminAuthService {
         }
         PlatformAdmin admin = admins.findById(adminId).orElseThrow(() -> new BusinessRuleException(
                 "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
-        if (totpRequired && !totpService.verifyCode(admin.totpSecret(), request.code())) {
+        if (totpRequired && !totpService.verifyCode(admin.getTotpSecret(), request.code())) {
             throw new BusinessRuleException("INVALID_TOTP_CODE", HttpStatus.UNAUTHORIZED, "That code is incorrect.");
         }
         return startSession(admin);
@@ -110,8 +110,8 @@ public class AdminAuthService {
         }
         PlatformAdmin admin = admins.findById(adminId).orElseThrow(() -> new BusinessRuleException(
                 "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
-        boolean passwordOk = password != null && passwordEncoder.matches(password, admin.passwordHash());
-        boolean codeOk = !totpRequired || (code != null && totpService.verifyCode(admin.totpSecret(), code));
+        boolean passwordOk = password != null && passwordEncoder.matches(password, admin.getPasswordHash());
+        boolean codeOk = !totpRequired || (code != null && totpService.verifyCode(admin.getTotpSecret(), code));
         if (!passwordOk || !codeOk) {
             rateLimiter.record(limitKey);
             throw new BusinessRuleException("REAUTH_FAILED", HttpStatus.FORBIDDEN,
@@ -139,15 +139,15 @@ public class AdminAuthService {
             throw new BusinessRuleException("SESSION_TOO_OLD", HttpStatus.UNAUTHORIZED,
                     "Your sign-in session has expired. Please sign in again.");
         }
-        String accessToken = adminJwtService.issueSessionToken(admin.id(), admin.email(), sessionStart);
+        String accessToken = adminJwtService.issueSessionToken(admin.getId(), admin.getEmail(), sessionStart);
         long expiresIn = Math.min(adminJwtService.sessionTtlSeconds(),
                 Math.max(0, sessionEnd.getEpochSecond() - Instant.now().getEpochSecond()));
-        return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", expiresIn, admin.email());
+        return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", expiresIn, admin.getEmail());
     }
 
     private AdminAuthDtos.SessionResponse startSession(PlatformAdmin admin) {
         admins.save(admin.withLastLoginAt(Instant.now()));
-        String accessToken = adminJwtService.issueSessionToken(admin.id(), admin.email());
-        return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", adminJwtService.sessionTtlSeconds(), admin.email());
+        String accessToken = adminJwtService.issueSessionToken(admin.getId(), admin.getEmail());
+        return new AdminAuthDtos.SessionResponse(accessToken, "Bearer", adminJwtService.sessionTtlSeconds(), admin.getEmail());
     }
 }

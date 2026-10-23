@@ -1,20 +1,18 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.Venue;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.Update;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface VenueRepository {
-
-    Optional<Venue> findById(String id);
+public interface VenueRepository extends MongoRepository<Venue, String> {
 
     List<Venue> findByClubId(String clubId);
 
-    Venue save(Venue venue);
-
-    void delete(String id);
-
     /** Unsets every other venue's default flag for this club, so exactly one default holds (SCR-PR-05). */
+    @Query("{ 'clubId': ?0 }")
+    @Update("{ $set: { 'isDefault': false } }")
     void clearDefaultForClub(String clubId);
 }

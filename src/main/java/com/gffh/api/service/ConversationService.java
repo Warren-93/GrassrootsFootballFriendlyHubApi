@@ -78,8 +78,8 @@ public class ConversationService {
         if (conversation.isEmpty()) {
             return List.of();
         }
-        auditLogService.record(adminId, "CONVERSATION_VIEWED", "CONVERSATION", conversation.get().id(), null);
-        return messages.findByConversationId(conversation.get().id()).stream()
+        auditLogService.record(adminId, "CONVERSATION_VIEWED", "CONVERSATION", conversation.get().getId(), null);
+        return messages.findByConversationIdOrderByCreatedAtAsc(conversation.get().getId()).stream()
                 .map(ConversationDtos.MessageView::from).toList();
     }
 
@@ -98,7 +98,7 @@ public class ConversationService {
         }
 
         Team otherTeam = teams.findById(request.otherTeamId()).orElseThrow(BusinessRuleException::blocked);
-        if (otherTeam.suspended() || otherTeam.archived()) {
+        if (otherTeam.isSuspended() || otherTeam.isArchived()) {
             throw BusinessRuleException.blocked();
         }
         if (blocks.blockedTeamIdsEitherDirection(request.teamId()).contains(request.otherTeamId())) {
@@ -108,10 +108,10 @@ public class ConversationService {
         Optional<Conversation> existing = conversations.findBetweenTeams(request.teamId(), request.otherTeamId());
         if (existing.isPresent()) {
             Conversation conversation = existing.get();
-            if (request.fixtureId() != null && !request.fixtureId().equals(conversation.relatedFixtureId())) {
-                conversation = conversations.save(new Conversation(conversation.id(), conversation.teamAId(),
-                        conversation.teamBId(), conversation.createdAt(), conversation.lastMessageAt(),
-                        conversation.lastMessageBody(), conversation.lastMessageSenderTeamId(), request.fixtureId()));
+            if (request.fixtureId() != null && !request.fixtureId().equals(conversation.getRelatedFixtureId())) {
+                conversation = conversations.save(new Conversation(conversation.getId(), conversation.getTeamAId(),
+                        conversation.getTeamBId(), conversation.getCreatedAt(), conversation.getLastMessageAt(),
+                        conversation.getLastMessageBody(), conversation.getLastMessageSenderTeamId(), request.fixtureId()));
             }
             return view(conversation, otherTeam);
         }
@@ -144,8 +144,8 @@ public class ConversationService {
 
     public ConversationDtos.ConversationView get(String userId, String conversationId) {
         Conversation conversation = requireVisible(userId, conversationId);
-        String otherTeamId = canManage(userId, conversation.teamAId())
-                ? conversation.teamBId() : conversation.teamAId();
+        String otherTeamId = canManage(userId, conversation.getTeamAId())
+                ? conversation.getTeamBId() : conversation.getTeamAId();
         Team other = teams.findById(otherTeamId).orElseThrow(BusinessRuleException::blocked);
         return view(conversation, other);
     }
@@ -159,8 +159,8 @@ public class ConversationService {
     public List<ConversationDtos.MessageView> messages(String userId, String conversationId, Instant since) {
         Conversation conversation = requireVisible(userId, conversationId);
         List<Message> found = since == null
-                ? messages.findByConversationId(conversation.id())
-                : messages.findByConversationIdSince(conversation.id(), since);
+                ? messages.findByConversationIdOrderByCreatedAtAsc(conversation.getId())
+                : messages.findByConversationIdSince(conversation.getId(), since);
         return found.stream()
                 .map(m -> ConversationDtos.MessageView.from(withMaskedBody(m))).toList();
     }
@@ -168,13 +168,13 @@ public class ConversationService {
     public ConversationDtos.MessageView send(String userId, String conversationId,
                                              ConversationDtos.SendMessageRequest request) {
         Conversation conversation = requireVisible(userId, conversationId);
-        if (blocks.blockedTeamIdsEitherDirection(conversation.teamAId()).contains(conversation.teamBId())) {
+        if (blocks.blockedTeamIdsEitherDirection(conversation.getTeamAId()).contains(conversation.getTeamBId())) {
             throw BusinessRuleException.blocked();
         }
 
-        String senderTeamId = membershipService.roleFor(userId, conversation.teamAId()) != null
-                && membershipService.roleFor(userId, conversation.teamAId()).canManageTeam()
-                ? conversation.teamAId() : conversation.teamBId();
+        String senderTeamId = membershipService.roleFor(userId, conversation.getTeamAId()) != null
+                && membershipService.roleFor(userId, conversation.getTeamAId()).canManageTeam()
+                ? conversation.getTeamAId() : conversation.getTeamBId();
         String otherTeamId = conversation.otherTeam(senderTeamId);
         // Masked before it's stored, so the original wording never reaches
         // the other team, a notification or the admin transcript.
@@ -185,14 +185,14 @@ public class ConversationService {
         }
         MessageGif gif = hasGif ? gifService.resolveForMessage(request.gifId().trim()) : null;
 
-        Message saved = messages.save(new Message(null, conversation.id(), senderTeamId, userId, body, Instant.now(), gif));
+        Message saved = messages.save(new Message(null, conversation.getId(), senderTeamId, userId, body, Instant.now(), gif));
 
         String preview = body.isEmpty() ? GIF_PREVIEW : body;
-        conversations.save(new Conversation(conversation.id(), conversation.teamAId(), conversation.teamBId(),
-                conversation.createdAt(), saved.createdAt(), preview, senderTeamId, conversation.relatedFixtureId()));
+        conversations.save(new Conversation(conversation.getId(), conversation.getTeamAId(), conversation.getTeamBId(),
+                conversation.getCreatedAt(), saved.getCreatedAt(), preview, senderTeamId, conversation.getRelatedFixtureId()));
 
         notificationService.notifyTeam(otherTeamId, NotificationType.MESSAGE_RECEIVED,
-                "New message", preview, null, null, conversation.id());
+                "New message", preview, null, null, conversation.getId());
 
         return ConversationDtos.MessageView.from(saved);
     }
@@ -202,8 +202,8 @@ public class ConversationService {
      * admin adds to the list later is also hidden in older messages.
      */
     private Message withMaskedBody(Message m) {
-        String body = chatFilter.mask(m.body()).text();
-        return new Message(m.id(), m.conversationId(), m.senderTeamId(), m.senderUserId(), body, m.createdAt(), m.gif());
+        String body = chatFilter.mask(m.getBody()).text();
+        return new Message(m.getId(), m.getConversationId(), m.getSenderTeamId(), m.getSenderUserId(), body, m.getCreatedAt(), m.getGif());
     }
 
     private ConversationDtos.ConversationView view(Conversation c, Team other) {
@@ -215,7 +215,7 @@ public class ConversationService {
     private Conversation requireVisible(String userId, String conversationId) {
         Conversation conversation = conversations.findById(conversationId)
                 .orElseThrow(BusinessRuleException::blocked);
-        if (!canManage(userId, conversation.teamAId()) && !canManage(userId, conversation.teamBId())) {
+        if (!canManage(userId, conversation.getTeamAId()) && !canManage(userId, conversation.getTeamBId())) {
             throw BusinessRuleException.blocked();
         }
         return conversation;

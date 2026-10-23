@@ -3,6 +3,10 @@ package com.gffh.api.model;
 import com.gffh.api.model.enums.AvailabilityStatus;
 import com.gffh.api.model.enums.Format;
 import com.gffh.api.model.enums.HomeAwayPreference;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,22 +18,39 @@ import java.time.LocalTime;
  * match duration must fit inside it. That is what makes overlap scoring
  * meaningful rather than a simple date equality check.
  */
-public record AvailabilitySlot(
-        String id,
-        String teamId,
-        LocalDate date,
-        LocalTime startTime,
-        LocalTime endTime,
-        HomeAwayPreference homeAwayPreference,
-        String venueId,
-        Format format,
-        String notes,
-        AvailabilityStatus status) {
+@Document("availability")
+@Data
+@NoArgsConstructor
+public class AvailabilitySlot {
 
-    public AvailabilitySlot {
+    @Id
+    private String id;
+    private String teamId;
+    private LocalDate date;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private HomeAwayPreference homeAwayPreference;
+    private String venueId;
+    private Format format;
+    private String notes;
+    private AvailabilityStatus status;
+
+    public AvailabilitySlot(String id, String teamId, LocalDate date, LocalTime startTime, LocalTime endTime,
+                            HomeAwayPreference homeAwayPreference, String venueId, Format format, String notes,
+                            AvailabilityStatus status) {
         if (!endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("end time must be after start time");
         }
+        this.id = id;
+        this.teamId = teamId;
+        this.date = date;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.homeAwayPreference = homeAwayPreference;
+        this.venueId = venueId;
+        this.format = format;
+        this.notes = notes;
+        this.status = status;
     }
 
     public int durationMinutes() {

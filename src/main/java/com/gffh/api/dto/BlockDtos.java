@@ -13,7 +13,7 @@ public final class BlockDtos {
 
     public record BlockView(String id, String blockedTeamId, String blockedTeamName, String reason, Instant createdAt) {
         public static BlockView from(Block block, String blockedTeamName) {
-            return new BlockView(block.id(), block.blockedTeamId(), blockedTeamName, block.reason(), block.createdAt());
+            return new BlockView(block.getId(), block.getBlockedTeamId(), blockedTeamName, block.getReason(), block.getCreatedAt());
         }
     }
 }

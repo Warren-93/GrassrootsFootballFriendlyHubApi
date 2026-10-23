@@ -1,12 +1,8 @@
 package com.gffh.api.repository;
 
 import com.gffh.api.model.AuditLogEntry;
+import com.gffh.api.repository.custom.AuditLogRepositoryCustom;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.List;
-
-public interface AuditLogRepository {
-
-    AuditLogEntry save(AuditLogEntry entry);
-
-    List<AuditLogEntry> list(String targetType, String targetId, int limit);
+public interface AuditLogRepository extends MongoRepository<AuditLogEntry, String>, AuditLogRepositoryCustom {
 }

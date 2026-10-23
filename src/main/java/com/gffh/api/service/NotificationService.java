@@ -9,6 +9,7 @@ import com.gffh.api.repository.NotificationPreferenceRepository;
 import com.gffh.api.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -65,40 +66,40 @@ public class NotificationService {
     }
 
     public List<NotificationDtos.NotificationView> list(String userId) {
-        return notifications.findByUserId(userId, MAX_LISTED).stream()
+        return notifications.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(MAX_LISTED)).stream()
                 .map(NotificationDtos.NotificationView::from)
                 .toList();
     }
 
     public long unreadCount(String userId) {
-        return notifications.countUnread(userId);
+        return notifications.countByUserIdAndReadFalse(userId);
     }
 
     public void markRead(String userId, String id) {
         Notification n = notifications.findById(id).orElseThrow(() -> new BusinessRuleException(
                 "NOTIFICATION_NOT_FOUND", HttpStatus.NOT_FOUND, "That notification could not be found."));
-        if (!n.userId().equals(userId)) {
+        if (!n.getUserId().equals(userId)) {
             throw new BusinessRuleException("NOTIFICATION_NOT_FOUND", HttpStatus.NOT_FOUND,
                     "That notification could not be found.");
         }
-        if (!n.read()) {
-            notifications.save(new Notification(n.id(), n.userId(), n.type(), n.title(), n.body(),
-                    n.relatedTeamId(), n.relatedRequestId(), n.relatedFixtureId(), n.relatedConversationId(),
-                    true, n.createdAt()));
+        if (!n.isRead()) {
+            notifications.save(new Notification(n.getId(), n.getUserId(), n.getType(), n.getTitle(), n.getBody(),
+                    n.getRelatedTeamId(), n.getRelatedRequestId(), n.getRelatedFixtureId(), n.getRelatedConversationId(),
+                    true, n.getCreatedAt()));
         }
     }
 
     public void markAllRead(String userId) {
-        notifications.findByUserId(userId, MAX_LISTED).stream()
-                .filter(n -> !n.read())
-                .forEach(n -> markRead(userId, n.id()));
+        notifications.findByUserIdOrderByCreatedAtDesc(userId, Limit.of(MAX_LISTED)).stream()
+                .filter(n -> !n.isRead())
+                .forEach(n -> markRead(userId, n.getId()));
     }
 
     public void clearAll(String userId) {
-        notifications.deleteAllForUser(userId);
+        notifications.deleteByUserId(userId);
     }
 
     private NotificationPreference preferenceFor(String userId) {
-        return preferences.findByUserId(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
+        return preferences.findById(userId).orElseGet(() -> NotificationPreference.defaultsFor(userId));
     }
 }

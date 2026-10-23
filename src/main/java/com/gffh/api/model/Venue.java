@@ -2,6 +2,12 @@ package com.gffh.api.model;
 
 import com.gffh.api.model.enums.PitchSurface;
 import com.gffh.api.model.enums.VenueFacility;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -21,20 +27,27 @@ import java.util.regex.Pattern;
  * clients that don't send it, fall back to a postcode found in the address
  * (see {@link #displayPostcode()}).
  */
-public record Venue(
-        String id,
-        String clubId,
-        String name,
-        String address,
-        String postcode,
-        GeoPoint location,
-        PitchSurface pitchSurface,
-        List<VenueFacility> facilities,
-        String accessNotes,
-        String parkingNotes,
-        String pitchNumber,
-        boolean isDefault,
-        Instant createdAt) {
+@Document("venues")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Venue {
+
+    @Id
+    private String id;
+    private String clubId;
+    private String name;
+    private String address;
+    private String postcode;
+    private GeoPoint location;
+    private PitchSurface pitchSurface;
+    private List<VenueFacility> facilities = List.of();
+    private String accessNotes;
+    private String parkingNotes;
+    private String pitchNumber;
+    private boolean isDefault;
+    @CreatedDate
+    private Instant createdAt;
 
     private static final String DIRECTIONS = "https://www.google.com/maps/dir/?api=1&destination=";
 

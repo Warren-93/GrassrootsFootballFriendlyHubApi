@@ -1,0 +1,40 @@
+package com.gffh.api.repository.custom;
+
+import com.gffh.api.model.GeoPoint;
+import com.gffh.api.model.Team;
+import com.gffh.api.model.enums.AgeGroup;
+import com.gffh.api.model.enums.Gender;
+
+import java.util.Collection;
+import java.util.List;
+
+/** The matching engine's candidate search, which a derived query method can't express. */
+public interface TeamRepositoryCustom {
+
+    /**
+     * Candidate opponents, narrowed in the database before scoring.
+     *
+     * <p>Results come back nearest first, so {@code limit} keeps the closest
+     * teams within {@code radiusMiles}.
+     *
+     * <p>Gender is filtered here rather than in the engine because it is a hard
+     * constraint with an index behind it; scoring 400 teams to discard 200 on a
+     * boolean would waste the index.
+     *
+     * @param ageGroups the age groups to admit - the searching team's own
+     *        group, widened by the matching engine's age band tolerance (see
+     *        {@link AgeGroup#withinBands}); exactly one group at the default
+     *        tolerance of 0
+     * @param excludeClubId the searching team's club - a club does not need the
+     *        platform to arrange a fixture between its own squads
+     */
+    List<Team> findCandidates(GeoPoint centre,
+                              int radiusMiles,
+                              Collection<AgeGroup> ageGroups,
+                              Gender gender,
+                              List<String> formats,
+                              List<String> abilityLevels,
+                              boolean verifiedOnly,
+                              String excludeClubId,
+                              int limit);
+}

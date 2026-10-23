@@ -1,6 +1,12 @@
 package com.gffh.api.model;
 
 import com.gffh.api.model.enums.NotificationType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -9,16 +15,23 @@ import java.time.Instant;
  * to every manager of the relevant team, rather than resolved per-viewer, so
  * read state is personal even when several people manage the same team.
  */
-public record Notification(
-        String id,
-        String userId,
-        NotificationType type,
-        String title,
-        String body,
-        String relatedTeamId,
-        String relatedRequestId,
-        String relatedFixtureId,
-        String relatedConversationId,
-        boolean read,
-        Instant createdAt) {
+@Document("notifications")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Notification {
+
+    @Id
+    private String id;
+    private String userId;
+    private NotificationType type;
+    private String title;
+    private String body;
+    private String relatedTeamId;
+    private String relatedRequestId;
+    private String relatedFixtureId;
+    private String relatedConversationId;
+    private boolean read;
+    @CreatedDate
+    private Instant createdAt;
 }

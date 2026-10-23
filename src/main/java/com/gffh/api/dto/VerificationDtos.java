@@ -28,10 +28,10 @@ public final class VerificationDtos {
 
         /** {@code team} may be null if it has since been deleted. */
         public static VerificationRequestView from(VerificationRequest r, Team team) {
-            return new VerificationRequestView(r.id(), r.teamId(), r.affiliationNumber(), r.contactDetails(),
-                    r.evidenceUrls(), r.status().name(), r.firstRejectionReason(), r.finalRejectionReason(),
-                    r.submittedAt(), r.reviewedAt(),
-                    team == null ? null : team.name(), team == null ? null : team.clubName());
+            return new VerificationRequestView(r.getId(), r.getTeamId(), r.getAffiliationNumber(), r.getContactDetails(),
+                    r.getEvidenceUrls(), r.getStatus().name(), r.getFirstRejectionReason(), r.getFinalRejectionReason(),
+                    r.getSubmittedAt(), r.getReviewedAt(),
+                    team == null ? null : team.getName(), team == null ? null : team.getClubName());
         }
     }
 }

@@ -34,44 +34,44 @@ public class AdminAssociationService {
     }
 
     public List<AdminAssociationDtos.OrganisationView> list() {
-        return organisations.findAll().stream().map(AdminAssociationDtos.OrganisationView::from).toList();
+        return organisations.findAllByOrderByNameAsc().stream().map(AdminAssociationDtos.OrganisationView::from).toList();
     }
 
     public AdminAssociationDtos.OrganisationView create(String adminId, AdminAssociationDtos.OrganisationInput in) {
         requireUniqueName(in.name(), null);
-        String email = admins.findById(adminId).map(PlatformAdmin::email).orElse(null);
+        String email = admins.findById(adminId).map(PlatformAdmin::getEmail).orElse(null);
         RegisteredOrganisation saved = organisations.save(new RegisteredOrganisation(null, in.name().trim(),
                 blankToNull(in.shortName()), in.linkedOrganisation(), blankToNull(in.contactName()),
                 blankToNull(in.contactEmail()), blankToNull(in.website()), blankToNull(in.notes()), List.of(),
                 null, email, null));
-        auditLog.record(adminId, "ASSOCIATION_ADDED", "ASSOCIATION", saved.id(), saved.name());
+        auditLog.record(adminId, "ASSOCIATION_ADDED", "ASSOCIATION", saved.getId(), saved.getName());
         return AdminAssociationDtos.OrganisationView.from(saved);
     }
 
     public AdminAssociationDtos.OrganisationView update(String adminId, String id, AdminAssociationDtos.OrganisationInput in) {
         RegisteredOrganisation o = find(id);
         requireUniqueName(in.name(), id);
-        RegisteredOrganisation saved = organisations.save(new RegisteredOrganisation(o.id(), in.name().trim(),
+        RegisteredOrganisation saved = organisations.save(new RegisteredOrganisation(o.getId(), in.name().trim(),
                 blankToNull(in.shortName()), in.linkedOrganisation(), blankToNull(in.contactName()),
-                blankToNull(in.contactEmail()), blankToNull(in.website()), blankToNull(in.notes()), o.leagues(),
-                o.createdAt(), o.createdByEmail(), null));
-        auditLog.record(adminId, "ASSOCIATION_UPDATED", "ASSOCIATION", id, saved.name());
+                blankToNull(in.contactEmail()), blankToNull(in.website()), blankToNull(in.notes()), o.getLeagues(),
+                o.getCreatedAt(), o.getCreatedByEmail(), null));
+        auditLog.record(adminId, "ASSOCIATION_UPDATED", "ASSOCIATION", id, saved.getName());
         return AdminAssociationDtos.OrganisationView.from(saved);
     }
 
     public void delete(String adminId, String id) {
         RegisteredOrganisation o = find(id);
-        organisations.delete(id);
+        organisations.deleteById(id);
         auditLog.record(adminId, "ASSOCIATION_REMOVED", "ASSOCIATION", id,
-                o.name() + " (" + o.leagues().size() + " league" + (o.leagues().size() == 1 ? "" : "s") + ")");
+                o.getName() + " (" + o.getLeagues().size() + " league" + (o.getLeagues().size() == 1 ? "" : "s") + ")");
     }
 
     public AdminAssociationDtos.OrganisationView addLeague(String adminId, String id, AdminAssociationDtos.LeagueInput in) {
         RegisteredOrganisation o = find(id);
         requireUniqueLeague(o, in.name(), null);
-        List<RegisteredOrganisation.League> leagues = new ArrayList<>(o.leagues());
+        List<RegisteredOrganisation.League> leagues = new ArrayList<>(o.getLeagues());
         leagues.add(new RegisteredOrganisation.League(UUID.randomUUID().toString(), in.name().trim(), divisions(in)));
-        auditLog.record(adminId, "LEAGUE_ADDED", "ASSOCIATION", id, o.name() + ": " + in.name().trim());
+        auditLog.record(adminId, "LEAGUE_ADDED", "ASSOCIATION", id, o.getName() + ": " + in.name().trim());
         return save(o, leagues);
     }
 
@@ -80,26 +80,26 @@ public class AdminAssociationService {
         RegisteredOrganisation o = find(id);
         findLeague(o, leagueId);
         requireUniqueLeague(o, in.name(), leagueId);
-        List<RegisteredOrganisation.League> leagues = o.leagues().stream()
+        List<RegisteredOrganisation.League> leagues = o.getLeagues().stream()
                 .map(l -> l.id().equals(leagueId)
                         ? new RegisteredOrganisation.League(l.id(), in.name().trim(), divisions(in)) : l)
                 .toList();
-        auditLog.record(adminId, "LEAGUE_UPDATED", "ASSOCIATION", id, o.name() + ": " + in.name().trim());
+        auditLog.record(adminId, "LEAGUE_UPDATED", "ASSOCIATION", id, o.getName() + ": " + in.name().trim());
         return save(o, leagues);
     }
 
     public AdminAssociationDtos.OrganisationView deleteLeague(String adminId, String id, String leagueId) {
         RegisteredOrganisation o = find(id);
         RegisteredOrganisation.League league = findLeague(o, leagueId);
-        List<RegisteredOrganisation.League> leagues = o.leagues().stream().filter(l -> !l.id().equals(leagueId)).toList();
-        auditLog.record(adminId, "LEAGUE_REMOVED", "ASSOCIATION", id, o.name() + ": " + league.name());
+        List<RegisteredOrganisation.League> leagues = o.getLeagues().stream().filter(l -> !l.id().equals(leagueId)).toList();
+        auditLog.record(adminId, "LEAGUE_REMOVED", "ASSOCIATION", id, o.getName() + ": " + league.name());
         return save(o, leagues);
     }
 
     private AdminAssociationDtos.OrganisationView save(RegisteredOrganisation o, List<RegisteredOrganisation.League> leagues) {
-        return AdminAssociationDtos.OrganisationView.from(organisations.save(new RegisteredOrganisation(o.id(), o.name(),
-                o.shortName(), o.linkedOrganisation(), o.contactName(), o.contactEmail(), o.website(), o.notes(),
-                leagues, o.createdAt(), o.createdByEmail(), null)));
+        return AdminAssociationDtos.OrganisationView.from(organisations.save(new RegisteredOrganisation(o.getId(), o.getName(),
+                o.getShortName(), o.getLinkedOrganisation(), o.getContactName(), o.getContactEmail(), o.getWebsite(), o.getNotes(),
+                leagues, o.getCreatedAt(), o.getCreatedByEmail(), null)));
     }
 
     private RegisteredOrganisation find(String id) {
@@ -108,24 +108,24 @@ public class AdminAssociationService {
     }
 
     private static RegisteredOrganisation.League findLeague(RegisteredOrganisation o, String leagueId) {
-        return o.leagues().stream().filter(l -> l.id().equals(leagueId)).findFirst()
+        return o.getLeagues().stream().filter(l -> l.id().equals(leagueId)).findFirst()
                 .orElseThrow(() -> new BusinessRuleException("LEAGUE_NOT_FOUND", HttpStatus.NOT_FOUND,
                         "That league could not be found."));
     }
 
     private void requireUniqueName(String name, String exceptId) {
-        organisations.findByName(name).filter(o -> !o.id().equals(exceptId)).ifPresent(o -> {
+        organisations.findByName(name).filter(o -> !o.getId().equals(exceptId)).ifPresent(o -> {
             throw new BusinessRuleException("ASSOCIATION_EXISTS", HttpStatus.CONFLICT,
-                    o.name() + " is already on the list.");
+                    o.getName() + " is already on the list.");
         });
     }
 
     private static void requireUniqueLeague(RegisteredOrganisation o, String name, String exceptId) {
-        boolean taken = o.leagues().stream()
+        boolean taken = o.getLeagues().stream()
                 .anyMatch(l -> !l.id().equals(exceptId) && l.name().equalsIgnoreCase(name.trim()));
         if (taken) {
             throw new BusinessRuleException("LEAGUE_EXISTS", HttpStatus.CONFLICT,
-                    o.name() + " already has a league called " + name.trim() + ".");
+                    o.getName() + " already has a league called " + name.trim() + ".");
         }
     }
 
