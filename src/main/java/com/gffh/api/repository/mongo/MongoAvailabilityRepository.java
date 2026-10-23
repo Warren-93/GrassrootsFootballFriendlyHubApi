@@ -26,8 +26,8 @@ public class MongoAvailabilityRepository implements AvailabilityRepository {
 
     @Override
     public Optional<AvailabilitySlot> findById(String id) {
-        AvailabilitySlotDocument doc = mongoTemplate.findById(id, AvailabilitySlotDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(AvailabilitySlotDocument::toDomain);
+        AvailabilitySlot doc = mongoTemplate.findById(id, AvailabilitySlot.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -35,8 +35,7 @@ public class MongoAvailabilityRepository implements AvailabilityRepository {
         Query query = new Query(Criteria.where("teamId").is(teamId)
                 .and("date").gte(from).lte(to)
                 .and("status").is(AvailabilityStatus.AVAILABLE.name()));
-        return mongoTemplate.find(query, AvailabilitySlotDocument.class, COLLECTION).stream()
-                .map(AvailabilitySlotDocument::toDomain).toList();
+        return mongoTemplate.find(query, AvailabilitySlot.class, COLLECTION);
     }
 
     @Override
@@ -45,23 +44,21 @@ public class MongoAvailabilityRepository implements AvailabilityRepository {
         Query query = new Query(Criteria.where("teamId").in(teamIds)
                 .and("date").gte(from).lte(to)
                 .and("status").is(AvailabilityStatus.AVAILABLE.name()));
-        return mongoTemplate.find(query, AvailabilitySlotDocument.class, COLLECTION).stream()
-                .map(AvailabilitySlotDocument::toDomain).toList();
+        return mongoTemplate.find(query, AvailabilitySlot.class, COLLECTION);
     }
 
     @Override
     public List<AvailabilitySlot> findOverlapping(String teamId, LocalDate date) {
         Query query = new Query(Criteria.where("teamId").is(teamId).and("date").is(date));
-        return mongoTemplate.find(query, AvailabilitySlotDocument.class, COLLECTION).stream()
-                .map(AvailabilitySlotDocument::toDomain).toList();
+        return mongoTemplate.find(query, AvailabilitySlot.class, COLLECTION);
     }
 
     @Override
     public AvailabilitySlot save(AvailabilitySlot slot) {
         AvailabilitySlot toSave = slot.getId() != null ? slot : withGeneratedId(slot);
-        AvailabilitySlotDocument doc = AvailabilitySlotDocument.from(toSave);
+        AvailabilitySlot doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private AvailabilitySlot withGeneratedId(AvailabilitySlot slot) {
@@ -72,6 +69,6 @@ public class MongoAvailabilityRepository implements AvailabilityRepository {
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), AvailabilitySlotDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), AvailabilitySlot.class, COLLECTION);
     }
 }

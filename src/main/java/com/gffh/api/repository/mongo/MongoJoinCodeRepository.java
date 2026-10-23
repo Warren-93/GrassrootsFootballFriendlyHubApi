@@ -25,28 +25,28 @@ public class MongoJoinCodeRepository implements JoinCodeRepository {
     @Override
     public Optional<JoinCode> findByTeamId(String teamId) {
         Query query = new Query(Criteria.where("teamId").is(teamId));
-        JoinCodeDocument doc = mongoTemplate.findOne(query, JoinCodeDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(JoinCodeDocument::toDomain);
+        JoinCode doc = mongoTemplate.findOne(query, JoinCode.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<JoinCode> findByCode(String code) {
         Query query = new Query(Criteria.where("code").is(code));
-        JoinCodeDocument doc = mongoTemplate.findOne(query, JoinCodeDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(JoinCodeDocument::toDomain);
+        JoinCode doc = mongoTemplate.findOne(query, JoinCode.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public JoinCode save(JoinCode joinCode) {
         JoinCode toSave = joinCode.getId() != null ? joinCode : withGeneratedId(joinCode);
-        JoinCodeDocument doc = JoinCodeDocument.from(toSave);
+        JoinCode doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void deleteByTeamId(String teamId) {
-        mongoTemplate.remove(new Query(Criteria.where("teamId").is(teamId)), JoinCodeDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("teamId").is(teamId)), JoinCode.class, COLLECTION);
     }
 
     private JoinCode withGeneratedId(JoinCode j) {

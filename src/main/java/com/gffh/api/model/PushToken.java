@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.PushPlatform;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -13,11 +15,13 @@ import java.time.Instant;
  * person, so it belongs to whoever registered it last - signing in as someone
  * else on the same phone moves it.
  */
+@Document("pushTokens")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PushToken {
 
+    @Id
     private String token;
     private String userId;
     private PushPlatform platform;

@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.VerificationRequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,11 +16,13 @@ import java.util.List;
  * there's no file/blob storage service in this build; a real deployment
  * would need one before this is production-ready.
  */
+@Document("verification_requests")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class VerificationRequest {
 
+    @Id
     private String id;
     private String teamId;
     private String submittedByUserId;

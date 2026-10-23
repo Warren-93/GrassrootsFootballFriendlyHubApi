@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -16,11 +18,13 @@ import java.time.Instant;
  *
  * <p>One invite per team and address; inviting again refreshes it.
  */
+@Document("memberInvites")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class MemberInvite {
 
+    @Id
     private String id;
     private String email;
     private String teamId;

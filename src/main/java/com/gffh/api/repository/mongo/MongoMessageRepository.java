@@ -27,17 +27,16 @@ public class MongoMessageRepository implements MessageRepository {
     @Override
     public Message save(Message message) {
         Message toSave = message.getId() != null ? message : withGeneratedId(message);
-        MessageDocument doc = MessageDocument.from(toSave);
+        Message doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public List<Message> findByConversationId(String conversationId) {
         Query query = new Query(Criteria.where("conversationId").is(conversationId))
                 .with(Sort.by(Sort.Direction.ASC, "createdAt"));
-        return mongoTemplate.find(query, MessageDocument.class, COLLECTION).stream()
-                .map(MessageDocument::toDomain).toList();
+        return mongoTemplate.find(query, Message.class, COLLECTION);
     }
 
     @Override
@@ -47,8 +46,7 @@ public class MongoMessageRepository implements MessageRepository {
         Query query = new Query(Criteria.where("conversationId").is(conversationId)
                 .and("createdAt").gte(since.truncatedTo(ChronoUnit.MILLIS)))
                 .with(Sort.by(Sort.Direction.ASC, "createdAt"));
-        return mongoTemplate.find(query, MessageDocument.class, COLLECTION).stream()
-                .map(MessageDocument::toDomain).toList();
+        return mongoTemplate.find(query, Message.class, COLLECTION);
     }
 
     private Message withGeneratedId(Message m) {

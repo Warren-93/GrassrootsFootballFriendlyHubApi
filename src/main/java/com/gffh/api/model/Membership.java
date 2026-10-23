@@ -3,6 +3,8 @@ package com.gffh.api.model;
 import com.gffh.api.model.enums.Role;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -12,10 +14,12 @@ import java.time.Instant;
  * ({@link com.gffh.api.service.MembershipService} resolves this), which is how a
  * club admin manages several squads without a membership row per team.
  */
+@Document("memberships")
 @Data
 @NoArgsConstructor
 public class Membership {
 
+    @Id
     private String id;
     private String userId;
     private String teamId;

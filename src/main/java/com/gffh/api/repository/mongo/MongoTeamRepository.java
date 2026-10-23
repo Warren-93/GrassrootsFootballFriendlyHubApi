@@ -38,15 +38,14 @@ public class MongoTeamRepository implements TeamRepository {
 
     @Override
     public Optional<Team> findById(String id) {
-        TeamDocument doc = mongoTemplate.findById(id, TeamDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(TeamDocument::toDomain);
+        Team doc = mongoTemplate.findById(id, Team.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<Team> findByClubId(String clubId) {
         Query query = new Query(Criteria.where("clubId").is(clubId));
-        return mongoTemplate.find(query, TeamDocument.class, COLLECTION).stream()
-                .map(TeamDocument::toDomain).toList();
+        return mongoTemplate.find(query, Team.class, COLLECTION);
     }
 
     @Override
@@ -54,10 +53,10 @@ public class MongoTeamRepository implements TeamRepository {
         Instant now = Instant.now();
         Team toSave = team.getId() != null ? team : withGeneratedId(team, now);
         toSave = toSave.getCreatedAt() != null ? toSave : withCreatedAt(toSave, now);
-        TeamDocument doc = TeamDocument.from(toSave);
-        doc.updatedAt = now;
+        Team doc = toSave;
+        doc.setUpdatedAt(now);
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private Team withGeneratedId(Team team, Instant now) {
@@ -108,14 +107,12 @@ public class MongoTeamRepository implements TeamRepository {
         }
 
         Query query = new Query(criteria).limit(limit);
-        return mongoTemplate.find(query, TeamDocument.class, COLLECTION).stream()
-                .map(TeamDocument::toDomain).toList();
+        return mongoTemplate.find(query, Team.class, COLLECTION);
     }
 
     @Override
     public List<Team> searchByName(String query, int limit) {
         Query q = new Query(Criteria.where("name").regex(java.util.regex.Pattern.quote(query), "i")).limit(limit);
-        return mongoTemplate.find(q, TeamDocument.class, COLLECTION).stream()
-                .map(TeamDocument::toDomain).toList();
+        return mongoTemplate.find(q, Team.class, COLLECTION);
     }
 }

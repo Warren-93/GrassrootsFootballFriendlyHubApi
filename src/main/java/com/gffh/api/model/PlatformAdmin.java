@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.AdminRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -14,11 +16,13 @@ import java.time.Instant;
  * ADMIN_TOTP_REQUIRED is on (see {@code AdminAuthService}). {@code role} is
  * null on accounts saved before roles existed, which count as ADMIN.
  */
+@Document("platform_admins")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlatformAdmin {
 
+    @Id
     private String id;
     private String email;
     private String passwordHash;

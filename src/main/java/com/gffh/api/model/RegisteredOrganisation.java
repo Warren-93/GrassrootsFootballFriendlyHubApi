@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.Organisation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,11 +19,13 @@ import java.util.List;
  * {@link Organisation} list. {@code linkedOrganisation} says which of those
  * fixed entries it corresponds to, if any, for when the two are joined up.
  */
+@Document("registered_organisations")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisteredOrganisation {
 
+    @Id
     private String id;
     private String name;
     private String shortName;
@@ -30,7 +34,7 @@ public class RegisteredOrganisation {
     private String contactEmail;
     private String website;
     private String notes;
-    private List<League> leagues;
+    private List<League> leagues = List.of();
     private Instant createdAt;
     private String createdByEmail;
     private Instant updatedAt;

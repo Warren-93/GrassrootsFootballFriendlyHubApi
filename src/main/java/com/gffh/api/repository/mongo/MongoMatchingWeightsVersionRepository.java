@@ -28,28 +28,27 @@ public class MongoMatchingWeightsVersionRepository implements MatchingWeightsVer
     @Override
     public Optional<MatchingWeightsVersion> findActive() {
         Query query = new Query(Criteria.where("active").is(true));
-        MatchingWeightsVersionDocument doc = mongoTemplate.findOne(query, MatchingWeightsVersionDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MatchingWeightsVersionDocument::toDomain);
+        MatchingWeightsVersion doc = mongoTemplate.findOne(query, MatchingWeightsVersion.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<MatchingWeightsVersion> listAll() {
         Query query = new Query().with(Sort.by(Sort.Direction.DESC, "publishedAt"));
-        return mongoTemplate.find(query, MatchingWeightsVersionDocument.class, COLLECTION).stream()
-                .map(MatchingWeightsVersionDocument::toDomain).toList();
+        return mongoTemplate.find(query, MatchingWeightsVersion.class, COLLECTION);
     }
 
     @Override
     public MatchingWeightsVersion save(MatchingWeightsVersion version) {
         MatchingWeightsVersion toSave = version.getId() != null ? version : withGeneratedId(version);
-        mongoTemplate.save(MatchingWeightsVersionDocument.from(toSave), COLLECTION);
+        mongoTemplate.save((toSave), COLLECTION);
         return toSave;
     }
 
     @Override
     public void deactivateAll() {
         mongoTemplate.updateMulti(new Query(), Update.update("active", false),
-                MatchingWeightsVersionDocument.class, COLLECTION);
+                MatchingWeightsVersion.class, COLLECTION);
     }
 
     private MatchingWeightsVersion withGeneratedId(MatchingWeightsVersion v) {

@@ -5,6 +5,8 @@ import com.gffh.api.model.enums.DeletionTargetType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -15,11 +17,13 @@ import java.time.Instant;
  * removed when it ran. Kept after the target is gone, as the record of who
  * asked, who approved and why.
  */
+@Document("deletion_requests")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DeletionRequest {
 
+    @Id
     private String id;
     private DeletionTargetType targetType;
     private String targetId;

@@ -26,16 +26,16 @@ public class MongoClubRepository implements ClubRepository {
 
     @Override
     public Optional<Club> findById(String id) {
-        ClubDocument doc = mongoTemplate.findById(id, ClubDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(ClubDocument::toDomain);
+        Club doc = mongoTemplate.findById(id, Club.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Club save(Club club) {
         Club toSave = club.getId() != null ? club : withGeneratedId(club);
-        ClubDocument doc = ClubDocument.from(toSave);
+        Club doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private Club withGeneratedId(Club club) {
@@ -47,7 +47,6 @@ public class MongoClubRepository implements ClubRepository {
     @Override
     public List<Club> searchByName(String query, int limit) {
         Query q = new Query(Criteria.where("name").regex(Pattern.quote(query), "i")).limit(limit);
-        return mongoTemplate.find(q, ClubDocument.class, COLLECTION).stream()
-                .map(ClubDocument::toDomain).toList();
+        return mongoTemplate.find(q, Club.class, COLLECTION);
     }
 }

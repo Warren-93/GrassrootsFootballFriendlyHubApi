@@ -28,51 +28,49 @@ public class MongoMemberInviteRepository implements MemberInviteRepository {
 
     @Override
     public Optional<MemberInvite> findById(String id) {
-        MemberInviteDocument doc = mongoTemplate.findById(id, MemberInviteDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MemberInviteDocument::toDomain);
+        MemberInvite doc = mongoTemplate.findById(id, MemberInvite.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<MemberInvite> findByTeamIdAndEmail(String teamId, String email) {
         Query query = new Query(Criteria.where("teamId").is(teamId).and("email").is(normalised(email)));
-        MemberInviteDocument doc = mongoTemplate.findOne(query, MemberInviteDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MemberInviteDocument::toDomain);
+        MemberInvite doc = mongoTemplate.findOne(query, MemberInvite.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<MemberInvite> findPendingByTeamId(String teamId, Instant now) {
         Query query = new Query(Criteria.where("teamId").is(teamId).and("expiresAt").gt(now))
                 .with(Sort.by(Sort.Direction.DESC, "createdAt"));
-        return mongoTemplate.find(query, MemberInviteDocument.class, COLLECTION).stream()
-                .map(MemberInviteDocument::toDomain).toList();
+        return mongoTemplate.find(query, MemberInvite.class, COLLECTION);
     }
 
     @Override
     public List<MemberInvite> findPendingByEmail(String email, Instant now) {
         Query query = new Query(Criteria.where("email").is(normalised(email)).and("expiresAt").gt(now))
                 .with(Sort.by(Sort.Direction.ASC, "createdAt"));
-        return mongoTemplate.find(query, MemberInviteDocument.class, COLLECTION).stream()
-                .map(MemberInviteDocument::toDomain).toList();
+        return mongoTemplate.find(query, MemberInvite.class, COLLECTION);
     }
 
     @Override
     public MemberInvite save(MemberInvite invite) {
         MemberInvite toSave = invite.getId() != null ? invite : withGeneratedId(invite);
-        MemberInviteDocument doc = MemberInviteDocument.from(toSave);
-        doc.email = normalised(doc.email);
+        MemberInvite doc = toSave;
+        doc.setEmail(normalised(doc.getEmail()));
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), MemberInviteDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), MemberInvite.class, COLLECTION);
     }
 
     @Override
     public void deleteByEmail(String email) {
         mongoTemplate.remove(new Query(Criteria.where("email").is(normalised(email))),
-                MemberInviteDocument.class, COLLECTION);
+                MemberInvite.class, COLLECTION);
     }
 
     private static String normalised(String email) {

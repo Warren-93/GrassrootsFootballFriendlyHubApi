@@ -47,20 +47,20 @@ public class MongoAdminActivityRepository implements AdminActivityRepository {
 
     @Override
     public List<RefreshToken> sessionsFor(String userId, int limit) {
-        return newest(Criteria.where("userId").is(userId), "createdAt", limit, RefreshTokenDocument.class, "refreshTokens")
-                .stream().map(RefreshTokenDocument::toDomain).toList();
+        return newest(Criteria.where("userId").is(userId), "createdAt", limit, RefreshToken.class, "refreshTokens")
+                ;
     }
 
     @Override
     public List<VerificationToken> emailLinksFor(String userId, int limit) {
-        return newest(Criteria.where("userId").is(userId), "createdAt", limit, VerificationTokenDocument.class,
-                "verificationTokens").stream().map(VerificationTokenDocument::toDomain).toList();
+        return newest(Criteria.where("userId").is(userId), "createdAt", limit, VerificationToken.class,
+                "verificationTokens");
     }
 
     @Override
     public List<Message> messagesSentBy(String userId, int limit) {
-        return newest(Criteria.where("senderUserId").is(userId), "createdAt", limit, MessageDocument.class, "messages")
-                .stream().map(MessageDocument::toDomain).toList();
+        return newest(Criteria.where("senderUserId").is(userId), "createdAt", limit, Message.class, "messages")
+                ;
     }
 
     @Override
@@ -80,37 +80,37 @@ public class MongoAdminActivityRepository implements AdminActivityRepository {
     @Override
     public List<VerificationRequest> verificationRequestsSubmittedBy(String userId) {
         return newest(Criteria.where("submittedByUserId").is(userId), "submittedAt", 50,
-                VerificationRequestDocument.class, "verification_requests")
-                .stream().map(VerificationRequestDocument::toDomain).toList();
+                VerificationRequest.class, "verification_requests")
+                ;
     }
 
     @Override
     public List<VerificationRequest> verificationRequestsFor(String teamId) {
         return newest(Criteria.where("teamId").is(teamId), "submittedAt", 50,
-                VerificationRequestDocument.class, "verification_requests")
-                .stream().map(VerificationRequestDocument::toDomain).toList();
+                VerificationRequest.class, "verification_requests")
+                ;
     }
 
     @Override
     public List<MemberInvite> invitesSentBy(String userId, int limit) {
-        return newest(Criteria.where("invitedByUserId").is(userId), "createdAt", limit, MemberInviteDocument.class,
-                "memberInvites").stream().map(MemberInviteDocument::toDomain).toList();
+        return newest(Criteria.where("invitedByUserId").is(userId), "createdAt", limit, MemberInvite.class,
+                "memberInvites");
     }
 
     @Override
     public List<Report> reportsInvolving(String teamId) {
         Criteria either = new Criteria().orOperator(
                 Criteria.where("reporterTeamId").is(teamId), Criteria.where("reportedTeamId").is(teamId));
-        return newest(either, "createdAt", 50, ReportDocument.class, "reports")
-                .stream().map(ReportDocument::toDomain).toList();
+        return newest(either, "createdAt", 50, Report.class, "reports")
+                ;
     }
 
     @Override
     public List<Block> blocksInvolving(String teamId) {
         Criteria either = new Criteria().orOperator(
                 Criteria.where("blockingTeamId").is(teamId), Criteria.where("blockedTeamId").is(teamId));
-        return newest(either, "createdAt", 50, BlockDocument.class, "blocks")
-                .stream().map(BlockDocument::toDomain).toList();
+        return newest(either, "createdAt", 50, Block.class, "blocks")
+                ;
     }
 
     @Override

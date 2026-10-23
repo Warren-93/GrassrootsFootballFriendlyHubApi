@@ -5,6 +5,8 @@ import com.gffh.api.model.enums.VenueFacility;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -24,11 +26,13 @@ import java.util.regex.Pattern;
  * clients that don't send it, fall back to a postcode found in the address
  * (see {@link #displayPostcode()}).
  */
+@Document("venues")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Venue {
 
+    @Id
     private String id;
     private String clubId;
     private String name;
@@ -36,7 +40,7 @@ public class Venue {
     private String postcode;
     private GeoPoint location;
     private PitchSurface pitchSurface;
-    private List<VenueFacility> facilities;
+    private List<VenueFacility> facilities = List.of();
     private String accessNotes;
     private String parkingNotes;
     private String pitchNumber;

@@ -26,8 +26,8 @@ public class MongoVerificationRequestRepository implements VerificationRequestRe
 
     @Override
     public Optional<VerificationRequest> findById(String id) {
-        VerificationRequestDocument doc = mongoTemplate.findById(id, VerificationRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(VerificationRequestDocument::toDomain);
+        VerificationRequest doc = mongoTemplate.findById(id, VerificationRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -35,8 +35,8 @@ public class MongoVerificationRequestRepository implements VerificationRequestRe
         Query query = new Query(Criteria.where("teamId").is(teamId)
                 .and("status").in(VerificationRequestStatus.PENDING.name(),
                         VerificationRequestStatus.AWAITING_SECOND_REJECTION.name()));
-        VerificationRequestDocument doc = mongoTemplate.findOne(query, VerificationRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(VerificationRequestDocument::toDomain);
+        VerificationRequest doc = mongoTemplate.findOne(query, VerificationRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -44,23 +44,22 @@ public class MongoVerificationRequestRepository implements VerificationRequestRe
         Query query = new Query(Criteria.where("teamId").is(teamId));
         query.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "submittedAt"));
         query.limit(1);
-        VerificationRequestDocument doc = mongoTemplate.findOne(query, VerificationRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(VerificationRequestDocument::toDomain);
+        VerificationRequest doc = mongoTemplate.findOne(query, VerificationRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<VerificationRequest> findByStatus(VerificationRequestStatus status) {
         Query query = new Query(Criteria.where("status").is(status.name()));
-        return mongoTemplate.find(query, VerificationRequestDocument.class, COLLECTION).stream()
-                .map(VerificationRequestDocument::toDomain).toList();
+        return mongoTemplate.find(query, VerificationRequest.class, COLLECTION);
     }
 
     @Override
     public VerificationRequest save(VerificationRequest request) {
         VerificationRequest toSave = request.getId() != null ? request : withGeneratedId(request);
-        VerificationRequestDocument doc = VerificationRequestDocument.from(toSave);
+        VerificationRequest doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private VerificationRequest withGeneratedId(VerificationRequest r) {

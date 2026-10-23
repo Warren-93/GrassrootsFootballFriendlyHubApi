@@ -26,8 +26,8 @@ public class MongoConversationRepository implements ConversationRepository {
 
     @Override
     public Optional<Conversation> findById(String id) {
-        ConversationDocument doc = mongoTemplate.findById(id, ConversationDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(ConversationDocument::toDomain);
+        Conversation doc = mongoTemplate.findById(id, Conversation.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -35,8 +35,8 @@ public class MongoConversationRepository implements ConversationRepository {
         Query query = new Query(new Criteria().orOperator(
                 Criteria.where("teamAId").is(teamAId).and("teamBId").is(teamBId),
                 Criteria.where("teamAId").is(teamBId).and("teamBId").is(teamAId)));
-        ConversationDocument doc = mongoTemplate.findOne(query, ConversationDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(ConversationDocument::toDomain);
+        Conversation doc = mongoTemplate.findOne(query, Conversation.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -45,16 +45,15 @@ public class MongoConversationRepository implements ConversationRepository {
                 Criteria.where("teamAId").is(teamId),
                 Criteria.where("teamBId").is(teamId)))
                 .with(Sort.by(Sort.Direction.DESC, "lastMessageAt"));
-        return mongoTemplate.find(query, ConversationDocument.class, COLLECTION).stream()
-                .map(ConversationDocument::toDomain).toList();
+        return mongoTemplate.find(query, Conversation.class, COLLECTION);
     }
 
     @Override
     public Conversation save(Conversation conversation) {
         Conversation toSave = conversation.getId() != null ? conversation : withGeneratedId(conversation);
-        ConversationDocument doc = ConversationDocument.from(toSave);
+        Conversation doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private Conversation withGeneratedId(Conversation c) {

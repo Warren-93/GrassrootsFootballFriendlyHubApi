@@ -26,15 +26,14 @@ public class MongoTestAccountRepository implements TestAccountRepository {
 
     @Override
     public Optional<TestAccount> findById(String id) {
-        TestAccountDocument doc = mongoTemplate.findById(id, TestAccountDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(TestAccountDocument::toDomain);
+        TestAccount doc = mongoTemplate.findById(id, TestAccount.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<TestAccount> findAll() {
         Query query = new Query().with(Sort.by(Sort.Direction.DESC, "createdAt"));
-        return mongoTemplate.find(query, TestAccountDocument.class, COLLECTION).stream()
-                .map(TestAccountDocument::toDomain).toList();
+        return mongoTemplate.find(query, TestAccount.class, COLLECTION);
     }
 
     @Override
@@ -43,9 +42,9 @@ public class MongoTestAccountRepository implements TestAccountRepository {
                 account.getUserId(), account.getEmail(), account.getDisplayName(), account.getKind(), account.getClubId(),
                 account.getTeamId(), account.getCreatedByAdminId(),
                 account.getCreatedAt() != null ? account.getCreatedAt() : Instant.now());
-        TestAccountDocument doc = TestAccountDocument.from(toSave);
+        TestAccount doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override

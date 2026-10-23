@@ -26,24 +26,24 @@ public class MongoUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(String id) {
-        UserDocument doc = mongoTemplate.findById(id, UserDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(UserDocument::toDomain);
+        User doc = mongoTemplate.findById(id, User.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
         Query query = new Query(Criteria.where("email").is(email.toLowerCase()));
-        UserDocument doc = mongoTemplate.findOne(query, UserDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(UserDocument::toDomain);
+        User doc = mongoTemplate.findOne(query, User.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public User save(User user) {
         User toSave = user.getId() != null ? user : withGeneratedId(user);
-        UserDocument doc = UserDocument.from(toSave);
-        doc.email = doc.email.toLowerCase();
+        User doc = toSave;
+        doc.setEmail(doc.getEmail().toLowerCase());
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private User withGeneratedId(User user) {
@@ -54,7 +54,7 @@ public class MongoUserRepository implements UserRepository {
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), UserDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), User.class, COLLECTION);
     }
 
     @Override
@@ -63,7 +63,6 @@ public class MongoUserRepository implements UserRepository {
         Query q = new Query(new Criteria().orOperator(
                 Criteria.where("email").regex(pattern, "i"),
                 Criteria.where("displayName").regex(pattern, "i"))).limit(limit);
-        return mongoTemplate.find(q, UserDocument.class, COLLECTION).stream()
-                .map(UserDocument::toDomain).toList();
+        return mongoTemplate.find(q, User.class, COLLECTION);
     }
 }

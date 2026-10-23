@@ -22,31 +22,30 @@ public class MongoPushTokenRepository implements PushTokenRepository {
 
     @Override
     public PushToken save(PushToken token) {
-        PushTokenDocument doc = PushTokenDocument.from(token);
+        PushToken doc = token;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public List<PushToken> findByUserId(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
-        return mongoTemplate.find(query, PushTokenDocument.class, COLLECTION).stream()
-                .map(PushTokenDocument::toDomain).toList();
+        return mongoTemplate.find(query, PushToken.class, COLLECTION);
     }
 
     @Override
     public void deleteForUser(String userId, String token) {
         Query query = new Query(Criteria.where("_id").is(token).and("userId").is(userId));
-        mongoTemplate.remove(query, PushTokenDocument.class, COLLECTION);
+        mongoTemplate.remove(query, PushToken.class, COLLECTION);
     }
 
     @Override
     public void delete(String token) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(token)), PushTokenDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(token)), PushToken.class, COLLECTION);
     }
 
     @Override
     public void deleteByUserId(String userId) {
-        mongoTemplate.remove(new Query(Criteria.where("userId").is(userId)), PushTokenDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("userId").is(userId)), PushToken.class, COLLECTION);
     }
 }

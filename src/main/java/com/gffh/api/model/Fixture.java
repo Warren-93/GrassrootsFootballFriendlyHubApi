@@ -7,6 +7,8 @@ import com.gffh.api.model.enums.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,11 +21,13 @@ import java.time.LocalTime;
  * step. Kept as a separate record, rather than just relabelling the request, so
  * that fixture history survives even if requests are later archived.
  */
+@Document("fixtures")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Fixture {
 
+    @Id
     private String id;
     private String friendlyRequestId;
     private String homeTeamId;

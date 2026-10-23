@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.TestAccountKind;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -13,11 +15,13 @@ import java.time.Instant;
  * touching) real accounts. The user, club and team themselves stay in their
  * normal collections so the account signs in and behaves like any other.
  */
+@Document("test_accounts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class TestAccount {
 
+    @Id
     private String id;
     private String userId;
     private String email;

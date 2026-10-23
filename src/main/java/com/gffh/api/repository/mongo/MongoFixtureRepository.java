@@ -30,8 +30,8 @@ public class MongoFixtureRepository implements FixtureRepository {
 
     @Override
     public Optional<Fixture> findById(String id) {
-        FixtureDocument doc = mongoTemplate.findById(id, FixtureDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(FixtureDocument::toDomain);
+        Fixture doc = mongoTemplate.findById(id, Fixture.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -39,8 +39,7 @@ public class MongoFixtureRepository implements FixtureRepository {
         Query query = new Query(new Criteria().orOperator(
                 Criteria.where("homeTeamId").is(teamId),
                 Criteria.where("awayTeamId").is(teamId)));
-        return mongoTemplate.find(query, FixtureDocument.class, COLLECTION).stream()
-                .map(FixtureDocument::toDomain).toList();
+        return mongoTemplate.find(query, Fixture.class, COLLECTION);
     }
 
     @Override
@@ -55,8 +54,7 @@ public class MongoFixtureRepository implements FixtureRepository {
         if (status != null) filters.add(Criteria.where("status").is(status.name()));
         Query query = filters.isEmpty() ? new Query() : new Query(new Criteria().andOperator(filters.toArray(new Criteria[0])));
         query.with(Sort.by(Sort.Direction.DESC, "date", "startTime")).limit(limit);
-        return mongoTemplate.find(query, FixtureDocument.class, COLLECTION).stream()
-                .map(FixtureDocument::toDomain).toList();
+        return mongoTemplate.find(query, Fixture.class, COLLECTION);
     }
 
     @Override
@@ -65,7 +63,7 @@ public class MongoFixtureRepository implements FixtureRepository {
                 Criteria.where("venueId").is(venueId),
                 Criteria.where("status").is("CONFIRMED"),
                 Criteria.where("date").gte(java.time.LocalDate.now())));
-        return mongoTemplate.exists(query, FixtureDocument.class, COLLECTION);
+        return mongoTemplate.exists(query, Fixture.class, COLLECTION);
     }
 
     @Override
@@ -77,15 +75,15 @@ public class MongoFixtureRepository implements FixtureRepository {
                 team,
                 Criteria.where("status").is("CONFIRMED"),
                 Criteria.where("date").gte(java.time.LocalDate.now())));
-        return mongoTemplate.exists(query, FixtureDocument.class, COLLECTION);
+        return mongoTemplate.exists(query, Fixture.class, COLLECTION);
     }
 
     @Override
     public Fixture save(Fixture fixture) {
         Fixture toSave = fixture.getId() != null ? fixture : withGeneratedId(fixture);
-        FixtureDocument doc = FixtureDocument.from(toSave);
+        Fixture doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private Fixture withGeneratedId(Fixture f) {

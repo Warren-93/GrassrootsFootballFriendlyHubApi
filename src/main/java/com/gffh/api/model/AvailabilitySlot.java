@@ -5,6 +5,8 @@ import com.gffh.api.model.enums.Format;
 import com.gffh.api.model.enums.HomeAwayPreference;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -16,10 +18,12 @@ import java.time.LocalTime;
  * match duration must fit inside it. That is what makes overlap scoring
  * meaningful rather than a simple date equality check.
  */
+@Document("availability")
 @Data
 @NoArgsConstructor
 public class AvailabilitySlot {
 
+    @Id
     private String id;
     private String teamId;
     private LocalDate date;

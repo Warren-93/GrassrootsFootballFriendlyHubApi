@@ -32,11 +32,11 @@ public class MongoBlockRepository implements BlockRepository {
         Query query = new Query(new Criteria().orOperator(
                 Criteria.where("blockingTeamId").is(teamId),
                 Criteria.where("blockedTeamId").is(teamId)));
-        List<BlockDocument> docs = mongoTemplate.find(query, BlockDocument.class, COLLECTION);
+        List<Block> docs = mongoTemplate.find(query, Block.class, COLLECTION);
 
         Set<String> other = new HashSet<>();
-        for (BlockDocument doc : docs) {
-            other.add(doc.blockingTeamId.equals(teamId) ? doc.blockedTeamId : doc.blockingTeamId);
+        for (Block doc : docs) {
+            other.add(doc.getBlockingTeamId().equals(teamId) ? doc.getBlockedTeamId() : doc.getBlockingTeamId());
         }
         return other;
     }
@@ -48,25 +48,24 @@ public class MongoBlockRepository implements BlockRepository {
                 .setOnInsert("_id", UUID.randomUUID().toString())
                 .setOnInsert("reason", reason)
                 .setOnInsert("createdAt", Instant.now());
-        mongoTemplate.upsert(pair, insertOnly, BlockDocument.class, COLLECTION);
+        mongoTemplate.upsert(pair, insertOnly, Block.class, COLLECTION);
     }
 
     @Override
     public List<Block> findByBlockingTeamId(String teamId) {
         Query query = new Query(Criteria.where("blockingTeamId").is(teamId))
                 .with(Sort.by(Sort.Direction.DESC, "createdAt"));
-        return mongoTemplate.find(query, BlockDocument.class, COLLECTION).stream()
-                .map(BlockDocument::toDomain).toList();
+        return mongoTemplate.find(query, Block.class, COLLECTION);
     }
 
     @Override
     public Optional<Block> findById(String id) {
-        BlockDocument doc = mongoTemplate.findById(id, BlockDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(BlockDocument::toDomain);
+        Block doc = mongoTemplate.findById(id, Block.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public void deleteById(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), BlockDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), Block.class, COLLECTION);
     }
 }

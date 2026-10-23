@@ -26,34 +26,33 @@ public class MongoVenueRepository implements VenueRepository {
 
     @Override
     public Optional<Venue> findById(String id) {
-        VenueDocument doc = mongoTemplate.findById(id, VenueDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(VenueDocument::toDomain);
+        Venue doc = mongoTemplate.findById(id, Venue.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<Venue> findByClubId(String clubId) {
         Query query = new Query(Criteria.where("clubId").is(clubId));
-        return mongoTemplate.find(query, VenueDocument.class, COLLECTION).stream()
-                .map(VenueDocument::toDomain).toList();
+        return mongoTemplate.find(query, Venue.class, COLLECTION);
     }
 
     @Override
     public Venue save(Venue venue) {
         Venue toSave = venue.getId() != null ? venue : withGeneratedId(venue);
-        VenueDocument doc = VenueDocument.from(toSave);
+        Venue doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), VenueDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), Venue.class, COLLECTION);
     }
 
     @Override
     public void clearDefaultForClub(String clubId) {
         mongoTemplate.updateMulti(new Query(Criteria.where("clubId").is(clubId)),
-                Update.update("isDefault", false), VenueDocument.class, COLLECTION);
+                Update.update("isDefault", false), Venue.class, COLLECTION);
     }
 
     private Venue withGeneratedId(Venue v) {

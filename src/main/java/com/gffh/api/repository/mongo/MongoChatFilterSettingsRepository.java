@@ -22,19 +22,19 @@ public class MongoChatFilterSettingsRepository implements ChatFilterSettingsRepo
 
     @Override
     public Optional<ChatFilterSettings> find() {
-        return Optional.ofNullable(mongoTemplate.findById(ChatFilterSettingsDocument.SINGLETON_ID,
-                ChatFilterSettingsDocument.class, COLLECTION)).map(ChatFilterSettingsDocument::toDomain);
+        return Optional.ofNullable(mongoTemplate.findById(ChatFilterSettings.SINGLETON_ID,
+                ChatFilterSettings.class, COLLECTION));
     }
 
     @Override
     public ChatFilterSettings save(ChatFilterSettings settings) {
-        ChatFilterSettingsDocument doc = ChatFilterSettingsDocument.from(settings);
+        ChatFilterSettings doc = settings;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void delete() {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(ChatFilterSettingsDocument.SINGLETON_ID)), COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(ChatFilterSettings.SINGLETON_ID)), COLLECTION);
     }
 }

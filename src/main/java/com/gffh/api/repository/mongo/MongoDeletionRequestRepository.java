@@ -29,8 +29,8 @@ public class MongoDeletionRequestRepository implements DeletionRequestRepository
 
     @Override
     public Optional<DeletionRequest> findById(String id) {
-        DeletionRequestDocument doc = mongoTemplate.findById(id, DeletionRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(DeletionRequestDocument::toDomain);
+        DeletionRequest doc = mongoTemplate.findById(id, DeletionRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -38,32 +38,31 @@ public class MongoDeletionRequestRepository implements DeletionRequestRepository
         Query query = new Query(Criteria.where("targetType").is(targetType.name())
                 .and("targetId").is(targetId)
                 .and("status").is(DeletionRequestStatus.PENDING.name()));
-        DeletionRequestDocument doc = mongoTemplate.findOne(query, DeletionRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(DeletionRequestDocument::toDomain);
+        DeletionRequest doc = mongoTemplate.findOne(query, DeletionRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<DeletionRequest> list(DeletionRequestStatus status, int limit) {
         Query query = status == null ? new Query() : new Query(Criteria.where("status").is(status.name()));
         query.with(Sort.by(Sort.Direction.DESC, "requestedAt")).limit(limit);
-        return mongoTemplate.find(query, DeletionRequestDocument.class, COLLECTION).stream()
-                .map(DeletionRequestDocument::toDomain).toList();
+        return mongoTemplate.find(query, DeletionRequest.class, COLLECTION);
     }
 
     @Override
     public DeletionRequest save(DeletionRequest request) {
         DeletionRequest toSave = request.getId() != null ? request : withGeneratedId(request);
-        DeletionRequestDocument doc = DeletionRequestDocument.from(toSave);
+        DeletionRequest doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public Optional<DeletionRequest> saveIfStatus(DeletionRequest updated, DeletionRequestStatus expected) {
         Query query = new Query(Criteria.where("_id").is(updated.getId()).and("status").is(expected.name()));
-        DeletionRequestDocument replaced = mongoTemplate.findAndReplace(query, DeletionRequestDocument.from(updated),
-                FindAndReplaceOptions.options().returnNew(), DeletionRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(replaced).map(DeletionRequestDocument::toDomain);
+        DeletionRequest replaced = mongoTemplate.findAndReplace(query, (updated),
+                FindAndReplaceOptions.options().returnNew(), DeletionRequest.class, COLLECTION);
+        return Optional.ofNullable(replaced);
     }
 
     private DeletionRequest withGeneratedId(DeletionRequest r) {

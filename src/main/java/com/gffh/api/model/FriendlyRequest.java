@@ -6,6 +6,8 @@ import com.gffh.api.model.enums.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,11 +23,13 @@ import java.time.LocalTime;
  * windows the proposal is built on, so the same window cannot be re-proposed to
  * a second team while this negotiation is open.
  */
+@Document("friendlyRequests")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FriendlyRequest {
 
+    @Id
     private String id;
     private String senderTeamId;
     private String recipientTeamId;

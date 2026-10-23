@@ -27,22 +27,22 @@ public class MongoVerificationTokenRepository implements VerificationTokenReposi
     @Override
     public Optional<VerificationToken> findByToken(String token, VerificationTokenPurpose purpose) {
         Query query = new Query(Criteria.where("token").is(token).and("purpose").is(purpose.name()));
-        VerificationTokenDocument doc = mongoTemplate.findOne(query, VerificationTokenDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(VerificationTokenDocument::toDomain);
+        VerificationToken doc = mongoTemplate.findOne(query, VerificationToken.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public VerificationToken save(VerificationToken token) {
         VerificationToken toSave = token.getId() != null ? token : withGeneratedId(token);
-        VerificationTokenDocument doc = VerificationTokenDocument.from(toSave);
+        VerificationToken doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void markUsed(String id) {
         mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(id)),
-                Update.update("used", true), VerificationTokenDocument.class, COLLECTION);
+                Update.update("used", true), VerificationToken.class, COLLECTION);
     }
 
     private VerificationToken withGeneratedId(VerificationToken t) {

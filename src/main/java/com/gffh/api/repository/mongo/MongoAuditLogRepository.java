@@ -26,9 +26,9 @@ public class MongoAuditLogRepository implements AuditLogRepository {
     @Override
     public AuditLogEntry save(AuditLogEntry entry) {
         AuditLogEntry toSave = entry.getId() != null ? entry : withGeneratedId(entry);
-        AuditLogDocument doc = AuditLogDocument.from(toSave);
+        AuditLogEntry doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
@@ -37,8 +37,7 @@ public class MongoAuditLogRepository implements AuditLogRepository {
         if (targetType != null) criteria = criteria.and("targetType").is(targetType);
         if (targetId != null) criteria = criteria.and("targetId").is(targetId);
         Query query = new Query(criteria).with(Sort.by(Sort.Direction.DESC, "timestamp")).limit(limit);
-        return mongoTemplate.find(query, AuditLogDocument.class, COLLECTION).stream()
-                .map(AuditLogDocument::toDomain).toList();
+        return mongoTemplate.find(query, AuditLogEntry.class, COLLECTION);
     }
 
     private AuditLogEntry withGeneratedId(AuditLogEntry entry) {

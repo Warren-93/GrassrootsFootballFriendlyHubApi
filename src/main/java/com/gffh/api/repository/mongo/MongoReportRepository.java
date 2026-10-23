@@ -29,16 +29,15 @@ public class MongoReportRepository implements ReportRepository {
 
     @Override
     public Optional<Report> findById(String id) {
-        ReportDocument doc = mongoTemplate.findById(id, ReportDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(ReportDocument::toDomain);
+        Report doc = mongoTemplate.findById(id, Report.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<Report> findByStatus(ReportStatus status) {
         Query query = new Query(Criteria.where("status").is(status.name()))
                 .with(Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<Report> reports = mongoTemplate.find(query, ReportDocument.class, COLLECTION).stream()
-                .map(ReportDocument::toDomain).toList();
+        List<Report> reports = mongoTemplate.find(query, Report.class, COLLECTION);
         // Safeguarding first, regardless of creation order.
         return reports.stream()
                 .sorted(Comparator.comparing((Report r) -> r.getSeverity() != ReportSeverity.SAFEGUARDING))
@@ -48,10 +47,10 @@ public class MongoReportRepository implements ReportRepository {
     @Override
     public Report save(Report report) {
         Report toSave = report.getId() != null ? report : withGeneratedId(report);
-        ReportDocument doc = ReportDocument.from(toSave);
-        doc.updatedAt = Instant.now();
+        Report doc = toSave;
+        doc.setUpdatedAt(Instant.now());
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     private Report withGeneratedId(Report r) {

@@ -27,15 +27,15 @@ public class MongoNotificationRepository implements NotificationRepository {
     @Override
     public Notification save(Notification notification) {
         Notification toSave = notification.getId() != null ? notification : withGeneratedId(notification);
-        NotificationDocument doc = NotificationDocument.from(toSave);
+        Notification doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public Optional<Notification> findById(String id) {
-        NotificationDocument doc = mongoTemplate.findById(id, NotificationDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(NotificationDocument::toDomain);
+        Notification doc = mongoTemplate.findById(id, Notification.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -43,20 +43,19 @@ public class MongoNotificationRepository implements NotificationRepository {
         Query query = new Query(Criteria.where("userId").is(userId))
                 .with(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .limit(limit);
-        return mongoTemplate.find(query, NotificationDocument.class, COLLECTION).stream()
-                .map(NotificationDocument::toDomain).toList();
+        return mongoTemplate.find(query, Notification.class, COLLECTION);
     }
 
     @Override
     public long countUnread(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId).and("read").is(false));
-        return mongoTemplate.count(query, NotificationDocument.class, COLLECTION);
+        return mongoTemplate.count(query, Notification.class, COLLECTION);
     }
 
     @Override
     public void deleteAllForUser(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
-        mongoTemplate.remove(query, NotificationDocument.class, COLLECTION);
+        mongoTemplate.remove(query, Notification.class, COLLECTION);
     }
 
     private Notification withGeneratedId(Notification n) {

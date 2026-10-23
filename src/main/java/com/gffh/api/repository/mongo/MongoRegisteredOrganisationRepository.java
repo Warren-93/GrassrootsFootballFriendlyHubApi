@@ -27,22 +27,21 @@ public class MongoRegisteredOrganisationRepository implements RegisteredOrganisa
 
     @Override
     public Optional<RegisteredOrganisation> findById(String id) {
-        RegisteredOrganisationDocument doc = mongoTemplate.findById(id, RegisteredOrganisationDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(RegisteredOrganisationDocument::toDomain);
+        RegisteredOrganisation doc = mongoTemplate.findById(id, RegisteredOrganisation.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<RegisteredOrganisation> findByName(String name) {
         Query query = new Query(Criteria.where("name").regex("^" + Pattern.quote(name.trim()) + "$", "i"));
-        RegisteredOrganisationDocument doc = mongoTemplate.findOne(query, RegisteredOrganisationDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(RegisteredOrganisationDocument::toDomain);
+        RegisteredOrganisation doc = mongoTemplate.findOne(query, RegisteredOrganisation.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<RegisteredOrganisation> findAll() {
         Query query = new Query().with(Sort.by(Sort.Direction.ASC, "name"));
-        return mongoTemplate.find(query, RegisteredOrganisationDocument.class, COLLECTION).stream()
-                .map(RegisteredOrganisationDocument::toDomain).toList();
+        return mongoTemplate.find(query, RegisteredOrganisation.class, COLLECTION);
     }
 
     @Override
@@ -52,13 +51,13 @@ public class MongoRegisteredOrganisationRepository implements RegisteredOrganisa
                 o.getId() != null ? o.getId() : UUID.randomUUID().toString(), o.getName(), o.getShortName(),
                 o.getLinkedOrganisation(), o.getContactName(), o.getContactEmail(), o.getWebsite(), o.getNotes(), o.getLeagues(),
                 o.getCreatedAt() != null ? o.getCreatedAt() : now, o.getCreatedByEmail(), now);
-        RegisteredOrganisationDocument doc = RegisteredOrganisationDocument.from(toSave);
+        RegisteredOrganisation doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), RegisteredOrganisationDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), RegisteredOrganisation.class, COLLECTION);
     }
 }

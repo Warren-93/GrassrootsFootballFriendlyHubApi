@@ -4,6 +4,8 @@ import com.gffh.api.model.enums.VerificationTokenPurpose;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
@@ -16,11 +18,13 @@ import java.time.Instant;
  * token proves ownership of that address only, so it stops applying once the
  * account changes to another one (see AuthService#confirmVerification).
  */
+@Document("verificationTokens")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class VerificationToken {
 
+    @Id
     private String id;
     private String userId;
     private String token;

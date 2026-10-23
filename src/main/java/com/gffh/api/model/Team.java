@@ -10,6 +10,8 @@ import com.gffh.api.model.enums.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,11 +24,13 @@ import java.util.List;
  * client except through a CONFIRMED fixture. See {@code TeamSummaryDto} and
  * {@code FixtureDetailDto} for the two projections that enforce this.
  */
+@Document("teams")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Team {
 
+    @Id
     private String id;
     private String clubId;
     private String name;
@@ -53,8 +57,9 @@ public class Team {
     private Instant updatedAt;
     private boolean suspended;
     private boolean archived;
-    private boolean searchVisible;
-    private boolean shareContactDetails;
+    /** Defaults to true so teams stored before this field existed stay visible and shared. */
+    private boolean searchVisible = true;
+    private boolean shareContactDetails = true;
 
     public boolean isVerified() { return verification == VerificationStatus.VERIFIED; }
 

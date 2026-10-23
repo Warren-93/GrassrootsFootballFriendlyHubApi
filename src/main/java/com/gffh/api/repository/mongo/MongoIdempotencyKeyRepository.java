@@ -1,5 +1,6 @@
 package com.gffh.api.repository.mongo;
 
+import com.gffh.api.model.IdempotencyKey;
 import com.gffh.api.repository.IdempotencyKeyRepository;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -21,16 +22,13 @@ public class MongoIdempotencyKeyRepository implements IdempotencyKeyRepository {
 
     @Override
     public Optional<String> resourceIdFor(String key) {
-        IdempotencyKeyDocument doc = mongoTemplate.findById(key, IdempotencyKeyDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(d -> d.resourceId);
+        IdempotencyKey doc = mongoTemplate.findById(key, IdempotencyKey.class, COLLECTION);
+        return Optional.ofNullable(doc).map(IdempotencyKey::getResourceId);
     }
 
     @Override
     public boolean claim(String key, String resourceId) {
-        IdempotencyKeyDocument doc = new IdempotencyKeyDocument();
-        doc.id = key;
-        doc.resourceId = resourceId;
-        doc.createdAt = Instant.now();
+        IdempotencyKey doc = new IdempotencyKey(key, resourceId, Instant.now());
         try {
             mongoTemplate.insert(doc, COLLECTION);
             return true;

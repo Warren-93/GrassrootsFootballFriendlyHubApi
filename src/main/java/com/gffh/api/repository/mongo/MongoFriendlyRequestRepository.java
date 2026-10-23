@@ -37,8 +37,8 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
 
     @Override
     public Optional<FriendlyRequest> findById(String id) {
-        FriendlyRequestDocument doc = mongoTemplate.findById(id, FriendlyRequestDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(FriendlyRequestDocument::toDomain);
+        FriendlyRequest doc = mongoTemplate.findById(id, FriendlyRequest.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
@@ -46,8 +46,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         Query query = new Query(new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamId),
                 Criteria.where("recipientTeamId").is(teamId)));
-        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
-                .map(FriendlyRequestDocument::toDomain).toList();
+        return mongoTemplate.find(query, FriendlyRequest.class, COLLECTION);
     }
 
     @Override
@@ -55,8 +54,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         Query query = new Query(new Criteria().andOperator(
                 Criteria.where("status").is(RequestStatus.CONFIRMED.name()),
                 Criteria.where("date").lt(date)));
-        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
-                .map(FriendlyRequestDocument::toDomain).toList();
+        return mongoTemplate.find(query, FriendlyRequest.class, COLLECTION);
     }
 
     @Override
@@ -64,8 +62,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         Query query = new Query(new Criteria().andOperator(
                 Criteria.where("status").in(NEGOTIATING),
                 Criteria.where("date").lt(date)));
-        return mongoTemplate.find(query, FriendlyRequestDocument.class, COLLECTION).stream()
-                .map(FriendlyRequestDocument::toDomain).toList();
+        return mongoTemplate.find(query, FriendlyRequest.class, COLLECTION);
     }
 
     @Override
@@ -74,7 +71,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
                 Criteria.where("senderTeamId").is(teamBId).and("recipientTeamId").is(teamAId));
         Query query = new Query(new Criteria().andOperator(pair, Criteria.where("status").in(NEGOTIATING)));
-        return mongoTemplate.exists(query, FriendlyRequestDocument.class, COLLECTION);
+        return mongoTemplate.exists(query, FriendlyRequest.class, COLLECTION);
     }
 
     @Override
@@ -82,7 +79,7 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
         Criteria pair = new Criteria().orOperator(
                 Criteria.where("senderTeamId").is(teamAId).and("recipientTeamId").is(teamBId),
                 Criteria.where("senderTeamId").is(teamBId).and("recipientTeamId").is(teamAId));
-        return mongoTemplate.exists(new Query(pair), FriendlyRequestDocument.class, COLLECTION);
+        return mongoTemplate.exists(new Query(pair), FriendlyRequest.class, COLLECTION);
     }
 
     @Override
@@ -91,26 +88,26 @@ public class MongoFriendlyRequestRepository implements FriendlyRequestRepository
                 Criteria.where("senderTeamId").is(teamId),
                 Criteria.where("recipientTeamId").is(teamId));
         Query query = new Query(new Criteria().andOperator(team, Criteria.where("status").nin(TERMINAL)));
-        return mongoTemplate.exists(query, FriendlyRequestDocument.class, COLLECTION);
+        return mongoTemplate.exists(query, FriendlyRequest.class, COLLECTION);
     }
 
     @Override
     public FriendlyRequest save(FriendlyRequest request) {
         FriendlyRequest toSave = request.getId() != null ? request : withGeneratedId(request);
-        FriendlyRequestDocument doc = FriendlyRequestDocument.from(toSave);
-        doc.updatedAt = Instant.now();
+        FriendlyRequest doc = toSave;
+        doc.setUpdatedAt(Instant.now());
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public Optional<FriendlyRequest> saveIfStatus(FriendlyRequest request, RequestStatus expectedStatus) {
-        FriendlyRequestDocument doc = FriendlyRequestDocument.from(request);
-        doc.updatedAt = Instant.now();
+        FriendlyRequest doc = request;
+        doc.setUpdatedAt(Instant.now());
         Query query = new Query(Criteria.where("_id").is(request.getId()).and("status").is(expectedStatus.name()));
-        FriendlyRequestDocument saved = mongoTemplate.findAndReplace(query, doc,
+        FriendlyRequest saved = mongoTemplate.findAndReplace(query, doc,
                 FindAndReplaceOptions.options().returnNew(), COLLECTION);
-        return Optional.ofNullable(saved).map(FriendlyRequestDocument::toDomain);
+        return Optional.ofNullable(saved);
     }
 
     private FriendlyRequest withGeneratedId(FriendlyRequest r) {

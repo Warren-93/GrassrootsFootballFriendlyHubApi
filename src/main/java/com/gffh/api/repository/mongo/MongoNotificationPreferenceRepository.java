@@ -20,14 +20,14 @@ public class MongoNotificationPreferenceRepository implements NotificationPrefer
 
     @Override
     public Optional<NotificationPreference> findByUserId(String userId) {
-        NotificationPreferenceDocument doc = mongoTemplate.findById(userId, NotificationPreferenceDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(NotificationPreferenceDocument::toDomain);
+        NotificationPreference doc = mongoTemplate.findById(userId, NotificationPreference.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public NotificationPreference save(NotificationPreference preference) {
-        NotificationPreferenceDocument doc = NotificationPreferenceDocument.from(preference);
+        NotificationPreference doc = preference;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 }

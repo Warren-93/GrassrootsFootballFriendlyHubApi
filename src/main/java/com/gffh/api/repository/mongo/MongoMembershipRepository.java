@@ -25,56 +25,53 @@ public class MongoMembershipRepository implements MembershipRepository {
 
     @Override
     public Optional<Membership> findById(String id) {
-        MembershipDocument doc = mongoTemplate.findById(id, MembershipDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MembershipDocument::toDomain);
+        Membership doc = mongoTemplate.findById(id, Membership.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<Membership> findTeamMembership(String userId, String teamId) {
         Query query = new Query(Criteria.where("userId").is(userId).and("teamId").is(teamId));
-        MembershipDocument doc = mongoTemplate.findOne(query, MembershipDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MembershipDocument::toDomain);
+        Membership doc = mongoTemplate.findOne(query, Membership.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public Optional<Membership> findClubMembership(String userId, String clubId) {
         Query query = new Query(Criteria.where("userId").is(userId).and("clubId").is(clubId));
-        MembershipDocument doc = mongoTemplate.findOne(query, MembershipDocument.class, COLLECTION);
-        return Optional.ofNullable(doc).map(MembershipDocument::toDomain);
+        Membership doc = mongoTemplate.findOne(query, Membership.class, COLLECTION);
+        return Optional.ofNullable(doc);
     }
 
     @Override
     public List<Membership> findByUserId(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId));
-        return mongoTemplate.find(query, MembershipDocument.class, COLLECTION).stream()
-                .map(MembershipDocument::toDomain).toList();
+        return mongoTemplate.find(query, Membership.class, COLLECTION);
     }
 
     @Override
     public List<Membership> findByTeamId(String teamId) {
         Query query = new Query(Criteria.where("teamId").is(teamId));
-        return mongoTemplate.find(query, MembershipDocument.class, COLLECTION).stream()
-                .map(MembershipDocument::toDomain).toList();
+        return mongoTemplate.find(query, Membership.class, COLLECTION);
     }
 
     @Override
     public List<Membership> findByClubId(String clubId) {
         Query query = new Query(Criteria.where("clubId").is(clubId));
-        return mongoTemplate.find(query, MembershipDocument.class, COLLECTION).stream()
-                .map(MembershipDocument::toDomain).toList();
+        return mongoTemplate.find(query, Membership.class, COLLECTION);
     }
 
     @Override
     public Membership save(Membership membership) {
         Membership toSave = membership.getId() != null ? membership : withGeneratedId(membership);
-        MembershipDocument doc = MembershipDocument.from(toSave);
+        Membership doc = toSave;
         mongoTemplate.save(doc, COLLECTION);
-        return doc.toDomain();
+        return doc;
     }
 
     @Override
     public void delete(String id) {
-        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), MembershipDocument.class, COLLECTION);
+        mongoTemplate.remove(new Query(Criteria.where("_id").is(id)), Membership.class, COLLECTION);
     }
 
     private Membership withGeneratedId(Membership m) {
