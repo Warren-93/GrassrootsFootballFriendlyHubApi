@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -103,6 +104,24 @@ class AuthServiceTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .extracting(e -> ((BusinessRuleException) e).code())
                 .isEqualTo("EMAIL_ALREADY_REGISTERED");
+    }
+
+    @Test
+    @DisplayName("reset emails to one address stop at the hourly limit, without the answer changing")
+    void passwordResetsAreRateLimited() {
+        var resetService = new AuthService(users, mock(PasswordEncoder.class), mock(JwtService.class),
+                mock(RefreshTokenService.class), verificationTokens, new RateLimiter(), new RateLimitProperties(),
+                memberInvites, mock(OAuthTokenVerifier.class));
+        when(users.findByEmail(any())).thenReturn(Optional.of(unverified));
+
+        for (int i = 0; i < 8; i++) {
+            // Mixed case still counts against the same address.
+            resetService.requestPasswordReset(new AuthDtos.PasswordResetRequest(
+                    i % 2 == 0 ? "player@example.com" : "Player@Example.com"));
+        }
+
+        verify(verificationTokens, times(5))
+                .issue("u1", VerificationTokenPurpose.PASSWORD_RESET, "player@example.com");
     }
 
     private void linkSentTo(String address) {

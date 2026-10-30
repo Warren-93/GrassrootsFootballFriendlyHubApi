@@ -4,6 +4,7 @@ import com.gffh.api.model.Team;
 import com.gffh.api.model.VerificationRequest;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,9 +14,9 @@ public final class VerificationDtos {
     private VerificationDtos() {}
 
     public record SubmitRequest(
-            String affiliationNumber,
-            @NotBlank String contactDetails,
-            @NotEmpty List<String> evidenceUrls) {}
+            @Size(max = 100) String affiliationNumber,
+            @NotBlank @Size(max = 500) String contactDetails,
+            @NotEmpty @Size(max = 10) List<@NotBlank @Size(max = 500) String> evidenceUrls) {}
 
     public record RejectRequest(@NotBlank String reason) {}
 

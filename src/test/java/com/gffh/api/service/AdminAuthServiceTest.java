@@ -95,6 +95,21 @@ class AdminAuthServiceTest {
                 .extracting(e -> ((BusinessRuleException) e).code()).isEqualTo("RATE_LIMITED");
     }
 
+    @Test
+    @DisplayName("wrong authenticator codes are rate limited per admin, however many times they sign in again")
+    void wrongCodesAreRateLimited() {
+        var service = service(true);
+        for (int i = 0; i < 10; i++) {
+            String pending = service.login(new AdminAuthDtos.LoginRequest("admin@test.dev", "right-password")).pendingToken();
+            assertThatThrownBy(() -> service.verify(new AdminAuthDtos.VerifyRequest(pending, "000000")))
+                    .extracting(e -> ((BusinessRuleException) e).code()).isEqualTo("INVALID_TOTP_CODE");
+        }
+
+        // Even the right code is refused until the hour is up.
+        assertThatThrownBy(() -> service.verify(new AdminAuthDtos.VerifyRequest("pending", "123456")))
+                .extracting(e -> ((BusinessRuleException) e).code()).isEqualTo("RATE_LIMITED");
+    }
+
     private AdminAuthService service(boolean totpRequired) {
         return new AdminAuthService(admins, passwordEncoder, totpService, jwt,
                 new RateLimiter(), new RateLimitProperties(), totpRequired);

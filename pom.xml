@@ -21,8 +21,11 @@
         <springdoc.version>2.6.0</springdoc.version>
         <!-- Newer than the Spring Boot 3.3.4 BOM default (1.19.8): that version's
              npipe client is incompatible with recent Docker Desktop-for-Windows
-             releases, which return an empty 400 from /info over the named pipe. -->
-        <testcontainers.version>1.20.4</testcontainers.version>
+             releases, which return an empty 400 from /info over the named pipe.
+             1.21.4 or later is needed for Docker Engine 29+ (GitHub's
+             ubuntu-26.04 runners), which refuses the API version 1.32 that
+             earlier releases send; 1.21.4 asks for 1.44. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <dependencies>
