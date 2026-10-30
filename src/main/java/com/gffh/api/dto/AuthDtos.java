@@ -13,7 +13,7 @@ public final class AuthDtos {
     public record RegisterRequest(
             @NotBlank @Email String email,
             @NotBlank @Size(min = 10, max = 72) String password,
-            @NotBlank String displayName) {}
+            @NotBlank @Size(max = 100) String displayName) {}
 
     public record LoginRequest(
             @NotBlank @Email String email,

@@ -89,8 +89,18 @@ public class AdminAuthService {
         }
         PlatformAdmin admin = admins.findById(adminId).orElseThrow(() -> new BusinessRuleException(
                 "ADMIN_NOT_FOUND", HttpStatus.UNAUTHORIZED, "Your sign-in session has expired. Please sign in again."));
-        if (totpRequired && !totpService.verifyCode(admin.getTotpSecret(), request.code())) {
-            throw new BusinessRuleException("INVALID_TOTP_CODE", HttpStatus.UNAUTHORIZED, "That code is incorrect.");
+        if (totpRequired) {
+            // Keyed on the admin, not the pending token: signing in again for a
+            // fresh token must not reset the count, or the 6-digit code could be
+            // guessed by anyone who has the password.
+            String limitKey = "admin-totp:" + adminId;
+            if (rateLimiter.isExhausted(limitKey, rateLimits.getAuthAttemptsPerHour())) {
+                throw BusinessRuleException.rateLimited();
+            }
+            if (!totpService.verifyCode(admin.getTotpSecret(), request.code())) {
+                rateLimiter.record(limitKey);
+                throw new BusinessRuleException("INVALID_TOTP_CODE", HttpStatus.UNAUTHORIZED, "That code is incorrect.");
+            }
         }
         return startSession(admin);
     }

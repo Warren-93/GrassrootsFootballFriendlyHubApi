@@ -149,9 +149,14 @@ public class AuthService {
     /**
      * Deliberately neutral: the response is identical whether or not the
      * address is registered, so account existence cannot be probed
-     * (SCR-AU-05).
+     * (SCR-AU-05). Past the hourly limit for an address nothing more is
+     * sent, so the endpoint can't be used to flood someone's inbox - but the
+     * answer is still the same, so the limit reveals nothing either.
      */
     public void requestPasswordReset(AuthDtos.PasswordResetRequest request) {
+        if (!rateLimiter.tryConsume("reset:" + request.email().toLowerCase(), rateLimits.getPasswordResetsPerHour())) {
+            return;
+        }
         users.findByEmail(request.email()).ifPresent(user ->
                 verificationTokenService.issue(user.getId(), VerificationTokenPurpose.PASSWORD_RESET, user.getEmail()));
     }

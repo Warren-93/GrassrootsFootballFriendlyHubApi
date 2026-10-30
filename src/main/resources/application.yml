@@ -130,6 +130,8 @@ gffh:
   rate-limits:
     invitations-per-hour: 20
     auth-attempts-per-hour: 10
+    # Reset emails sent to one address; requests beyond it get the same neutral answer.
+    password-resets-per-hour: 5
 
 management:
   health:
@@ -142,7 +144,10 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
+      # Only admins see component details (Mongo and so on); everyone else,
+      # Render's health check included, gets just the status.
       show-details: when-authorized
+      roles: PLATFORM_ADMIN
 
 logging:
   pattern:

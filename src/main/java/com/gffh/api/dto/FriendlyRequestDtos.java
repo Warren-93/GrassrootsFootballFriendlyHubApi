@@ -5,6 +5,7 @@ import com.gffh.api.model.enums.*;
 import com.gffh.api.service.RequestStateMachine;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -26,7 +27,7 @@ public final class FriendlyRequestDtos {
             @NotBlank String homeTeamId,
             @NotNull CostShare costShare,
             @NotNull RefereeArrangement refereeArrangement,
-            String message) {}
+            @Size(max = ConversationDtos.MAX_BODY_LENGTH) String message) {}
 
     /** Contact details, populated only once {@link RequestStateMachine#disclosesContactDetails} is true. */
     public record TeamContact(String teamId, String teamName, String managerName, String contactPhone,

@@ -61,6 +61,9 @@ public class SecurityConfig {
                 // The client config (support email, which sign-in buttons to
                 // show) is needed before anyone has signed in.
                 .requestMatchers(HttpMethod.GET, "/actuator/health", "/api/v1/config").permitAll()
+                // Metrics and the rest describe the server, not the user: any
+                // signed-in user (anyone, since sign-up is open) mustn't read them.
+                .requestMatchers("/actuator/**").hasRole("PLATFORM_ADMIN")
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // Admin sign-in is necessarily unauthenticated (that's the point of
                 // it); every other /api/v1/admin/** route requires the role.

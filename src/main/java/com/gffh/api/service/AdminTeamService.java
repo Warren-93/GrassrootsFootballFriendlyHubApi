@@ -56,13 +56,32 @@ public class AdminTeamService {
      * already tied to the duplicate's ID are left as historical record
      * rather than migrated - a fuller data migration is real future work,
      * out of scope for this pass.
+     *
+     * <p>Someone with a role on both teams (usually the manager who created
+     * the duplicate) keeps one membership of the primary, with the stronger
+     * of the two roles: a second row for the same user and team would make
+     * every later lookup of their role on it fail.
      */
     public void merge(String adminId, AdminTeamDtos.MergeRequest request) {
+        if (request.primaryTeamId().equals(request.duplicateTeamId())) {
+            throw new BusinessRuleException("CANNOT_MERGE_TEAM_INTO_ITSELF", HttpStatus.BAD_REQUEST,
+                    "Choose two different teams to merge.");
+        }
         Team primary = find(request.primaryTeamId());
         Team duplicate = find(request.duplicateTeamId());
 
         for (Membership m : memberships.findByTeamId(duplicate.getId())) {
-            memberships.save(new Membership(m.getId(), m.getUserId(), primary.getId(), null, m.getRole(), m.getCreatedAt()));
+            Membership existing = memberships.findByUserIdAndTeamId(m.getUserId(), primary.getId()).orElse(null);
+            if (existing == null) {
+                memberships.save(new Membership(m.getId(), m.getUserId(), primary.getId(), null, m.getRole(), m.getCreatedAt()));
+                continue;
+            }
+            // Role is declared weakest first.
+            if (m.getRole().ordinal() > existing.getRole().ordinal()) {
+                memberships.save(new Membership(existing.getId(), existing.getUserId(), primary.getId(), null,
+                        m.getRole(), existing.getCreatedAt()));
+            }
+            memberships.deleteById(m.getId());
         }
 
         teams.save(withSuspended(duplicate, true));

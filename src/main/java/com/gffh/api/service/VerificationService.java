@@ -46,6 +46,7 @@ public class VerificationService {
     public VerificationDtos.VerificationRequestView submit(String userId, String teamId,
                                                             VerificationDtos.SubmitRequest request) {
         membershipService.requireCanManageTeam(userId, teamId);
+        request.evidenceUrls().forEach(VerificationService::requireSafeEvidence);
         if (requests.findPendingByTeamId(teamId).isPresent()) {
             throw new BusinessRuleException("VERIFICATION_ALREADY_PENDING", HttpStatus.CONFLICT,
                     "This team already has a verification request in progress.");
@@ -177,6 +178,25 @@ public class VerificationService {
         return requests.findById(id).orElseThrow(() -> new BusinessRuleException(
                 "VERIFICATION_REQUEST_NOT_FOUND", HttpStatus.NOT_FOUND, "That request could not be found."));
     }
+
+    /**
+     * Evidence is free text, one link per line, and the admin site opens it:
+     * a "javascript:" (or similar) entry would run in an admin's session. Other
+     * text - a bare "myclub.co.uk", a short note - is left alone. Browsers
+     * ignore whitespace and control characters inside a scheme, so those are
+     * dropped before comparing.
+     */
+    static void requireSafeEvidence(String entry) {
+        String scheme = entry.replaceAll("[\\x00-\\x20\\x7F]", "").toLowerCase(java.util.Locale.ROOT);
+        for (String unsafe : UNSAFE_SCHEMES) {
+            if (scheme.startsWith(unsafe)) {
+                throw new BusinessRuleException("INVALID_EVIDENCE_URL", HttpStatus.BAD_REQUEST,
+                        "Evidence links must be web addresses (http or https).");
+            }
+        }
+    }
+
+    private static final List<String> UNSAFE_SCHEMES = List.of("javascript:", "vbscript:", "data:", "file:");
 
     private static Team withVerification(Team team, VerificationStatus status) {
         return new Team(team.getId(), team.getClubId(), team.getName(), team.getClubName(), team.getBadgeUrl(),
